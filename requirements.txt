@@ -19,7 +19,7 @@ GitPython
 gradio
 gymnasium
 idna
-Jinja2
+Jinja2>=3.1.5
 jsonschema
 jsonschema-specifications
 kiwisolver
