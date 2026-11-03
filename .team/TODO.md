@@ -24,11 +24,11 @@
   - dépend de : T16
   - essais : 1
 
-- [ ] **T19** · Référence PPO 1 tour sur piste fixe (reprise T4-T6 adaptée) · P2
+- [x] **T19** · Référence PPO 1 tour sur piste fixe (reprise T4-T6 adaptée) · P2
   - but : entraînement PPO ≤ 10 min avec `rl_train_ppo.py --static --steps <≤200k>`, avec la physique actuelle (MAX_SPEED 23, frein moteur) ; évaluer avec `eval.py --static --laps 1 --episodes 20 --seed 0`. Copier le meilleur dans `data/models/best/` avec un `best.json` (mesure).
   - fini quand : entrée `metrics.json` du modèle ; `data/models/best/` + sa mesure ; taux de finition 1 tour rapporté (même s'il vaut 0)
   - dépend de : T17
-  - essais : 0
+  - essais : 1
 
 - [ ] **T20** · Entraînement fiabilité 3 tours (reprise du modèle de T19) · P2
   - but : reprendre `--load` le meilleur modèle, entraînement ≤ 10 min avec `laps=3` ; adapter récompense seulement si nécessaire (checkpoints qui se répètent à chaque tour) ; évaluer 20 épisodes `--laps 3`.

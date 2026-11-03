@@ -18,6 +18,15 @@ import torch.nn as nn
 print("✅ Ready. Heavy libraries will load when training starts...")
 
 
+def _tb_log_dir():
+    """Dossier tensorboard, ou None si tensorboard n'est pas installé."""
+    try:
+        import tensorboard  # noqa: F401
+        return "./logs/ppo_tensorboard/"
+    except ImportError:
+        return None
+
+
 def main():
     # Parse args first (fast)
     parser = argparse.ArgumentParser()
@@ -220,7 +229,7 @@ def main():
             venv,
             device=device,
             verbose=1,
-            tensorboard_log="./logs/ppo_tensorboard/",
+            tensorboard_log=_tb_log_dir(),
             policy_kwargs=policy_kwargs,
             **ppo_params
         )

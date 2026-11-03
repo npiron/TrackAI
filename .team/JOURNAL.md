@@ -270,3 +270,13 @@
 ## 2026-11-03 22:50 · reviewer · T18 validée
 
 - Relu human_lap.py, eval.py, tests. pytest hors e2e : 35 passed, 1 skipped. eval random --static --laps 3 : human_best_total null sans fichier. Imports pygame du mode jeu vérifiés par grep (non lancé, pas d affichage). Le test de rejeu utilise une fin de tour patchée, acceptable.
+
+## 2026-11-03 23:01 · worker · T19 Référence PPO 1 tour piste fixe
+- Fichiers : `rl_train_ppo.py` (tensorboard_log=None si tensorboard absent, sinon l'entraînement plantait), `data/models/best/` (best.zip, best_vecnormalize.pkl, best.json), `.team/metrics.json` (entrée du modèle).
+- Entraînement : `SDL_VIDEODRIVER=dummy .venv/bin/python rl_train_ppo.py --static --steps 200000 --run-id t19` → 8 min 14 s, ep_rew_mean final ≈ -732.
+- Éval : `scripts/eval.py --model data/checkpoints/ppo_t19_final.zip --static --laps 1 --episodes 20 --seed 0` → finish_rate 0.0, mean_checkpoints 1.0, mean_return -3.19, épisodes de 2000 steps (timeout). Aucun tour fini ; pas meilleur que random (1.1 cp).
+- Limites : 200k steps insuffisants avec cette récompense/physique ; copié dans best/ comme référence (finish_rate 0). Pistes pour T20 : plus de steps en reprise, revoir la récompense. Entraînement sans `laps` (option absente de rl_train_ppo.py) à ajouter pour T20.
+
+## 2026-11-03 23:02 · reviewer · T19 validée
+
+- Relancé eval du modèle t19 (static, laps 1, 20 ép., seed 0) : finish_rate 0.0, mean_checkpoints 1.0, return -3.1875, identique à metrics.json. pytest hors e2e : 35 passed, 1 skipped. Fix tensorboard optionnel OK. best/ est gitignoré (non commité, normal). Référence faible (0 tour) assumée par le critère.
