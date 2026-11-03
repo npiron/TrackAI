@@ -24,11 +24,11 @@
   - dépend de : T11
   - essais : 1
 
-- [ ] **T14** · Corriger #1 : MAX_SPEED cohérent avec la vitesse terminale · P2
+- [x] **T14** · Corriger #1 : MAX_SPEED cohérent avec la vitesse terminale · P2
   - but : choisir une des deux options (recommandé : baisser MAX_SPEED à ~23 pour garder la sensation de jeu ; ajuster le cap du boost relatif, BOOST_CAP du banc et la normalisation `speed_n`) et la justifier dans PHYSICS.md. Ajouter au banc un scénario « la vitesse terminale atteint ≥ 95 % de MAX_SPEED »
   - fini quand : nouveau scénario pass ; boost toujours borné et pass ; pytest vert ; note dans PHYSICS.md que les modèles RL antérieurs sont invalidés (aucun modèle n'existe dans le dépôt)
   - dépend de : T12, T13 (même fichier, éviter les conflits)
-  - essais : 0
+  - essais : 1
 
 - [ ] **T15** · Rapport final du banc : 100 % pass · P2
   - but : relancer `physics_check.py` (écrit dans metrics.json), vérifier summary = 100 % pass, mettre à jour PHYSICS.md (tableau final, tous les écarts corrigés ou assumés), dédoublonner l'entrée `random` de metrics.json (doublon) sans en perdre

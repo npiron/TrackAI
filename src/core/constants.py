@@ -6,7 +6,7 @@ W, H = 1400, 1000
 FPS = 50
 
 # Physics constants
-MAX_SPEED = 32.0
+MAX_SPEED = 23.0  # ~ vitesse terminale ACCEL*FRICTION/(1-FRICTION)=22.32 (cf. docs/PHYSICS.md #1)
 ACCEL = 0.18        # Reduced for smoother acceleration
 BRAKE = 0.5
 FRICTION = 0.992

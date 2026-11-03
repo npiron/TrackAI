@@ -191,3 +191,13 @@
 ## 2026-11-03 22:28 · reviewer · T13 validée
 
 - Diff relu (env.py speed=|vel| après collision, détection de contact du banc, test, PHYSICS.md). Banc relancé 2× : sortie identique, summary 19/19 pass, murs 0 hors piste, 0 téléportation, mismatch 0.0. pytest hors e2e : 26 passed, 1 skipped. Réserves non bloquantes dans l'inbox (entrées physics_check cumulées, critère de contact modifié, test à aligner sur pi/2).
+
+## 2026-11-03 22:28 · worker · T14 MAX_SPEED cohérent avec la vitesse terminale
+
+- Fichiers : `src/core/constants.py` (MAX_SPEED 32→23), `scripts/physics_check.py` (MIN_TERMINAL_RATIO=0.95, clé `terminal_reaches_max`, scénario `terminal_reaches_max_speed` dans summary), `tests/test_physics.py` (+test), `docs/PHYSICS.md` (#1 corrigé, modèles RL invalidés), `.team/metrics.json` (physics_check réécrit).
+- Résultats : terminal 22.32 = 97.04 % de MAX_SPEED (pass) ; boost pic 26.45, cap 27.6 (pass) ; virages 3/3 pass (dérive 16.5/14.3/12.8°) ; summary 20/20 pass. pytest `--ignore=tests/test_e2e_training.py` : 27 passed, 1 skipped.
+- Limites : rayon de virage légèrement plus grand (speed_factor normalisé sur 23) ; doublons metrics.json laissés à T15 ; scripts/test_drift.py et env_backup lisent la constante sans changement.
+
+## 2026-11-03 22:29 · reviewer · T14 validée
+
+- Diff relu (MAX_SPEED 32→23, scénario terminal_reaches_max_speed, test, PHYSICS.md #1 + invalidation modèles RL). Banc relancé: 20/20 pass, terminal 22.32 = 97.04 %, boost pic 26.45 < cap 27.6, virages 3/3. pytest hors e2e: 27 passed, 1 skipped. Usages de MAX_SPEED (env, wrappers) cohérents.

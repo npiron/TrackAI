@@ -46,3 +46,10 @@ def test_speed_resynced_after_wall_hit():
         assert r["contact_seen"]
         assert r["max_speed_vel_mismatch"] <= 0.25
         assert r["frames_outside_track"] == 0
+
+
+def test_terminal_speed_reaches_max_speed():
+    from scripts.physics_check import measure
+    a = measure()
+    assert a["terminal_reaches_max"]["pass"]
+    assert a["terminal_speed_px_frame"] <= MAX_SPEED * 1.0 + 1e-6

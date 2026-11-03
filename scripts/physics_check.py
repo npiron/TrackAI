@@ -148,6 +148,7 @@ def measure_out_of_range():
 MAX_TELEPORT_PX = 1.0               # saut de position toléré au-delà de |vel| de la frame
 MAX_SPEED_VEL_MISMATCH = 0.25       # |speed-|vel|| / max(speed,1) toléré juste après un choc
 BOOST_CAP = MAX_SPEED * 1.2
+MIN_TERMINAL_RATIO = 0.95           # la vitesse terminale doit atteindre 95 % de MAX_SPEED
 
 
 def _real_env(seed=42):
@@ -313,6 +314,8 @@ def measure():
         "terminal_speed_px_frame": round(vterm, 4),
         "terminal_speed_px_s": round(vterm * FPS, 2),
         "terminal_over_max": round(vterm / MAX_SPEED, 4),
+        "terminal_reaches_max": {"ratio": round(vterm / MAX_SPEED, 4), "min_ratio": MIN_TERMINAL_RATIO,
+                                 "pass": bool(vterm >= MIN_TERMINAL_RATIO * MAX_SPEED)},
         "frames_to_90pct_terminal": t90,
         "time_to_90pct_terminal_s": round(t90 / FPS, 3) if t90 else None,
         "frames_to_90pct_MAX_SPEED": t90_max,  # None = MAX_SPEED inatteignable
@@ -335,6 +338,7 @@ def summarize(res):
     sc["turn_radius_increases_with_speed"] = t["radius_increases_with_speed"]
     for k in ("steer5", "accel_neg1", "brake_neg1", "accel3"):
         sc[f"out_of_range_{k}"] = o[f"{k}_pass"]
+    sc["terminal_reaches_max_speed"] = res["terminal_reaches_max"]["pass"]
     sc["out_of_range_finite"] = o["all_finite"]
     for k in ("perpendicular", "oblique"):
         sc[f"walls_{k}_inside"] = w["walls"][k]["pass_inside"]
