@@ -24,7 +24,7 @@
   - dépend de : rien (T26 utile mais non bloquant)
   - essais : 0
 
-- [?] **T28** · Robustesse du meilleur modèle · P1
+- [x] **T28** · Robustesse du meilleur modèle · P1
   - but : évaluer `best/` sur 100 épisodes avec seeds différents (`--static`, laps 3) et avec petit bruit d'action (eps 0,05) pour vérifier que 20/20 n'est pas un artefact de déterminisme ; rapport `docs/ROBUST_T28.md`.
   - fini quand : taux de finish chiffré dans le doc et une entrée `metrics.json` ; si < 100 %, cause principale identifiée (virage/checkpoint)
   - dépend de : rien
