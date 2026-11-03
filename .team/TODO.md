@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T30** · Réduire encore le temps : optimisation de l'heuristique par recherche · P1
+- [x] **T30** · Réduire encore le temps : optimisation de l'heuristique par recherche · P1
   - but : étendre `scripts/sweep_heuristic.py` (recherche aléatoire / hill-climbing, éventuellement paramètres par secteur de courbure) pour passer sous 17,74 s en gardant 20/20, puis ré-imitation (`imitate.py --dagger 5`) du nouveau professeur. ≤ 10 min de calcul par lancement.
   - fini quand : heuristique améliorée dans `metrics.json` (20/20, temps < 17,74) ; si modèle BC évalué 20/20 et plus rapide que best/, `best/` remplacé ; sinon table prouvant le plafond
   - dépend de : T29 (verdict valide)
-  - essais : 0
+  - essais : 1
 
 - [ ] **T27** · Affinage PPO 3 tours depuis le BC, sous pression de temps · P2
   - but : tester `rl_train_ppo.py --load` sur `ppo_t24_bc.zip` (ou le best de T26) avec `--laps 3`, LR faible, récompense de vitesse/temps renforcée (config, pas physique ; vérifier que `rewards_config.json` ne masque pas les clés), ≤ 10 min. Surveiller l'effondrement : checkpoint à mi-parcours évalué.

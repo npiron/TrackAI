@@ -396,3 +396,15 @@
 ## 2026-11-03 23:49 · reviewer · T29 validée
 
 - Relancé audit_lap (static, laps 3) : tableaux identiques à docs/AUDIT_T29.md (seul le bloc verdict est rédigé à la main). 8 cp dans l ordre, 0 hors piste, 0 mur. pytest hors e2e : 41 passed, 1 skipped. Verdict valide, pas de faille.
+
+## 2026-11-04 00:00 · worker · T30 Optimisation de l'heuristique par recherche
+- Fichiers : `scripts/search_heuristic.py` (nouveau, hill-climbing sur SPEED_PER_RADIUS, PREDICT_FRAMES, LOOK_MIN, LOOK_GAIN, STEER_DEADZONE ; 1 ép. déterministe par essai), `docs/SEARCH_T30.md`, `scripts/heuristic_lap.py` (constantes : 0.2→0.2836, 10→8, 200/240→125/384, deadzone 0.05→0.0375), `.team/metrics.json`, `data/models/best/` (remplacé, gitignoré).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/search_heuristic.py --budget 1500` (~4 min, 17,94 → 15,9 s). Heuristique `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` ×2 : 20/20, 15,90 s (795 steps), identique.
+- Ré-imitation : `imitate.py --static --laps 3 --dagger 5 --dagger-episodes 20 --epochs 40 --out data/checkpoints/ppo_t30_bc` → précision 0.993 ; eval 20 ép. : 20/20, 15,90 s (avant 17,74). best/ remplacé et réévalué : identique.
+- Audit (audit_lap.py sur nouveau best/ et heuristique) : 8 cp dans l'ordre, 0 frame hors piste, 0 contact mur, bord au pire -1,9 px (précision spline). Sortie `/tmp`, docs/AUDIT_T29.md non réécrit.
+- pytest (hors e2e, `--ignore=tests/test_e2e_training.py`) : 41 passed, 1 skipped.
+- Limites : surapprentissage possible aux 1 épisode/piste fixe ; la recherche n'est pas optimale globale ; professeur utilise la spline.
+
+## 2026-11-04 00:01 · reviewer · T30 validée
+
+- Relancé : heuristic_lap (static, 3 tours, 20 ép.) → 20/20, 15,90 s ; eval best/best.zip → 20/20, 15,90 s (identique au journal). audit_lap : 8 cp dans l ordre, 0 hors piste, 0 mur. pytest hors e2e : 41 passed, 1 skipped. Diff limité aux constantes, script de recherche et doc. Réserve : surapprentissage possible à la piste fixe/éval déterministe.

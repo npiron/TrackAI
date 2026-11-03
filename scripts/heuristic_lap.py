@@ -11,12 +11,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Actions : 0 idle, 1 acc, 2 frein, 3 gauche, 4 droite, 5 G+acc, 6 D+acc, 7 G+frein, 8 D+frein
-STEER_DEADZONE = 0.05   # rad : en dessous on va tout droit
+STEER_DEADZONE = 0.0375   # rad : en dessous on va tout droit
 MAX_V_N = 1.0           # vitesse normalisée maximale visée
-PREDICT_FRAMES = 10
-SPEED_PER_RADIUS = 0.2   # px/frame par px de rayon
+PREDICT_FRAMES = 8
+SPEED_PER_RADIUS = 0.2836   # px/frame par px de rayon
 MAX_SPEED_PX = 23.0
-LOOK_MIN, LOOK_GAIN = 200, 240  # indices de spline en avance (± vitesse)
+LOOK_MIN, LOOK_GAIN = 125, 384  # indices de spline en avance (± vitesse)
 CORNER_V_N = 0.35       # vitesse visée pour un virage serré
 
 
