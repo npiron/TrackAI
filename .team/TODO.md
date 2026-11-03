@@ -24,11 +24,11 @@
   - dépend de : T21
   - essais : 1
 
-- [ ] **T24** · Entraînement par imitation/amorçage depuis l'heuristique (si T22 réussit) · P2
+- [x] **T24** · Entraînement par imitation/amorçage depuis l'heuristique (si T22 réussit) · P2
   - but : collecter des trajectoires de l'heuristique, pré-entraîner la politique (behavior cloning, ≤ 5 min) ou injecter ces trajectoires, puis affiner PPO ; compatible `--load`.
   - fini quand : modèle évalué 20 ép. `--laps 1` ; entrée `metrics.json` comparée à T19/T23 ; décision `best/` notée
   - dépend de : T22
-  - essais : 0
+  - essais : 1
 
 > Action humaine (non assignable) : jouer `python scripts/human_lap.py --laps 3` pour créer `data/human_best.json` ; sans lui le critère vitesse n'est pas évaluable (le banc affiche `human_best_total: null`).
 > Plus tard : fiabilité 3 tours 20/20 (reprise du meilleur modèle, `--laps 3`), puis paliers de vitesse (pénalité de temps, reprise). Anciens modèles de `data/models/production` invalides.

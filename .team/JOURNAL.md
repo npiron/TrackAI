@@ -329,3 +329,14 @@
 ## 2026-11-03 23:32 · reviewer · T23 validée
 
 - Relancé eval t23 (static, laps 1, 20 ép., seed 0) : finish_rate 0, cp 2.0, return -153.54, 275 steps, identique à metrics.json (doublon retiré). pytest hors e2e : 39 passed, 1 skipped. Diff wrappers cohérent (défauts configurables). Critère : échec justifié chiffré dans inbox, best/ intact. Réserve : rewards_config.json peut masquer les nouvelles clés. Reste à faire : T24 imitation.
+
+## 2026-11-03 23:33 · worker · T24 Imitation depuis l'heuristique
+- Fichiers : `scripts/imitate.py` (collecte obs/action de l'heuristique sur 40 épisodes avec bruit eps 0/0.1/0.2/0.3, BC cross-entropy 30 époques sur PPO MlpPolicy [256,256], stats VecNormalize issues des données, sauve zip + _vecnormalize.pkl), `tests/test_imitate.py`, `.team/metrics.json` (2 entrées), `data/models/best/` (remplacé, gitignoré).
+- Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 1` (17 s, 32 913 échantillons, précision 0.848) ; `scripts/eval.py --model data/checkpoints/ppo_t24_bc.zip --static --laps {1,3} --episodes 20 --seed 0`.
+- Résultats : laps 1 → finish_rate 1.0, 14.1 s, 8 cp ; laps 3 → finish_rate 1.0 (20/20), temps total 41.7 s (heuristique : 45.46 s ; t19/t23 : 0). pytest hors e2e : 40 passed, 1 skipped.
+- Décision : best/ remplacé par ce modèle (finish_rate 1.0 à 3 tours). Pas de fine-tuning PPO fait (inutile pour le critère) ; `--load` compatible mais non testé avec ce zip.
+- Limites : l'heuristique utilise la spline, la politique apprise reproduit son comportement sur piste fixe seulement ; évaluation seed 0 sur piste fixe déterministe (20 épisodes identiques). Temps humain toujours absent.
+
+## 2026-11-03 23:34 · reviewer · T24 validée
+
+- Relancé eval t24_bc laps 1 et 3 (20 ép., seed 0) : finish_rate 1.0, 14.1 s et 41.7 s, identique à metrics.json (doublons retirés). pytest hors e2e : 40 passed, 1 skipped. Décision best/ notée. Réserve : dépend de la spline via l heuristique, piste fixe, --load non testé.

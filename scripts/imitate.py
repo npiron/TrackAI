@@ -1,0 +1,96 @@
+"""Behavior cloning depuis l'heuristique : collecte (obs, action) puis pré-entraîne une PPO MlpPolicy.
+
+Usage : python scripts/imitate.py --static --laps 1 --out data/checkpoints/ppo_t24_bc [--episodes 30]
+Sauve <out>.zip et <out>_vecnormalize.pkl (compatibles `rl_train_ppo.py --load` et scripts/eval.py).
+Les épisodes bruités (action aléatoire avec proba eps, étiquette = action de l'heuristique) couvrent
+les états hors trajectoire (type DAgger sans politique apprise).
+"""
+import argparse
+import os
+import random
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import numpy as np
+
+EPS_LEVELS = (0.0, 0.1, 0.2, 0.3)
+
+
+def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000):
+    """Renvoie (obs[N,14], actions[N]) ; l'étiquette est toujours l'action de l'heuristique."""
+    from src.rl.wrappers import GymTimeAttack
+    from scripts.heuristic_lap import heuristic_action
+    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps)
+    O, A = [], []
+    for k in range(episodes):
+        random.seed(seed + k)
+        np.random.seed(seed + k)
+        rng = np.random.RandomState(seed + k)
+        eps = eps_levels[k % len(eps_levels)]
+        obs, _ = env.reset()
+        for _ in range(max_steps):
+            a = heuristic_action(obs, env.ta)
+            O.append(obs.copy())
+            A.append(a)
+            if rng.rand() < eps:
+                a = int(rng.randint(env.action_space.n))
+            obs, _, term, trunc, _ = env.step(a)
+            if term or trunc:
+                break
+    return np.array(O, dtype=np.float32), np.array(A, dtype=np.int64)
+
+
+def behavior_clone(model, obs_n, acts, epochs, lr=1e-3, batch=256, seed=0):
+    """Cross-entropy sur les logits de la politique ; renvoie (perte finale, précision)."""
+    import torch
+    torch.manual_seed(seed)
+    pol = model.policy
+    opt = torch.optim.Adam(pol.parameters(), lr=lr)
+    X, Y = torch.as_tensor(obs_n), torch.as_tensor(acts)
+    n = len(X)
+    for _ in range(epochs):
+        perm = torch.randperm(n)
+        for i in range(0, n, batch):
+            idx = perm[i:i + batch]
+            dist = pol.get_distribution(X[idx])
+            loss = -dist.log_prob(Y[idx]).mean()
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+    with torch.no_grad():
+        logits = pol.get_distribution(X).distribution.logits
+        acc = float((logits.argmax(1) == Y).float().mean())
+    return float(loss), acc
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser()
+    p.add_argument("--episodes", type=int, default=40)
+    p.add_argument("--laps", type=int, default=1)
+    p.add_argument("--static", action="store_true")
+    p.add_argument("--epochs", type=int, default=30)
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
+    a = p.parse_args(argv)
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+    from src.rl.wrappers import GymTimeAttack
+    O, A = collect(a.episodes, a.laps, not a.static, a.seed)
+    print(f"{len(O)} échantillons, répartition actions: {np.bincount(A, minlength=9).tolist()}")
+    venv = VecNormalize(DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
+                                                           laps=a.laps)]),
+                        norm_obs=True, norm_reward=True, clip_obs=10.0)
+    venv.obs_rms.mean, venv.obs_rms.var, venv.obs_rms.count = O.mean(0).astype(np.float64), O.var(0).astype(np.float64) + 1e-8, len(O)
+    On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
+    model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed,
+                policy_kwargs=dict(net_arch=[dict(pi=[256, 256], vf=[256, 256])]))
+    loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed)
+    print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
+    model.save(a.out)
+    venv.save(a.out + "_vecnormalize.pkl")
+    print("sauvé", a.out + ".zip")
+
+
+if __name__ == "__main__":
+    main()
