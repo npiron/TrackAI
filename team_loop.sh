@@ -22,7 +22,8 @@ run_agent() {  # $1=agent  $2=consigne
   local agent="$1" out="$LOGS/$(date +%Y%m%d-%H%M%S)-$1.log"
   log "→ $agent (log : $out)"
   # Utiliser le login claude.ai (abonnement), pas une clé API du shell
-  env -u ANTHROPIC_API_KEY claude -p "$2" \
+  local consigne="$2 Heure actuelle : $(ts). Pour dater une entrée du journal, utilise toujours la sortie de \`date '+%Y-%m-%d %H:%M'\`, jamais une heure estimée."
+  env -u ANTHROPIC_API_KEY claude -p "$consigne" \
     --agent "$agent" \
     --permission-mode acceptEdits \
     --allowedTools "${ALLOWED[@]}" \
