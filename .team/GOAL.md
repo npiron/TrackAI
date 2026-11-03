@@ -18,4 +18,4 @@ Un agent entraîné qui enchaîne 3 tours complets du circuit fixe (`build_track
 > Rempli par le planificateur, ne pas éditer à la main.
 
 - critère : sur `build_track()` (piste fixe, seed 42, `--static`), avec `laps=3`, via `scripts/eval.py` sur ≥ 20 épisodes, graine 0, politique déterministe : (1) fiabilité = 20/20 épisodes qui terminent les 3 tours sans sortie de piste fatale ni timeout ; (2) vitesse = temps total moyen des 3 tours inférieur ou égal au temps de référence humain (mesuré avec le même chrono, voir T16/T21), à défaut minimal et en baisse à chaque palier. Validé par le reviewer dans `metrics.json`.
-- statut : non évalué
+- statut : en cours (dernière mesure : PPO t20, laps 3, finish_rate 0/20, 2.0 checkpoints en moyenne ; temps humain non mesuré)

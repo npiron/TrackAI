@@ -6,6 +6,10 @@
 
 Étapes : multi-tours (T16-T17) → référence humaine (T18) → PPO 1 tour (T19) → fiabilité 3 tours (T20) → vitesse. Le banc physique (ci-dessous) est clos ; physique figée (contrainte).
 
+## Point 23:16
+
+T16-T20 faits : infrastructure multi-tours et banc OK, mais PPO 200k steps n'a fini aucun tour (t19 : 1.0 cp, t20 : 2.0 cp). Avant d'entraîner plus, on réduit l'incertitude : diagnostic de l'échec (T21), preuve de faisabilité par heuristique (T22), puis correction de récompense (T23) et amorçage par imitation (T24). Temps humain : action de Nicolas en attente.
+
 ## Ancien objectif (clos, 2026-11-03 22:30) : physique/gameplay : vérifier gameplay/physique, simulation réaliste
 
 Priorité absolue sur l'ancien plan RL (jalons 0-1 mis en pause : T3-T6 reportées, sauf T3 random qui sert de test de bon sens). Contrainte : aucune capture d'écran ; tout se vérifie par scénarios numériques headless.
@@ -38,3 +42,4 @@ Un agent RL qui boucle proprement les circuits du clone Trackmania, avec des pro
 - 2026-11-03 22:15 : objectif changé (physique/gameplay réaliste). Pause du plan RL ; nouveau jalon « banc physique » (T7-T11). Critère défini dans GOAL.md.
 - 2026-11-03 22:25 : banc T7-T10 validé, 15 écarts triés. Corrections retenues : #1 MAX_SPEED, #2 désynchro, #3/#4 clip actions ; le reste assumé arcade. Tâches T11-T15 ; objectif atteint si metrics.json porte un `physics_check` sans fail, validé reviewer. Plan RL toujours en pause.
 - 2026-11-03 22:43 : nouvel objectif (3 tours puis temps). Critère mesurable défini dans GOAL.md (piste fixe `--static`, 20 épisodes, seed 0, finish_rate 20/20 puis temps ≤ humain). Les modèles existants sont invalides (physique changée). Temps humain à mesurer (T18, action de Nicolas).
+- 2026-11-03 23:16 : PPO brut à 0 tour fini ; on diagnostique (T21) et on prouve la faisabilité par heuristique (T22) avant d'investir plus de calcul. Pas de modif physique.

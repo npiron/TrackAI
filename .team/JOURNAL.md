@@ -291,3 +291,9 @@
 ## 2026-11-03 23:15 · reviewer · T20 validée
 
 - Relancé eval du modèle t20 (static, laps 3, 20 ép., seed 0) : finish_rate 0.0, mean_checkpoints 2.0, return 364.8389, identique à metrics.json. pytest hors e2e : 35 passed, 1 skipped. Diff rl_train_ppo.py (--laps, reprise VecNormalize) cohérent. best/ non modifié, décision notée dans l inbox. Reste : 20/20 non atteint (0 tour fini), à replanifier (récompense/durée).
+
+## 2026-11-03 23:16 · planner · Replanification
+
+- T19/T20 validées : aucun tour fini (finish_rate 0, 1.0 puis 2.0 checkpoints). Statut GOAL : en cours. Inbox T20 traitée (pistes retenues : diagnostic, récompense, imitation) puis archivée.
+- Nouvelles tâches : T21 diagnostic, T22 heuristique (faisabilité + plancher de temps), T23 correction récompense + PPO 1 tour, T24 imitation.
+- Temps humain toujours absent : Nicolas doit jouer `scripts/human_lap.py --laps 3`.
