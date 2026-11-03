@@ -68,3 +68,7 @@
 - T1 et T2 validées, rangées dans « Terminées ». Inbox vide. `metrics.json` toujours vide.
 - T3 et T4 conservées (indépendantes, prêtes). Ajout T5 (éval du modèle smoke, couvre le chemin modèle non testé) et T6 (PPO 50k, jalon 1).
 - Feuille de route : jalon 0 presque terminé, décision datée ajoutée.
+
+## 2026-11-03 22:06 · boucle · Fin
+
+- Session terminée après 1 itération(s), 0 tâche(s) validée(s) au total.
