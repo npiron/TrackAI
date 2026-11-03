@@ -52,7 +52,9 @@ def multi_lap_stats(succ, laps_done, totals):
 def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
     from src.rl.wrappers import GymTimeAttack
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
-    model, vn = (None, None) if model_path == "random" else _load_model(model_path)
+    model, vn = (None, None) if model_path in ("random", "heuristic") else _load_model(model_path)
+    if model_path == "heuristic":
+        from scripts.heuristic_lap import heuristic_action
     rng = np.random.RandomState(seed)
     rets, cps, succ, laps, lens = [], [], [], [], []
     laps_done, totals = [], []
@@ -62,7 +64,9 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
         obs, _ = env.reset()
         ret, steps, done, info = 0.0, 0, False, {}
         while not done:
-            if model is None:
+            if model_path == "heuristic":
+                action = heuristic_action(obs, env.ta)
+            elif model is None:
                 action = int(rng.randint(env.action_space.n))
             else:
                 o = obs

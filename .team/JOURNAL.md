@@ -307,3 +307,15 @@
 ## 2026-11-03 23:19 · reviewer · T21 validée
 
 - Relancé diagnose t19 ×2 : sorties identiques (cmp), total -3.188 = eval. t20 : cp 2, arrêt 5840, total 364.8 conforme au doc. pytest hors e2e : 37 passed, 1 skipped. Récompense inchangée (test somme des composantes = récompense). Doc nomme la cause (arrêt au mur, +0.1/frame sur piste sans coût d arrêt). Réserve : le doc dit que progress n est pas une pénalité alors qu il cumule -410 ; formulation imprécise, sans impact.
+
+## 2026-11-03 23:22 · worker · T22 Contrôleur heuristique
+- Fichiers : `scripts/heuristic_lap.py` (nouveau), `scripts/eval.py` (`--model heuristic`, passe `env.ta` à la politique), `tests/test_heuristic.py` (2 tests), `.team/metrics.json` (entrée heuristic).
+- Politique : vise un point de la ligne centrale (`track.spline_points`) en avance sur la voiture, avec anticipation de la vitesse angulaire (inertie de direction ~18 images), et vitesse limitée par le rayon de courbure à venir (0,06 px/frame par px de rayon). Écart au sujet : la visée directe du prochain checkpoint (obs seule) coupe les virages et bloque au mur (cp 3/8, 0/20) ; la version finale utilise donc la piste en plus de l'observation.
+- Réglages choisis par petit balayage (27 combinaisons, toutes finissent 3 tours en 45 à 114 s) ; retenu PREDICT_FRAMES=18, SPEED_PER_RADIUS=0.06, LOOK_MIN=25.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` ×3 → identique : finish_rate 1.0 (20/20), mean_total_time 45.46 s (2273 steps), mean_laps_done 3.0, 8 checkpoints. pytest hors e2e : 39 passed, 1 skipped.
+- Conclusion : 3 tours faisables avec la physique figée ; plancher de référence ≈ 45,5 s (non optimisé : touches de mur occasionnelles dans les virages serrés).
+- Limites : politique non pure-observation (utilise la spline) ; piste fixe uniquement ; `mean_lap_time` du banc vaut en fait le temps total (existant).
+
+## 2026-11-03 23:23 · reviewer · T22 validée
+
+- Relancé heuristic_lap (static, laps 3, 20 ép., seed 0) : finish_rate 1.0, temps total moyen 45.46 s, identique à metrics.json (doublon créé par ma relance retiré). pytest hors e2e : 39 passed, 1 skipped. Réserve : politique non pure-observation (utilise la spline), assumé et documenté par le worker.
