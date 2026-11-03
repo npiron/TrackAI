@@ -6,7 +6,7 @@
 
 ## En cours / à faire
 
-- [?] **T11** · Banc : seuil de dérive à 18° + statut global + mesure dans le dépôt · P1
+- [x] **T11** · Banc : seuil de dérive à 18° + statut global + mesure dans le dépôt · P1
   - but : dans `scripts/physics_check.py`, MAX_DRIFT_DEG=18 (décision #8 de docs/PHYSICS.md) ; ajouter au JSON un résumé `summary` (nb scénarios, nb pass, liste des fails) ; lancer le banc SANS `--metrics` pour écrire l'entrée `physics_check` dans `.team/metrics.json`
   - fini quand : `metrics.json` contient une entrée `physics_check` avec `summary` ; les seuls fails restants sont #1 (si mesuré), #2, #3, #4 ; 2 lancements donnent le même résumé ; pytest hors e2e vert
   - dépend de : T10
@@ -40,5 +40,5 @@
 
 ## Terminées
 
-T1, T2, T3, T7, T8, T9, T10 (validées).
+T1, T2, T3, T7, T8, T9, T10, T11 (validées).
 
