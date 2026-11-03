@@ -13,7 +13,9 @@ import shutil
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import functions to test
+# Le dashboard nécessite gradio (optionnel pour les tests rapides)
+pytest.importorskip("gradio")
+
 from dashboard.main import (
     format_time,
     get_training_progress,

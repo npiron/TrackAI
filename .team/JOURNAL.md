@@ -26,3 +26,16 @@
 - Constat : 0 tâche validée ; les logs worker/planner montrent « Invalid API key » (ANTHROPIC_API_KEY invalide prioritaire sur le login claude.ai). Problème d'infra, à corriger par l'humain.
 - Inbox vide. Plan T1→T2→T3 conservé. Ajout T4 (smoke PPO 5k steps, dépend de T1) pour débloquer le jalon 1 en parallèle de T2.
 - `metrics.json` toujours vide ; aucun modèle entraîné dans le dépôt.
+
+## 2026-11-03 22:20 · worker · T1 Suite de tests exécutable
+
+- Fichiers : `requirements.txt` (+pytest), `tests/test_dashboard_utils.py` (`pytest.importorskip("gradio")`, gradio absent du .venv), `tests/test_env.py` (test_track_has_boundaries obsolète : utilisait rect_outer/obstacles inexistants → vérifie spline_points, checkpoints, collision_mask).
+- `pip install pytest` dans `.venv` (pytest 9.2.0).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python -m pytest -q --ignore=tests/test_e2e_training.py` → 20 passed, 1 skipped (dashboard, faute de gradio), 1.7 s.
+- Limites : test_e2e_training.py non lancé ; tests dashboard non exécutés tant que gradio n'est pas installé.
+
+## 2026-11-03 22:30 · reviewer · T1 validée
+
+- Relu le diff (requirements, 2 tests) : changements ciblés, sans hors-sujet.
+- `SDL_VIDEODRIVER=dummy .venv/bin/python -m pytest -q --ignore=tests/test_e2e_training.py` → 20 passed, 1 skipped en 1.7 s (conforme au worker).
+- Note : tests dashboard sautés faute de gradio.

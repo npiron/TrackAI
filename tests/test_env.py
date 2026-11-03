@@ -18,10 +18,10 @@ class TestTrack:
         """Track should have outer and inner boundaries."""
         from src.game.track import build_track
         track = build_track()
-        assert track.rect_outer is not None
-        assert track.rect_outer is not None
-        assert isinstance(track.obstacles, list)
-        assert len(track.obstacles) > 0
+        # rect_outer/rect_inner sont obsolètes (None) : la piste est définie par spline_points
+        assert len(track.spline_points) > 0
+        assert len(track.checkpoints) > 0
+        assert track.collision_mask.count() > 0
         # assert track.rect_outer.width > track.rect_inner.width # Meaningless now
 
 

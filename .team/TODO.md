@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T1** · Rendre la suite de tests exécutable · P1
+- [x] **T1** · Rendre la suite de tests exécutable · P1
   - but : `pytest` tourne dans `.venv` (ajouter à `requirements.txt` si absent), tests rapides séparés de `test_e2e_training.py`
   - fini quand : `SDL_VIDEODRIVER=dummy .venv/bin/python -m pytest -q --ignore=tests/test_e2e_training.py` passe ou les échecs restants sont listés dans le journal
   - dépend de : —
-  - essais : 0
+  - essais : 1
 
 - [ ] **T2** · Banc d'éval reproductible · P1
   - but : `scripts/eval.py --model <chemin|random> --episodes N --seed S` qui ajoute une entrée dans `.team/metrics.json`
