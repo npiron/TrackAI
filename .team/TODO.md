@@ -24,5 +24,11 @@
   - dépend de : T2
   - essais : 0
 
+- [ ] **T4** · Smoke test PPO 5k steps · P2
+  - but : `rl_train_ppo.py` (ou équivalent) lance 5 000 steps en headless (`SDL_VIDEODRIVER=dummy`) et sauvegarde un modèle dans un dossier ignoré par git
+  - fini quand : la commande exacte et le chemin du modèle sont dans le journal, code de sortie 0, durée < 10 min
+  - dépend de : T1
+  - essais : 0
+
 ## Terminées
 
