@@ -151,3 +151,9 @@
 ## 2026-11-03 22:22 · reviewer · T3 validée
 
 - eval.py random relancé (20 ép., seed 0) : -2992.9709, 1.0 CP, succès 0 %, 2000 steps = metrics.json. pytest hors e2e : 24 passed, 1 skipped.
+
+## 2026-11-03 22:25 · planner · Replanification
+
+- T7-T10 et T3 validées, rangées. Inbox vide. Constat : `metrics.json` n'a pas d'entrée `physics_check` (les lancements écrivaient dans /tmp) et l'entrée `random` est en double.
+- Écarts à corriger (PHYSICS.md) convertis en T11 (seuil dérive 18° + summary + entrée metrics), T12 (clip actions), T13 (resync speed), T14 (MAX_SPEED), T15 (rapport final 100 % pass, dédoublonnage random). Décision #8 acceptée.
+- GOAL.md : statut mis à jour (en cours). T4-T6 RL toujours reportées.

@@ -6,37 +6,39 @@
 
 ## En cours / à faire
 
-- [x] **T7** · Banc physique `scripts/physics_check.py` : mouvement longitudinal · P1
-  - but : script headless (SDL_VIDEODRIVER=dummy) qui crée l'env sur une piste fixe (non procédurale, ou graine fixe) et mesure : vitesse terminale en pleine accélération (valeur vs MAX_SPEED), temps 0→90 % de vitesse, distance de freinage depuis vitesse max, décélération en roue libre ; affiche un JSON et ajoute une entrée `physics_check` à `metrics.json` (`--metrics` pour changer)
-  - fini quand : commande lancée 2× donne le même JSON ; chiffres commentés dans le journal (en m/s-équivalents px/frame et px/s) ; test pytest `tests/test_physics.py` minimal
-  - dépend de : T2
-  - essais : 1
+- [ ] **T11** · Banc : seuil de dérive à 18° + statut global + mesure dans le dépôt · P1
+  - but : dans `scripts/physics_check.py`, MAX_DRIFT_DEG=18 (décision #8 de docs/PHYSICS.md) ; ajouter au JSON un résumé `summary` (nb scénarios, nb pass, liste des fails) ; lancer le banc SANS `--metrics` pour écrire l'entrée `physics_check` dans `.team/metrics.json`
+  - fini quand : `metrics.json` contient une entrée `physics_check` avec `summary` ; les seuls fails restants sont #1 (si mesuré), #2, #3, #4 ; 2 lancements donnent le même résumé ; pytest hors e2e vert
+  - dépend de : T10
+  - essais : 0
 
-- [x] **T8** · Banc physique : virage et adhérence · P1
-  - but : étendre le script : rayon de virage à braquage plein à vitesses 5/15/22, angle de dérive (heading vs vel) en régime établi, temps de réaction du volant (STEER_SPEED), absence de glissement irréaliste ; vérifie aussi que actions hors bornes (steer=5, accel=-1) ne cassent pas la physique
-  - fini quand : valeurs dans le JSON + journal ; chaque scénario a un seuil « réaliste » écrit dans le script et un statut pass/fail
-  - dépend de : T7
-  - essais : 1
+- [ ] **T12** · Corriger #3/#4 : clipper les actions dans `env.step` · P1
+  - but : `np.clip` de steer ∈ [-1,1], accel ∈ [0,1], brake ∈ [0,1] au début de `step` dans `src/game/env.py`
+  - fini quand : le scénario `out_of_range_actions` du banc passe (steer=5 → steering ≤ 1 ; accel=3 ≡ accel=1) ; test pytest ajouté ; suite pytest hors e2e verte ; docs/PHYSICS.md #3/#4 marqués corrigés
+  - dépend de : T11
+  - essais : 0
 
-- [x] **T9** · Banc physique : murs, boost, checkpoints, arrivée · P1
-  - but : scénarios : voiture lancée perpendiculairement/en biais contre un mur (reste dans la piste, jamais de téléportation, `speed` cohérent avec `|vel|` après choc), traversée de boost (vitesse plafonnée), checkpoints dans l'ordre et pas de saut, finish uniquement après tous les checkpoints, départ à vitesse 0 ; reproductibilité à graine égale
-  - fini quand : scénarios dans le JSON avec pass/fail ; les échecs sont listés dans le journal comme « écarts de réalisme » numérotés
-  - dépend de : T7
-  - essais : 1
+- [ ] **T13** · Corriger #2 : resynchroniser `speed` après collision · P1
+  - but : après résolution du glissement mur, recaler `speed` sur la composante de `vel` selon le cap (ou |vel|) dans `env.py`
+  - fini quand : scénarios walls du banc (perpendiculaire et 45°) passent le seuil 0.25 ; toujours 0 frame hors piste et 0 téléportation ; test pytest ; suite verte ; PHYSICS.md #2 marqué corrigé
+  - dépend de : T11
+  - essais : 0
 
-- [x] **T10** · Triage des écarts de réalisme · P2
-  - but : à partir des résultats T7-T9, lister dans `docs/PHYSICS.md` chaque écart (confirmé/infirmé) avec décision : corriger (ex. vitesse max inatteignable, désynchro speed/vel, marche arrière, dt) ou assumer comme choix arcade. Pas de changement de code
-  - fini quand : `docs/PHYSICS.md` créé, chaque écart a mesure + décision ; le planner convertira les « corriger » en tâches
-  - dépend de : T8, T9
-  - essais : 1
+- [ ] **T14** · Corriger #1 : MAX_SPEED cohérent avec la vitesse terminale · P2
+  - but : choisir une des deux options (recommandé : baisser MAX_SPEED à ~23 pour garder la sensation de jeu ; ajuster le cap du boost relatif, BOOST_CAP du banc et la normalisation `speed_n`) et la justifier dans PHYSICS.md. Ajouter au banc un scénario « la vitesse terminale atteint ≥ 95 % de MAX_SPEED »
+  - fini quand : nouveau scénario pass ; boost toujours borné et pass ; pytest vert ; note dans PHYSICS.md que les modèles RL antérieurs sont invalidés (aucun modèle n'existe dans le dépôt)
+  - dépend de : T12, T13 (même fichier, éviter les conflits)
+  - essais : 0
 
-- [x] **T3** · Mesurer la référence random (reporté, utile comme test de bon sens) · P3
-  - but : entrée `random` dans `metrics.json`
-  - fini quand : chiffres dans `metrics.json` et journal
-  - dépend de : T2
-  - essais : 1
+- [ ] **T15** · Rapport final du banc : 100 % pass · P2
+  - but : relancer `physics_check.py` (écrit dans metrics.json), vérifier summary = 100 % pass, mettre à jour PHYSICS.md (tableau final, tous les écarts corrigés ou assumés), dédoublonner l'entrée `random` de metrics.json (doublon) sans en perdre
+  - fini quand : `metrics.json` contient une entrée `physics_check` avec 0 fail ; reproductible ; le reviewer peut valider le critère de GOAL.md
+  - dépend de : T14
+  - essais : 0
 
 > Reportées (plan RL en pause) : T4 smoke PPO, T5 éval du modèle, T6 PPO 50k. À reprendre après correction de la physique, car changer la physique invalide les entraînements.
 
 ## Terminées
+
+T1, T2, T3, T7, T8, T9, T10 (validées).
 
