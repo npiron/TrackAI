@@ -21,16 +21,20 @@ journal() { printf '\n## %s · boucle · %s\n\n- %s\n' "$(ts)" "$1" "$2" >> "$TE
 run_agent() {  # $1=agent  $2=consigne
   local agent="$1" out="$LOGS/$(date +%Y%m%d-%H%M%S)-$1.log"
   log "→ $agent (log : $out)"
-  claude -p "$2" \
+  # Utiliser le login claude.ai (abonnement), pas une clé API du shell
+  env -u ANTHROPIC_API_KEY claude -p "$2" \
     --agent "$agent" \
     --permission-mode acceptEdits \
     --allowedTools "${ALLOWED[@]}" \
     --disallowedTools "${DENIED[@]}" \
-    > "$out" 2>&1
+    < /dev/null > "$out" 2>&1
   local rc=$?
   tail -n 4 "$out" | sed 's/^/    /'
-  [ $rc -ne 0 ] && log "⚠️  $agent a terminé avec le code $rc"
-  return $rc
+  if [ $rc -ne 0 ]; then
+    log "❌ $agent a échoué (code $rc) : arrêt de la boucle."
+    journal "Arrêt sur erreur" "\`$agent\` a échoué (code $rc), voir \`$out\`."
+    exit $rc
+  fi
 }
 
 count_done() { grep -c '^- \[x\]' "$TEAM/TODO.md" 2>/dev/null || true; }
