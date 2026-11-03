@@ -251,3 +251,13 @@
 ## 2026-11-03 22:46 · reviewer · T16 validée
 
 - Relu diff env.py/wrappers.py/test_laps.py ; laps=1 inchangé (test trajectoire identique), laps=3 par téléportation donne 3 lap_times, info wrapper OK. pytest hors e2e : 30 passed, 1 skipped. Reset de _last_cp_count non nécessaire (pas de récompense quand le compte baisse).
+
+## 2026-11-03 22:48 · worker · T17 Banc --laps et métriques multi-tours
+- Fichiers : `scripts/eval.py` (option `--laps`, fonction `multi_lap_stats`, clés `finish_rate`, `mean_total_time`, `best_total_time`, `mean_laps_done`, champ `laps` dans l'entrée ; anciennes clés conservées), `tests/test_eval.py` (+2 tests).
+- Commande : `eval.py --model random --static --laps 3 --episodes 20 --seed 0` ×3 (2 en /tmp, 1 dans metrics.json) → sorties identiques (hors date) : finish_rate 0.0, mean_laps_done 0.0, mean_checkpoints 1.1, totaux null (aucun épisode fini).
+- pytest `--ignore=tests/test_e2e_training.py` : 32 passed, 1 skipped.
+- Limite : `random` ne finit aucun tour, donc mean_total_time non exercé en réel (couvert par le test unitaire). Entrée random laps=3 ajoutée à metrics.json.
+
+## 2026-11-03 22:48 · reviewer · T17 validée
+
+- Diff relu (eval.py, tests). Relancé eval random --static --laps 3 --episodes 20 --seed 0 ×2 : sorties identiques (hors date), nouvelles clés présentes, anciennes conservées. pytest hors e2e : 32 passed, 1 skipped. Réserve : mean_total_time non exercé en réel (couvert en unitaire).

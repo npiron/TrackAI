@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T17** · Banc : `--laps N` et métriques multi-tours dans `scripts/eval.py` · P1
+- [x] **T17** · Banc : `--laps N` et métriques multi-tours dans `scripts/eval.py` · P1
   - but : option `--laps` (défaut 1) ; sortie : `finish_rate` (épisodes qui finissent les N tours), `mean_total_time`, `best_total_time`, `mean_laps_done`. Rétrocompatible (mêmes clés qu'avant à `--laps 1`). Rappel : la piste fixe est `--static` (sinon le banc est procédural).
   - fini quand : `eval.py --model random --static --laps 3 --episodes 20 --seed 0` écrit une entrée dans `metrics.json` avec les nouvelles clés ; 2 lancements identiques ; test pytest sur le calcul
   - dépend de : T16
-  - essais : 0
+  - essais : 1
 
 - [ ] **T18** · Chrono humain : mode de mesure du meilleur temps humain sur la piste fixe · P1
   - but : ajouter dans `trackmania_clone.py` (ou un script `scripts/human_lap.py`) l'enregistrement du temps de chaque tour avec le même chrono que le banc (`1/FPS` par frame, via `TimeAttackEnv`), `laps` configurable, écriture du meilleur total dans `data/human_best.json`. Jouable par Nicolas. Pas de screenshot.

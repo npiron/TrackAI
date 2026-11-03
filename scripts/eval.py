@@ -39,12 +39,23 @@ def _load_model(path):
     return model, stats
 
 
-def run_eval(model_path, episodes, seed, procedural=True):
+def multi_lap_stats(succ, laps_done, totals):
+    """Métriques multi-tours à partir des résultats par épisode (totals = temps totaux des épisodes réussis)."""
+    return {
+        "finish_rate": round(float(np.mean(succ)), 4),
+        "mean_total_time": round(float(np.mean(totals)), 4) if totals else None,
+        "best_total_time": round(float(np.min(totals)), 4) if totals else None,
+        "mean_laps_done": round(float(np.mean(laps_done)), 4),
+    }
+
+
+def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
     from src.rl.wrappers import GymTimeAttack
-    env = GymTimeAttack(render_mode=None, procedural=procedural)
+    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
     model, vn = (None, None) if model_path == "random" else _load_model(model_path)
     rng = np.random.RandomState(seed)
     rets, cps, succ, laps, lens = [], [], [], [], []
+    laps_done, totals = [], []
     for k in range(episodes):
         random.seed(seed + k)
         np.random.seed(seed + k)
@@ -66,7 +77,9 @@ def run_eval(model_path, episodes, seed, procedural=True):
         rets.append(ret)
         cps.append(info.get("checkpoints_reached", 0))
         succ.append(bool(info.get("is_success", False)))
+        laps_done.append(info.get("laps_done", 0))
         if succ[-1]:
+            totals.append(info.get("total_time", 0.0))
             laps.append(info["lap_time"])
         lens.append(steps)
     return {
@@ -75,6 +88,7 @@ def run_eval(model_path, episodes, seed, procedural=True):
         "success_rate": round(float(np.mean(succ)), 4),
         "mean_lap_time": round(float(np.mean(laps)), 4) if laps else None,
         "mean_episode_steps": round(float(np.mean(lens)), 4),
+        **multi_lap_stats(succ, laps_done, totals),
     }
 
 
@@ -94,11 +108,12 @@ def main(argv=None):
     p.add_argument("--episodes", type=int, default=10)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--static", action="store_true", help="piste fixe")
+    p.add_argument("--laps", type=int, default=1, help="nombre de tours")
     p.add_argument("--metrics", default=DEFAULT_METRICS)
     a = p.parse_args(argv)
-    res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static)
+    res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static, laps_n=a.laps)
     entry = {"date": time.strftime("%Y-%m-%d %H:%M"), "model": a.model, "episodes": a.episodes,
-             "seed": a.seed, "static": a.static, **res}
+             "seed": a.seed, "static": a.static, "laps": a.laps, **res}
     append_metrics(a.metrics, entry)
     print(json.dumps(entry, ensure_ascii=False))
     return entry
