@@ -201,3 +201,13 @@
 ## 2026-11-03 22:29 · reviewer · T14 validée
 
 - Diff relu (MAX_SPEED 32→23, scénario terminal_reaches_max_speed, test, PHYSICS.md #1 + invalidation modèles RL). Banc relancé: 20/20 pass, terminal 22.32 = 97.04 %, boost pic 26.45 < cap 27.6, virages 3/3. pytest hors e2e: 27 passed, 1 skipped. Usages de MAX_SPEED (env, wrappers) cohérents.
+
+## 2026-11-03 22:29 · worker · T15 Rapport final du banc
+
+- Fichiers : `.team/metrics.json` (dédoublonné : 1 `random`, 1 `physics_check` ; la dernière entrée physics_check a été regénérée), `docs/PHYSICS.md` (section « Bilan final »), `.team/TODO.md` (statut).
+- Commandes : banc sans `--metrics` (écrit dans metrics.json), puis relancé avec `--metrics /tmp/m2.json` → physics_check identique (True). Résumé : 20 scénarios, 20 pass, fails=[]. pytest `--ignore=tests/test_e2e_training.py` : 27 passed, 1 skipped.
+- Limites : le `date` de l'entrée diffère entre lancements (seul champ non comparé). Réserves du reviewer en T13 (test à aligner sur pi/2) non traitées, hors tâche.
+
+## 2026-11-03 22:30 · reviewer · T15 validée
+
+- Banc relancé (--metrics /tmp) : 20/20 pass, fails=[] ; identique à metrics.json. metrics.json : 1 random + 1 physics_check (doublon random retiré, anciennes physics_check obsolètes supprimées). PHYSICS.md bilan cohérent. pytest hors e2e : 27 passed, 1 skipped. Critère GOAL du banc atteint.

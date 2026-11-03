@@ -28,3 +28,10 @@ Aucun changement de code dans cette tâche : les décisions « corriger » devie
 - #2 : resynchroniser `speed` après collision.
 - #3 + #4 : clipper les actions dans `env.step`.
 - Ajuster le seuil de dérive du banc (#8) à 18°.
+
+## Bilan final (T15)
+
+Banc `scripts/physics_check.py` : **20 scénarios, 20 pass, 0 fail** (entrée `physics_check` de `.team/metrics.json`, reproductible : 2 lancements donnent le même résumé).
+
+- Corrigés : #1 (MAX_SPEED=23, terminal 97 %), #2 (speed=|vel| après choc), #3/#4 (clip des actions), seuil de dérive relevé à 18° (#8).
+- Assumés (choix arcade, documentés ci-dessus) : #6, #7, #8, #10, #11, #12, #13, #15. Infirmés : #5, #9, #14.

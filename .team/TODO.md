@@ -30,15 +30,15 @@
   - dépend de : T12, T13 (même fichier, éviter les conflits)
   - essais : 1
 
-- [ ] **T15** · Rapport final du banc : 100 % pass · P2
+- [x] **T15** · Rapport final du banc : 100 % pass · P2
   - but : relancer `physics_check.py` (écrit dans metrics.json), vérifier summary = 100 % pass, mettre à jour PHYSICS.md (tableau final, tous les écarts corrigés ou assumés), dédoublonner l'entrée `random` de metrics.json (doublon) sans en perdre
   - fini quand : `metrics.json` contient une entrée `physics_check` avec 0 fail ; reproductible ; le reviewer peut valider le critère de GOAL.md
   - dépend de : T14
-  - essais : 0
+  - essais : 1
 
 > Reportées (plan RL en pause) : T4 smoke PPO, T5 éval du modèle, T6 PPO 50k. À reprendre après correction de la physique, car changer la physique invalide les entraînements.
 
 ## Terminées
 
-T1, T2, T3, T7, T8, T9, T10, T11, T12, T13 (validées).
+T1, T2, T3, T7, T8, T9, T10, T11, T12, T13, T14, T15 (validées).
 
