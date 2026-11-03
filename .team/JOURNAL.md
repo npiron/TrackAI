@@ -8,3 +8,7 @@
 - Projet déplacé dans `~/TrackAI` (symlink laissé dans `~/.openclaw/workspace/TackAI`).
 - Équipe créée : planner, worker, reviewer. Feuille de route et todo initiales posées.
 - Constat : aucun modèle entraîné dans le dépôt, `pytest` absent du `.venv`, branche PPO jamais validée par une mesure.
+
+## 2026-11-03 21:53 · boucle · Démarrage
+
+- Session de 2 itérations sur `team/main`.
