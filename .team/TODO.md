@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T21** · Diagnostic du modèle t20/t19 : où et pourquoi la voiture s'arrête · P1
+- [x] **T21** · Diagnostic du modèle t20/t19 : où et pourquoi la voiture s'arrête · P1
   - but : script `scripts/diagnose.py --model <zip> --static --laps N --episodes 5 --seed 0` qui rejoue la politique déterministe et rapporte par épisode : indice du dernier checkpoint, position finale, vitesse moyenne, nombre de frames à l'arrêt (<1), cause de fin (mur/timeout/…), récompense cumulée par composante (progress, alignment, speed, time_bonus, env). Lancer sur `ppo_t19_final.zip` (laps 1) et `ppo_t20_final.zip` (laps 3), résultats dans `docs/DIAG_T21.md`.
   - fini quand : le doc nomme la cause dominante de l'échec (ex. collision au virage N, récompense négative d'alignement qui piège la voiture, tourne en rond) avec chiffres ; test pytest sur le calcul des composantes ; deux lancements identiques
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T22** · Contrôleur heuristique (poursuite des checkpoints) : faisabilité 3 tours et plancher de temps · P1
   - but : `scripts/heuristic_lap.py` : politique sans apprentissage qui vise le prochain checkpoint (direction + régulation vitesse) et passe par `GymTimeAttack(laps=3)` ; évaluation avec le même chrono. Sert à prouver que 3 tours sont faisables avec la physique figée et à donner un ordre de grandeur de temps.

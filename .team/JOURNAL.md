@@ -297,3 +297,13 @@
 - T19/T20 validées : aucun tour fini (finish_rate 0, 1.0 puis 2.0 checkpoints). Statut GOAL : en cours. Inbox T20 traitée (pistes retenues : diagnostic, récompense, imitation) puis archivée.
 - Nouvelles tâches : T21 diagnostic, T22 heuristique (faisabilité + plancher de temps), T23 correction récompense + PPO 1 tour, T24 imitation.
 - Temps humain toujours absent : Nicolas doit jouer `scripts/human_lap.py --laps 3`.
+
+## 2026-11-03 23:18 · worker · T21 Diagnostic t19/t20
+- Fichiers : `scripts/diagnose.py` (nouveau), `tests/test_diagnose.py` (2 tests), `src/rl/wrappers.py` (info `reward_components` dont la somme = récompense, et `end_cause` timeout/wall_stuck ; récompense inchangée), `docs/DIAG_T21.md`.
+- Commandes : `diagnose.py --model data/checkpoints/ppo_t{19,20}_final.zip --static --laps {1,3}` ×2 chacun → sorties identiques (cmp). pytest hors e2e : 37 passed, 1 skipped.
+- Résultat : t19 bloqué au cp 1/8, 96 % des frames à l'arrêt ; t20 cp 2/8, 97 % à l'arrêt ; voiture collée au mur, actions frein, fin par timeout. Cause : +0.1/frame « sur piste » + pas de coût à l'arrêt, wall_stuck jamais déclenché. Détails/pistes dans le doc.
+- Limites : les 5 épisodes sont identiques (piste fixe + déterministe) ; raison du choix « frein » non élucidée.
+
+## 2026-11-03 23:19 · reviewer · T21 validée
+
+- Relancé diagnose t19 ×2 : sorties identiques (cmp), total -3.188 = eval. t20 : cp 2, arrêt 5840, total 364.8 conforme au doc. pytest hors e2e : 37 passed, 1 skipped. Récompense inchangée (test somme des composantes = récompense). Doc nomme la cause (arrêt au mur, +0.1/frame sur piste sans coût d arrêt). Réserve : le doc dit que progress n est pas une pénalité alors qu il cumule -410 ; formulation imprécise, sans impact.

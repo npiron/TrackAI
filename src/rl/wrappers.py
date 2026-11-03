@@ -146,6 +146,7 @@ class GymTimeAttack(gym.Env):
                 "lap_time": 0.0
             }
             self._add_lap_info(info)
+            info["end_cause"] = "timeout"
             return obs, -50.0, True, False, info  # Penalty for timeout
         if self.step_counter % 60 == 0:
             self._load_config()
@@ -198,6 +199,7 @@ class GymTimeAttack(gym.Env):
                 "lap_time": 0.0
             }
             self._add_lap_info(info)
+            info["end_cause"] = "wall_stuck"
             return obs, -100.0, True, False, info  # Stuck penalty
         
         # Record position for replay
@@ -390,6 +392,19 @@ class GymTimeAttack(gym.Env):
         )
         
         total_reward = float(reward + shaped_reward)
+        # Décomposition de la récompense (diagnostic) ; la somme vaut total_reward
+        info["reward_components"] = {
+            "progress": float(progress_reward),
+            "alignment": float(alignment_reward),
+            "checkpoint": float(checkpoint_bonus),
+            "speed": float(speed_reward),
+            "urgency": float(urgency_penalty),
+            "track": float(track_penalty),
+            "wall": float(wall_penalty),
+            "ghost": float(ghost_following_reward),
+            "time_bonus": float(time_bonus + pb_improvement_bonus),
+            "env": float(reward),
+        }
 
         if self.render_mode == "human":
             self.render()
