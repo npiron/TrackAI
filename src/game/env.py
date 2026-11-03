@@ -66,6 +66,9 @@ class TimeAttackEnv:
     def step(self, action: Tuple[float, float, float]):
         # action: steer, accel, brake
         steer, accel, brake = action
+        steer = float(np.clip(steer, -1.0, 1.0))
+        accel = float(np.clip(accel, 0.0, 1.0))
+        brake = float(np.clip(brake, 0.0, 1.0))
         
         # ========== REALISTIC CAR PHYSICS ==========
         

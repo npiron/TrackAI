@@ -146,5 +146,127 @@
         ]
       }
     }
+  },
+  {
+    "date": "2026-11-03 22:24",
+    "physics_check": {
+      "fps": 50,
+      "start_speed": 0.0,
+      "max_speed_const": 32.0,
+      "terminal_speed_px_frame": 22.32,
+      "terminal_speed_px_s": 1116.0,
+      "terminal_over_max": 0.6975,
+      "frames_to_90pct_terminal": 287,
+      "time_to_90pct_terminal_s": 5.74,
+      "frames_to_90pct_MAX_SPEED": null,
+      "brake_frames_to_stop": 39,
+      "brake_distance_px": 476.47,
+      "coast_decel_px_frame2": 0.1477,
+      "coast_decel_pct_per_frame": 0.662,
+      "reverse_possible": false,
+      "turn": {
+        "v5": {
+          "turn_radius_px": 61.54,
+          "yaw_rate_rad_s": 3.814,
+          "drift_deg_steady": 16.769,
+          "pass": true
+        },
+        "v15": {
+          "turn_radius_px": 206.59,
+          "yaw_rate_rad_s": 3.442,
+          "drift_deg_steady": 15.246,
+          "pass": true
+        },
+        "v22": {
+          "turn_radius_px": 329.88,
+          "yaw_rate_rad_s": 3.182,
+          "drift_deg_steady": 14.161,
+          "pass": true
+        },
+        "steer_full_lock_frames": 7,
+        "steer_reaction_pass": true,
+        "radius_increases_with_speed": true,
+        "pass": true
+      },
+      "out_of_range_actions": {
+        "steer5_steering_value": 1.0,
+        "steer5_yaw_rate_rad_s": 3.441,
+        "steer5_pass": true,
+        "accel_neg1_speed": 0.0,
+        "accel_neg1_pass": true,
+        "brake_neg1_speed": 0.0,
+        "brake_neg1_pass": true,
+        "accel3_speed_after_50": 7.3825,
+        "accel1_speed_after_50": 7.3825,
+        "accel3_pass": true,
+        "all_finite": true,
+        "pass": true
+      },
+      "world": {
+        "walls": {
+          "perpendicular": {
+            "frames_outside_track": 0,
+            "max_jump_over_vel_px": 0.0,
+            "max_speed_vel_mismatch": 0.847,
+            "contact_seen": true,
+            "final_speed": 2.982,
+            "finite": true,
+            "pass_inside": true,
+            "pass_no_teleport": true,
+            "pass_speed_vel_coherent": false
+          },
+          "oblique": {
+            "frames_outside_track": 0,
+            "max_jump_over_vel_px": 0.0,
+            "max_speed_vel_mismatch": 0.868,
+            "contact_seen": true,
+            "final_speed": 0.177,
+            "finite": true,
+            "pass_inside": true,
+            "pass_no_teleport": true,
+            "pass_speed_vel_coherent": false
+          },
+          "pass": false
+        },
+        "boost": {
+          "peak_speed": 36.8,
+          "cap": 38.4,
+          "over_max_speed": true,
+          "pass": true
+        },
+        "checkpoints": {
+          "n_checkpoints": 8,
+          "start_speed_zero": true,
+          "out_of_order_ignored": true,
+          "finish_before_cps_ignored": true,
+          "in_order_counts": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "in_order_ok": true,
+          "max_one_cp_per_frame": true,
+          "finish_after_all_cps": true,
+          "pass": true
+        },
+        "reproducibility": {
+          "pass": true
+        },
+        "pass": false
+      },
+      "summary": {
+        "n_scenarios": 19,
+        "n_pass": 17,
+        "fails": [
+          "walls_oblique_speed_vel_coherent",
+          "walls_perpendicular_speed_vel_coherent"
+        ]
+      }
+    }
   }
 ]

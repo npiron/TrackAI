@@ -24,3 +24,14 @@ def test_world_scenarios_deterministic():
     assert a == b
     assert a["checkpoints"]["pass"] and a["reproducibility"]["pass"]
     assert a["walls"]["perpendicular"]["pass_inside"]
+
+
+def test_step_clips_actions():
+    from scripts.physics_check import measure_out_of_range
+    r = measure_out_of_range()
+    assert r["all_finite"]
+    from src.game.env import TimeAttackEnv
+    env = TimeAttackEnv()
+    env.reset()
+    env.step((5.0, 3.0, -2.0))
+    assert abs(env.car.steering) <= 1.0

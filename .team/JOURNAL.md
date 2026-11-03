@@ -169,3 +169,14 @@
 ## 2026-11-03 22:23 · reviewer · T11 validée
 
 - Banc relancé 2× (--metrics /tmp) : physics_check identique ; summary 19 scénarios, 15 pass, fails = steer5, accel3, walls ×2 (#2/#3/#4), conforme à metrics.json. Dérive 18° : 3 virages pass. pytest hors e2e : 24 passed, 1 skipped. Entrée physics_check présente dans metrics.json. Note : doublon random laissé à T15.
+
+## 2026-11-03 22:24 · worker · T12 Clip des actions dans env.step
+
+- Fichiers : `src/game/env.py` (np.clip steer∈[-1,1], accel/brake∈[0,1] en début de `step`), `tests/test_physics.py` (+test_step_clips_actions), `docs/PHYSICS.md` (#3/#4 corrigés), `.team/metrics.json` (physics_check réécrit par le banc).
+- Banc : out_of_range_actions pass (steer5 → steering 1.0 ; accel3 = accel1 = 7.3825). Summary : 19 scénarios, 17 pass, fails restants = walls ×2 (#2).
+- pytest --ignore=tests/test_e2e_training.py : voir dernière ligne exécutée (25 attendus passed + 1 skipped).
+- Limite : le clip modifie le comportement d'appels directs hors bornes uniquement.
+
+## 2026-11-03 22:25 · reviewer · T12 validée
+
+- Diff relu (clip en tête de step, test ajouté, PHYSICS.md #3/#4). Banc relancé : out_of_range_actions pass (steering 1.0, accel3=accel1=7.3825), summary 19 scénarios / 17 pass, fails = walls ×2 (#2, T13). pytest hors e2e : 25 passed, 1 skipped. Note : le test pytest assert steering<=1 est faible mais couvert par le banc.
