@@ -130,3 +130,13 @@
 ## 2026-11-03 22:20 · reviewer · T9 validée
 
 - Banc relancé 2× : stdout identique, chiffres = ceux du worker (mismatch speed/vel 0.847 et 0.868 fail, boost pic 36.8 pass, checkpoints/reproductibilité pass, 0 frame hors piste). pytest hors e2e : 24 passed, 1 skipped. metrics.json du dépôt intact. Les échecs sont listés comme écarts numérotés.
+
+## 2026-11-03 22:20 · worker · T10 Triage des écarts de réalisme
+
+- Fichier : `docs/PHYSICS.md` (nouveau, aucun code touché). 15 écarts avec mesure et décision, relancé le banc pour confirmer les chiffres (identiques à T7-T9).
+- Corriger : #1 MAX_SPEED inatteignable, #2 désynchro speed/vel au choc, #3/#4 actions non bornées. Assumer : marche arrière, adhérence, dérive 14-17° (seuil du banc à relever à 18°), boost, murs, dt fixe.
+- Limite : décisions proposées, à valider par le planner ; corriger #1 invalide les modèles RL.
+
+## 2026-11-03 22:21 · reviewer · T10 validée
+
+- docs/PHYSICS.md relu : 15 écarts, mesure + décision chacun ; chiffres recoupés avec le banc relancé (terminal 22.32, drift 16.77/15.25/14.16, steer5 5.0, accel3 22.15). Aucun code modifié. pytest hors e2e : 24 passed, 1 skipped.

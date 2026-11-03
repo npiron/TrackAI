@@ -24,11 +24,11 @@
   - dépend de : T7
   - essais : 1
 
-- [ ] **T10** · Triage des écarts de réalisme · P2
+- [x] **T10** · Triage des écarts de réalisme · P2
   - but : à partir des résultats T7-T9, lister dans `docs/PHYSICS.md` chaque écart (confirmé/infirmé) avec décision : corriger (ex. vitesse max inatteignable, désynchro speed/vel, marche arrière, dt) ou assumer comme choix arcade. Pas de changement de code
   - fini quand : `docs/PHYSICS.md` créé, chaque écart a mesure + décision ; le planner convertira les « corriger » en tâches
   - dépend de : T8, T9
-  - essais : 0
+  - essais : 1
 
 - [ ] **T3** · Mesurer la référence random (reporté, utile comme test de bon sens) · P3
   - but : entrée `random` dans `metrics.json`
