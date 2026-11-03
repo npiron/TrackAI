@@ -479,3 +479,13 @@
 ## 2026-11-04 00:44 · planner · Replanification
 
 - T34 en cours : mesure partielle 15,68 s mais robustesse 49 %/31 % (bruit) vs 100/99 % pour best/ ; règle de remplacement de best/ précisée. Ajout T36 (ré-imitation avec DAgger bruité) et T37 (professeur robuste au bruit). Inbox vide. GOAL : statut inchangé (temps humain absent), pas de GOAL_REACHED. REPLAN absent.
+
+## 2026-11-04 00:44 · worker · T34 Ré-imitation du professeur 15,68 s
+- Fichiers : aucun code modifié ; `data/checkpoints/ppo_t34.zip` (+vecnormalize), 4 entrées dans `.team/metrics.json` (mesures du 00:37-00:38, relues, non relancées).
+- Résultats ppo_t34 : 20 ép. laps 3 seed 0 → 20/20, 15,68 s (< 15,90) ; robustesse 100 ép. seed 1000 : eps 0 → 100/100 15,68 s ; eps 0,05 → 49/100 ; eps 0,1 → 31/100 (best/ T31 : 100 et 99).
+- Décision : best/ NON remplacé (règle planner : robustesse ≥ T31 exigée). Constat : le modèle est plus rapide mais fragile ; le professeur T33 est moins tolérant au bruit. Tâche close, suite = T36 (DAgger bruité sur ce professeur) et T37.
+- Limites : mesures reprises de l'essai précédent, pas de nouvel entraînement.
+
+## 2026-11-04 00:45 · reviewer · T34 validée (close sans remplacement de best/)
+
+- Relancé robust_eval sur ppo_t34 (100 ép., seed 1000) : eps 0 → 100/100 15,68 s ; eps 0,05 → 49/100 (18,31 s), identique au journal. pytest hors e2e : 41 passed, 1 skipped. Aucun code modifié ; best/ inchangé, conforme à la règle du planner (robustesse < T31). Mes entrées dupliquées de metrics.json retirées. Suite : T36/T37.

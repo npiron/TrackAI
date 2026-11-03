@@ -24,11 +24,11 @@
   - dépend de : rien (T32 oriente l'effort)
   - essais : 1
 
-- [~] **T34** · Ré-imitation du meilleur professeur de T33 et remplacement de best/ · P1
+- [x] **T34** · Ré-imitation du meilleur professeur de T33 et remplacement de best/ · P1
   - but : `imitate.py --dagger 5` (avec bruit de T31 si validé) sur le nouveau professeur, éval 20 ép. laps 3 seed 0 et robustesse 100 ép. eps 0/0,05.
   - fini quand : modèle 20/20 plus rapide que 15,90 s dans `metrics.json` et `best/` remplacé ; sinon constat que T33 n'a rien produit (tâche close)
   - dépend de : T33 (amélioration trouvée)
-  - essais : 1
+  - essais : 2
   - note planner 00:45 : mesure partielle ppo_t34 = 15,68 s mais robustesse 49 % (eps 0,05) / 31 % (eps 0,1) contre 100/99 % pour best/ (T31). Ne PAS remplacer best/ avec ce modèle ; best/ ne change que si temps < 15,90 s ET robustesse ≥ celle de T31 (≥ 99 % eps 0,05, ≥ 95 % eps 0,1). Sinon clore T34 et passer à T36.
 
 - [ ] **T36** · Ré-imitation du professeur 15,68 s avec DAgger bruité · P1
