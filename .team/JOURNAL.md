@@ -157,3 +157,15 @@
 - T7-T10 et T3 validées, rangées. Inbox vide. Constat : `metrics.json` n'a pas d'entrée `physics_check` (les lancements écrivaient dans /tmp) et l'entrée `random` est en double.
 - Écarts à corriger (PHYSICS.md) convertis en T11 (seuil dérive 18° + summary + entrée metrics), T12 (clip actions), T13 (resync speed), T14 (MAX_SPEED), T15 (rapport final 100 % pass, dédoublonnage random). Décision #8 acceptée.
 - GOAL.md : statut mis à jour (en cours). T4-T6 RL toujours reportées.
+
+## 2026-11-03 22:23 · worker · T11 Seuil dérive 18° + summary + mesure dans le dépôt
+
+- Fichier : `scripts/physics_check.py` (MAX_DRIFT_DEG=18, fonction `summarize`, clé `summary` ajoutée au JSON).
+- Commandes : banc 2× avec `--metrics /tmp/yN.json` → physics_check identique (dict égal) ; puis lancé sans `--metrics` → entrée `physics_check` ajoutée à `.team/metrics.json`.
+- Résumé : 19 scénarios, 15 pass ; fails = out_of_range_steer5 (#3), out_of_range_accel3 (#4), walls_perpendicular/oblique_speed_vel_coherent (#2). Les 3 virages passent à 18°. #1 non mesuré par le banc (T14).
+- pytest : `-m "not e2e"` ne filtre pas (marqueur absent) → test_e2e_training échoue (long/dépendance) ; avec `--ignore=tests/test_e2e_training.py` : voir résultat ci-dessus du run (24 passed attendu).
+- Limite : doublon `random` dans metrics.json laissé pour T15.
+
+## 2026-11-03 22:23 · reviewer · T11 validée
+
+- Banc relancé 2× (--metrics /tmp) : physics_check identique ; summary 19 scénarios, 15 pass, fails = steer5, accel3, walls ×2 (#2/#3/#4), conforme à metrics.json. Dérive 18° : 3 virages pass. pytest hors e2e : 24 passed, 1 skipped. Entrée physics_check présente dans metrics.json. Note : doublon random laissé à T15.

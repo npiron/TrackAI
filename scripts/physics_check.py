@@ -47,7 +47,7 @@ def _terminal(env):
 
 # Seuils « réalistes » (voir journal T8) : chaque scénario a un statut pass/fail.
 TURN_RADIUS_RANGE = (20.0, 600.0)   # px, braquage plein ; ordre de grandeur largeur piste 90 px
-MAX_DRIFT_DEG = 15.0                # angle heading/vel en régime établi
+MAX_DRIFT_DEG = 18.0                # angle heading/vel en régime établi
 MAX_STEER_REACTION_FRAMES = 15      # braquage plein atteint en <= 15 frames
 MAX_YAW_RATE_RAD_S = 6.0            # vitesse de rotation max plausible
 TURN_SPEEDS = (5.0, 15.0, 22.0)
@@ -326,11 +326,32 @@ def measure():
     }
 
 
+def summarize(res):
+    """Résumé global : un scénario = un booléen pass nommé ; liste des fails."""
+    t, o, w = res["turn"], res["out_of_range_actions"], res["world"]
+    sc = {f"turn_{k}": t[k]["pass"] for k in t if k.startswith("v") and isinstance(t[k], dict)}
+    sc["turn_steer_reaction"] = t["steer_reaction_pass"]
+    sc["turn_radius_increases_with_speed"] = t["radius_increases_with_speed"]
+    for k in ("steer5", "accel_neg1", "brake_neg1", "accel3"):
+        sc[f"out_of_range_{k}"] = o[f"{k}_pass"]
+    sc["out_of_range_finite"] = o["all_finite"]
+    for k in ("perpendicular", "oblique"):
+        sc[f"walls_{k}_inside"] = w["walls"][k]["pass_inside"]
+        sc[f"walls_{k}_no_teleport"] = w["walls"][k]["pass_no_teleport"]
+        sc[f"walls_{k}_speed_vel_coherent"] = w["walls"][k]["pass_speed_vel_coherent"]
+    for k in ("boost", "checkpoints", "reproducibility"):
+        sc[f"world_{k}"] = w[k]["pass"]
+    sc = {k: bool(v) for k, v in sc.items()}
+    fails = sorted(k for k, v in sc.items() if not v)
+    return {"n_scenarios": len(sc), "n_pass": len(sc) - len(fails), "fails": fails}
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--metrics", default=DEFAULT_METRICS)
     a = p.parse_args(argv)
     res = measure()
+    res["summary"] = summarize(res)
     print(json.dumps(res, ensure_ascii=False, sort_keys=True))
     data = []
     if os.path.exists(a.metrics):
