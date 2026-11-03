@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "date": "2026-11-03 22:21",
+    "model": "random",
+    "episodes": 20,
+    "seed": 0,
+    "static": false,
+    "mean_return": -2992.9709,
+    "mean_checkpoints": 1.0,
+    "success_rate": 0.0,
+    "mean_lap_time": null,
+    "mean_episode_steps": 2000.0
+  },
+  {
+    "date": "2026-11-03 22:21",
+    "model": "random",
+    "episodes": 20,
+    "seed": 0,
+    "static": false,
+    "mean_return": -2992.9709,
+    "mean_checkpoints": 1.0,
+    "success_rate": 0.0,
+    "mean_lap_time": null,
+    "mean_episode_steps": 2000.0
+  }
+]

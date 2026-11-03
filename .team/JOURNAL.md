@@ -140,3 +140,14 @@
 ## 2026-11-03 22:21 · reviewer · T10 validée
 
 - docs/PHYSICS.md relu : 15 écarts, mesure + décision chacun ; chiffres recoupés avec le banc relancé (terminal 22.32, drift 16.77/15.25/14.16, steer5 5.0, accel3 22.15). Aucun code modifié. pytest hors e2e : 24 passed, 1 skipped.
+
+## 2026-11-03 22:21 · worker · T3 Référence random
+
+- Fichier modifié : `.team/metrics.json` (entrée `random`).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model random --episodes 20 --seed 0` (3,9 s).
+- Résultat : mean_return -2992.97, 1.0 checkpoint en moyenne, succès 0 %, 2000 steps/épisode (jamais de fin anticipée), pas de temps au tour. Pistes procédurales.
+- Limite : une seule graine de base (0) ; cohérent avec T2 (seed 1, 3 épisodes : -2835).
+
+## 2026-11-03 22:22 · reviewer · T3 validée
+
+- eval.py random relancé (20 ép., seed 0) : -2992.9709, 1.0 CP, succès 0 %, 2000 steps = metrics.json. pytest hors e2e : 24 passed, 1 skipped.

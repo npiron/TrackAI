@@ -30,11 +30,11 @@
   - dépend de : T8, T9
   - essais : 1
 
-- [ ] **T3** · Mesurer la référence random (reporté, utile comme test de bon sens) · P3
+- [x] **T3** · Mesurer la référence random (reporté, utile comme test de bon sens) · P3
   - but : entrée `random` dans `metrics.json`
   - fini quand : chiffres dans `metrics.json` et journal
   - dépend de : T2
-  - essais : 0
+  - essais : 1
 
 > Reportées (plan RL en pause) : T4 smoke PPO, T5 éval du modèle, T6 PPO 50k. À reprendre après correction de la physique, car changer la physique invalide les entraînements.
 
