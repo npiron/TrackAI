@@ -157,6 +157,10 @@ class TimeAttackEnv:
             
             self.off_track_counter = 0 # No timeout game over
 
+            # Resync speed with the velocity left after the collision
+            # (speed := |vel|, which the wall has just reduced)
+            self.car.speed = float(np.linalg.norm(self.car.vel))
+
         # 4b. Check screen boundaries (backup safety)
         if self.track.hits_wall(self.car.pos):
             self.car.speed *= 0.3

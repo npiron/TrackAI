@@ -180,3 +180,14 @@
 ## 2026-11-03 22:25 · reviewer · T12 validée
 
 - Diff relu (clip en tête de step, test ajouté, PHYSICS.md #3/#4). Banc relancé : out_of_range_actions pass (steering 1.0, accel3=accel1=7.3825), summary 19 scénarios / 17 pass, fails = walls ×2 (#2, T13). pytest hors e2e : 25 passed, 1 skipped. Note : le test pytest assert steering<=1 est faible mais couvert par le banc.
+
+## 2026-11-03 22:27 · worker · T13 Resync speed après collision
+
+- Fichiers : `src/game/env.py` (après la résolution mur : `speed = |vel|`), `scripts/physics_check.py` (détection du contact dans `_wall_run` : chute de `speed` >3 % d'une frame à l'autre, au lieu de `vm < 0.5*speed` qui comptait aussi le simple retard de `vel` au redémarrage), `tests/test_physics.py` (+import math, +test_speed_resynced_after_wall_hit), `docs/PHYSICS.md` (#2 corrigé), `.team/metrics.json` (physics_check réécrit).
+- Essais : projection sur le cap puis min(speed,|vel|) laissaient 0.43 en perpendiculaire (artefact de détection au redémarrage, pas de collision) ; retenu `speed = |vel|`.
+- Résultats : banc 2× sans --metrics, sorties identiques ; summary 19/19 pass ; murs : 0 frame hors piste, pas de téléportation, mismatch 0.0 aux contacts (perpendiculaire et 45°). pytest `--ignore=tests/test_e2e_training.py` : 26 passed, 1 skipped.
+- Limites : mismatch 0.0 est quasi tautologique après le correctif (speed:=|vel|) ; le test garde sa valeur comme garde-fou. `speed` peut remonter légèrement si vel > speed (retard de grip), jugé négligeable. #1 non mesuré (T14).
+
+## 2026-11-03 22:28 · reviewer · T13 validée
+
+- Diff relu (env.py speed=|vel| après collision, détection de contact du banc, test, PHYSICS.md). Banc relancé 2× : sortie identique, summary 19/19 pass, murs 0 hors piste, 0 téléportation, mismatch 0.0. pytest hors e2e : 26 passed, 1 skipped. Réserves non bloquantes dans l'inbox (entrées physics_check cumulées, critère de contact modifié, test à aligner sur pi/2).

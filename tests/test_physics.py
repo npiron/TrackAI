@@ -1,3 +1,5 @@
+import math
+
 from scripts.physics_check import measure
 from src.core.constants import MAX_SPEED
 
@@ -35,3 +37,12 @@ def test_step_clips_actions():
     env.reset()
     env.step((5.0, 3.0, -2.0))
     assert abs(env.car.steering) <= 1.0
+
+
+def test_speed_resynced_after_wall_hit():
+    from scripts.physics_check import _wall_run
+    for off in (0.0, math.pi / 4):
+        r = _wall_run(off)
+        assert r["contact_seen"]
+        assert r["max_speed_vel_mismatch"] <= 0.25
+        assert r["frames_outside_track"] == 0

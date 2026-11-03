@@ -163,13 +163,14 @@ def _wall_run(angle_off, v=15.0, frames=200):
     outside, max_jump, max_mismatch, hit = 0, 0.0, 0.0, False
     for _ in range(frames):
         p0 = c.pos.copy()
+        speed0 = c.speed
         env.step((0.0, 1.0, 0.0))
         if not env.track.inside_track(c.pos):
             outside += 1
         jump = float(math.hypot(*(c.pos - p0)))
         vm = float(math.hypot(*c.vel))
         max_jump = max(max_jump, jump - vm)
-        if jump < 0.5 * vm or vm < 0.5 * c.speed:  # frame de contact (déplacement freiné)
+        if jump < 0.5 * vm or c.speed < 0.97 * speed0:  # frame de contact (vitesse cassée par le mur)
             hit = True
             max_mismatch = max(max_mismatch, abs(c.speed - vm) / max(c.speed, 1.0))
     finite = all(math.isfinite(x) for x in (*c.pos, *c.vel, c.heading, c.speed))
