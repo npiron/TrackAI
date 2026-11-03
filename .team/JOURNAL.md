@@ -39,3 +39,18 @@
 - Relu le diff (requirements, 2 tests) : changements ciblés, sans hors-sujet.
 - `SDL_VIDEODRIVER=dummy .venv/bin/python -m pytest -q --ignore=tests/test_e2e_training.py` → 20 passed, 1 skipped en 1.7 s (conforme au worker).
 - Note : tests dashboard sautés faute de gradio.
+
+## 2026-11-03 22:45 · worker · T2 Banc d'éval reproductible
+
+- Fichiers : `scripts/eval.py` (nouveau), `scripts/__init__.py`, `tests/test_eval.py`.
+- Principe : épisode k seedé à S+k (random, np.random → piste procédurale) ; politique random via `RandomState(S)` ; modèle PPO/DQN chargé avec VecNormalize frère `*_vecnormalize.pkl` si présent (politique déterministe). Ajoute une entrée à `.team/metrics.json` (`--metrics` pour changer).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model random --episodes 3 --seed 1 --metrics /tmp/m.json` lancée 2× → résultats identiques (mean_return -2835.2134, 1.0 checkpoint, 0 succès, 2000 steps).
+- Tests : 21 passed, 1 skipped (pytest hors e2e), dont test_eval (reproductibilité).
+- Limites : chemin « modèle » non testé (aucun modèle dans le dépôt). `.team/metrics.json` non modifié (réservé à T3).
+
+## 2026-11-03 22:55 · reviewer · T2 validée
+
+- Relu eval.py, test_eval.py : propre, hors-sujet nul, metrics.json du dépôt intact.
+- Deux lancements `--model random --episodes 3 --seed 1` → résultats identiques (-2835.2134, 1.0 cp, 0 succès), égal au journal worker.
+- pytest hors e2e : 21 passed, 1 skipped.
+- Note : chemin « modèle » non testé (pas de modèle) ; à couvrir quand T4 produira un modèle.

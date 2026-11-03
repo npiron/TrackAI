@@ -12,11 +12,11 @@
   - dépend de : —
   - essais : 1
 
-- [ ] **T2** · Banc d'éval reproductible · P1
+- [x] **T2** · Banc d'éval reproductible · P1
   - but : `scripts/eval.py --model <chemin|random> --episodes N --seed S` qui ajoute une entrée dans `.team/metrics.json`
   - fini quand : deux lancements identiques donnent le même résultat, test unitaire ajouté
   - dépend de : T1
-  - essais : 0
+  - essais : 1
 
 - [ ] **T3** · Mesurer la référence · P1
   - but : entrée `random` dans `metrics.json`, et DQN si un modèle existe
