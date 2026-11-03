@@ -58,3 +58,13 @@
 ## 2026-11-03 21:58 · boucle · Fin
 
 - Session terminée après 2 itération(s), 2 tâche(s) validée(s) au total.
+
+## 2026-11-03 22:06 · boucle · Démarrage
+
+- Session de 5 itérations sur `team/main`.
+
+## 2026-11-03 22:06 · planner · Replanification
+
+- T1 et T2 validées, rangées dans « Terminées ». Inbox vide. `metrics.json` toujours vide.
+- T3 et T4 conservées (indépendantes, prêtes). Ajout T5 (éval du modèle smoke, couvre le chemin modèle non testé) et T6 (PPO 50k, jalon 1).
+- Feuille de route : jalon 0 presque terminé, décision datée ajoutée.

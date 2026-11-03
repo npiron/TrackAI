@@ -6,18 +6,6 @@
 
 ## En cours / à faire
 
-- [x] **T1** · Rendre la suite de tests exécutable · P1
-  - but : `pytest` tourne dans `.venv` (ajouter à `requirements.txt` si absent), tests rapides séparés de `test_e2e_training.py`
-  - fini quand : `SDL_VIDEODRIVER=dummy .venv/bin/python -m pytest -q --ignore=tests/test_e2e_training.py` passe ou les échecs restants sont listés dans le journal
-  - dépend de : —
-  - essais : 1
-
-- [x] **T2** · Banc d'éval reproductible · P1
-  - but : `scripts/eval.py --model <chemin|random> --episodes N --seed S` qui ajoute une entrée dans `.team/metrics.json`
-  - fini quand : deux lancements identiques donnent le même résultat, test unitaire ajouté
-  - dépend de : T1
-  - essais : 1
-
 - [ ] **T3** · Mesurer la référence · P1
   - but : entrée `random` dans `metrics.json`, et DQN si un modèle existe
   - fini quand : les chiffres sont dans `metrics.json` et commentés dans le journal
@@ -28,6 +16,18 @@
   - but : `rl_train_ppo.py` (ou équivalent) lance 5 000 steps en headless (`SDL_VIDEODRIVER=dummy`) et sauvegarde un modèle dans un dossier ignoré par git
   - fini quand : la commande exacte et le chemin du modèle sont dans le journal, code de sortie 0, durée < 10 min
   - dépend de : T1
+  - essais : 0
+
+- [ ] **T5** · Évaluer le modèle du smoke PPO sur le banc · P2
+  - but : `scripts/eval.py --model <modèle T4> --episodes 5 --seed 1` valide le chemin « modèle » (VecNormalize inclus) ; ajouter un test unitaire léger (modèle minuscule 64 steps généré dans tmp_path)
+  - fini quand : entrée `ppo_smoke_5k` dans `metrics.json`, test pytest passe, chiffres comparés à `random` dans le journal
+  - dépend de : T3, T4
+  - essais : 0
+
+- [ ] **T6** · Entraînement PPO 50k steps (jalon 1) · P2
+  - but : lancer `rl_train_ppo.py --steps 50000` headless en arrière-plan avec log, modèle dans dossier ignoré par git ; durée mesurée
+  - fini quand : modèle sauvegardé, commande + durée dans le journal, éval 10 épisodes seed 1 ajoutée à `metrics.json` (entrée `ppo_50k`)
+  - dépend de : T5
   - essais : 0
 
 ## Terminées
