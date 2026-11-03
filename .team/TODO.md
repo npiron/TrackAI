@@ -6,39 +6,39 @@
 
 ## En cours / à faire
 
-- [x] **T11** · Banc : seuil de dérive à 18° + statut global + mesure dans le dépôt · P1
-  - but : dans `scripts/physics_check.py`, MAX_DRIFT_DEG=18 (décision #8 de docs/PHYSICS.md) ; ajouter au JSON un résumé `summary` (nb scénarios, nb pass, liste des fails) ; lancer le banc SANS `--metrics` pour écrire l'entrée `physics_check` dans `.team/metrics.json`
-  - fini quand : `metrics.json` contient une entrée `physics_check` avec `summary` ; les seuls fails restants sont #1 (si mesuré), #2, #3, #4 ; 2 lancements donnent le même résumé ; pytest hors e2e vert
-  - dépend de : T10
-  - essais : 1
+- [ ] **T16** · Mode multi-tours `laps` (défaut 1) dans `TimeAttackEnv` et `GymTimeAttack` · P1
+  - but : paramètre `laps=1` ; à chaque passage de la ligne d'arrivée avec tous les checkpoints validés, si tour < laps : incrémenter le compteur, remettre `cp_visited` à faux, enregistrer le temps du tour ; `done` seulement au dernier tour. `info` du wrapper expose `laps_done`, `lap_times` (liste), `total_time`, `is_success` (= laps tours finis). Aucun changement de physique ni de comportement à `laps=1`.
+  - fini quand : test pytest `laps=1` identique à l'avant (même trajectoire/récompense sur actions fixes) ; test `laps=3` avec voiture téléportée/rejouée sur le tracé qui renvoie 3 `lap_times` ; pytest hors e2e vert
+  - dépend de : rien
+  - essais : 0
 
-- [x] **T12** · Corriger #3/#4 : clipper les actions dans `env.step` · P1
-  - but : `np.clip` de steer ∈ [-1,1], accel ∈ [0,1], brake ∈ [0,1] au début de `step` dans `src/game/env.py`
-  - fini quand : le scénario `out_of_range_actions` du banc passe (steer=5 → steering ≤ 1 ; accel=3 ≡ accel=1) ; test pytest ajouté ; suite pytest hors e2e verte ; docs/PHYSICS.md #3/#4 marqués corrigés
-  - dépend de : T11
-  - essais : 1
+- [ ] **T17** · Banc : `--laps N` et métriques multi-tours dans `scripts/eval.py` · P1
+  - but : option `--laps` (défaut 1) ; sortie : `finish_rate` (épisodes qui finissent les N tours), `mean_total_time`, `best_total_time`, `mean_laps_done`. Rétrocompatible (mêmes clés qu'avant à `--laps 1`). Rappel : la piste fixe est `--static` (sinon le banc est procédural).
+  - fini quand : `eval.py --model random --static --laps 3 --episodes 20 --seed 0` écrit une entrée dans `metrics.json` avec les nouvelles clés ; 2 lancements identiques ; test pytest sur le calcul
+  - dépend de : T16
+  - essais : 0
 
-- [x] **T13** · Corriger #2 : resynchroniser `speed` après collision · P1
-  - but : après résolution du glissement mur, recaler `speed` sur la composante de `vel` selon le cap (ou |vel|) dans `env.py`
-  - fini quand : scénarios walls du banc (perpendiculaire et 45°) passent le seuil 0.25 ; toujours 0 frame hors piste et 0 téléportation ; test pytest ; suite verte ; PHYSICS.md #2 marqué corrigé
-  - dépend de : T11
-  - essais : 1
+- [ ] **T18** · Chrono humain : mode de mesure du meilleur temps humain sur la piste fixe · P1
+  - but : ajouter dans `trackmania_clone.py` (ou un script `scripts/human_lap.py`) l'enregistrement du temps de chaque tour avec le même chrono que le banc (`1/FPS` par frame, via `TimeAttackEnv`), `laps` configurable, écriture du meilleur total dans `data/human_best.json`. Jouable par Nicolas. Pas de screenshot.
+  - fini quand : un test headless rejoue une liste d'actions et obtient un total identique au chrono du banc ; `data/human_best.json` est lu par `eval.py` s'il existe (champ `human_best_total` dans l'entrée métrique, null sinon)
+  - dépend de : T16
+  - essais : 0
 
-- [x] **T14** · Corriger #1 : MAX_SPEED cohérent avec la vitesse terminale · P2
-  - but : choisir une des deux options (recommandé : baisser MAX_SPEED à ~23 pour garder la sensation de jeu ; ajuster le cap du boost relatif, BOOST_CAP du banc et la normalisation `speed_n`) et la justifier dans PHYSICS.md. Ajouter au banc un scénario « la vitesse terminale atteint ≥ 95 % de MAX_SPEED »
-  - fini quand : nouveau scénario pass ; boost toujours borné et pass ; pytest vert ; note dans PHYSICS.md que les modèles RL antérieurs sont invalidés (aucun modèle n'existe dans le dépôt)
-  - dépend de : T12, T13 (même fichier, éviter les conflits)
-  - essais : 1
+- [ ] **T19** · Référence PPO 1 tour sur piste fixe (reprise T4-T6 adaptée) · P2
+  - but : entraînement PPO ≤ 10 min avec `rl_train_ppo.py --static --steps <≤200k>`, avec la physique actuelle (MAX_SPEED 23, frein moteur) ; évaluer avec `eval.py --static --laps 1 --episodes 20 --seed 0`. Copier le meilleur dans `data/models/best/` avec un `best.json` (mesure).
+  - fini quand : entrée `metrics.json` du modèle ; `data/models/best/` + sa mesure ; taux de finition 1 tour rapporté (même s'il vaut 0)
+  - dépend de : T17
+  - essais : 0
 
-- [x] **T15** · Rapport final du banc : 100 % pass · P2
-  - but : relancer `physics_check.py` (écrit dans metrics.json), vérifier summary = 100 % pass, mettre à jour PHYSICS.md (tableau final, tous les écarts corrigés ou assumés), dédoublonner l'entrée `random` de metrics.json (doublon) sans en perdre
-  - fini quand : `metrics.json` contient une entrée `physics_check` avec 0 fail ; reproductible ; le reviewer peut valider le critère de GOAL.md
-  - dépend de : T14
-  - essais : 1
+- [ ] **T20** · Entraînement fiabilité 3 tours (reprise du modèle de T19) · P2
+  - but : reprendre `--load` le meilleur modèle, entraînement ≤ 10 min avec `laps=3` ; adapter récompense seulement si nécessaire (checkpoints qui se répètent à chaque tour) ; évaluer 20 épisodes `--laps 3`.
+  - fini quand : entrée `metrics.json` avec `finish_rate` ; `best/` mis à jour seulement si le finish_rate ou le temps s'améliore ; décision à noter dans l'inbox (reste à faire pour 20/20)
+  - dépend de : T19
+  - essais : 0
 
-> Reportées (plan RL en pause) : T4 smoke PPO, T5 éval du modèle, T6 PPO 50k. À reprendre après correction de la physique, car changer la physique invalide les entraînements.
+> Plus tard (après fiabilité 20/20) : paliers de vitesse (bonus de temps, pénalité de temps par tour, reprise de modèle) ; comparaison au temps humain. Les anciens modèles de `data/models/production` sont invalides (physique changée).
+> Reportées : T4, T5, T6 remplacées par T19.
 
 ## Terminées
 
 T1, T2, T3, T7, T8, T9, T10, T11, T12, T13, T14, T15 (validées).
-

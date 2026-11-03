@@ -227,3 +227,18 @@
 
 - Ancien objectif clos : « vérifier le gameplay et la physique du jeu, et avoir une simulation réaliste » (banc physique terminé en T15).
 - Nouvel objectif : 3 tours complets du circuit fixe sans échec, puis temps total minimal, avec un temps humain comme référence. Mode multi-tours autorisé.
+
+## 2026-11-03 22:43 · boucle · Démarrage
+
+- Session de 12 itérations sur `team/main`.
+
+## 2026-11-03 22:43 · boucle · Objectif modifié
+
+- Nouvel objectif : Un agent entraîné qui enchaîne 3 tours complets du circuit fixe (`build_track()`) sans échec, puis qui réduit au maximum le temps total des 3 tours. Étapes attendues : d'abord la fiabilité (finir les 3 tours), ensuite la vitesse. Le temps de référence à battre est mon meilleur temps humain sur ce ci
+
+## 2026-11-03 22:43 · planner · Replanification
+
+- Objectif modifié : critère posé dans GOAL.md (piste fixe, laps=3, 20 épisodes, seed 0 ; fiabilité 20/20 puis temps ≤ référence humaine). Statut : non évalué.
+- Nouvelles tâches T16-T20 : multi-tours, banc `--laps`, chrono humain, PPO 1 tour, fiabilité 3 tours. Piège noté : `eval.py` est procédural par défaut, il faut `--static`.
+- Inbox : note reviewer T13 déjà traitée (T15 a dédoublonné metrics.json) ; seul reste mineur : aligner un test sur pi/2, non retenu. Fichier archivé.
+- Le temps humain n'existe pas encore : il demande que Nicolas joue (T18).
