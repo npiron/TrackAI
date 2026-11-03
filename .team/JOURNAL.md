@@ -222,3 +222,8 @@
 - Ajout de `COAST_FRICTION = 0.975` (src/core/constants.py), appliqué dans `env.step` quand `accel == 0`. `FRICTION = 0.992` reste appliqué en accélération, donc la vitesse terminale ne change pas.
 - Effet : la vitesse tombe de moitié en 0,56 s au lieu de 1,74 s. Tests rapides : 27 passed, 1 skipped.
 - À prendre en compte : les mesures physiques et d'éval antérieures ont été faites avec l'ancien comportement.
+
+## 2026-11-03 22:41 · humain · Nouvel objectif
+
+- Ancien objectif clos : « vérifier le gameplay et la physique du jeu, et avoir une simulation réaliste » (banc physique terminé en T15).
+- Nouvel objectif : 3 tours complets du circuit fixe sans échec, puis temps total minimal, avec un temps humain comme référence. Mode multi-tours autorisé.
