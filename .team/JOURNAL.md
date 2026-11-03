@@ -340,3 +340,13 @@
 ## 2026-11-03 23:34 · reviewer · T24 validée
 
 - Relancé eval t24_bc laps 1 et 3 (20 ép., seed 0) : finish_rate 1.0, 14.1 s et 41.7 s, identique à metrics.json (doublons retirés). pytest hors e2e : 40 passed, 1 skipped. Décision best/ notée. Réserve : dépend de la spline via l heuristique, piste fixe, --load non testé.
+
+## 2026-11-03 23:34 · worker · Aucune tâche
+
+- T21-T24 toutes [x], aucune [ ] ni [-]. REPLAN créé. Rappel : data/human_best.json absent (action humaine).
+
+## 2026-11-03 23:35 · planner · Replanification
+
+- T21-T24 validées. Fiabilité atteinte : BC t24 20/20 sur 3 tours, 41,7 s (heuristique 45,5 s). PPO brut toujours à 0 tour. GOAL : statut mis à jour (vitesse en cours), pas de GOAL_REACHED car le temps humain est absent (data/human_best.json, action de Nicolas : `python scripts/human_lap.py --laps 3`).
+- Inbox T23 traitée (pistes imitation faite ; reprise PPO → T27) et archivée.
+- Nouvelles tâches : T25 heuristique plus rapide, T26 ré-imitation/DAgger, T27 affinage PPO depuis BC, T28 robustesse sur seeds/bruit.

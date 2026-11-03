@@ -10,6 +10,10 @@
 
 T16-T20 faits : infrastructure multi-tours et banc OK, mais PPO 200k steps n'a fini aucun tour (t19 : 1.0 cp, t20 : 2.0 cp). Avant d'entraîner plus, on réduit l'incertitude : diagnostic de l'échec (T21), preuve de faisabilité par heuristique (T22), puis correction de récompense (T23) et amorçage par imitation (T24). Temps humain : action de Nicolas en attente.
 
+## Point 23:35
+
+Fiabilité ATTEINTE : BC t24 (imitation de l'heuristique) 20/20 sur 3 tours, 41,7 s (heuristique 45,5 s ; PPO brut 0). Phase vitesse : T25 heuristique plus rapide, T26 ré-imitation/DAgger, T27 affinage PPO, T28 robustesse. Le critère vitesse final attend `data/human_best.json` (action de Nicolas) ; sans lui, on poursuit la baisse du temps. Limite connue : la politique dérive d'une heuristique qui lit la spline, valable sur la piste fixe seulement (conforme à l'objectif).
+
 ## Ancien objectif (clos, 2026-11-03 22:30) : physique/gameplay : vérifier gameplay/physique, simulation réaliste
 
 Priorité absolue sur l'ancien plan RL (jalons 0-1 mis en pause : T3-T6 reportées, sauf T3 random qui sert de test de bon sens). Contrainte : aucune capture d'écran ; tout se vérifie par scénarios numériques headless.
@@ -43,3 +47,4 @@ Un agent RL qui boucle proprement les circuits du clone Trackmania, avec des pro
 - 2026-11-03 22:25 : banc T7-T10 validé, 15 écarts triés. Corrections retenues : #1 MAX_SPEED, #2 désynchro, #3/#4 clip actions ; le reste assumé arcade. Tâches T11-T15 ; objectif atteint si metrics.json porte un `physics_check` sans fail, validé reviewer. Plan RL toujours en pause.
 - 2026-11-03 22:43 : nouvel objectif (3 tours puis temps). Critère mesurable défini dans GOAL.md (piste fixe `--static`, 20 épisodes, seed 0, finish_rate 20/20 puis temps ≤ humain). Les modèles existants sont invalides (physique changée). Temps humain à mesurer (T18, action de Nicolas).
 - 2026-11-03 23:16 : PPO brut à 0 tour fini ; on diagnostique (T21) et on prouve la faisabilité par heuristique (T22) avant d'investir plus de calcul. Pas de modif physique.
+- 2026-11-03 23:35 : PPO brut abandonné comme voie principale (T19/T20/T23 : 0 tour) ; l'imitation (T24) donne la fiabilité. Phase vitesse T25-T28. Pas de GOAL_REACHED tant que le temps humain manque.
