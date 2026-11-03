@@ -12,7 +12,7 @@
   - dépend de : rien
   - essais : 1
 
-- [?] **T22** · Contrôleur heuristique (poursuite des checkpoints) : faisabilité 3 tours et plancher de temps · P1
+- [x] **T22** · Contrôleur heuristique (poursuite des checkpoints) : faisabilité 3 tours et plancher de temps · P1
   - but : `scripts/heuristic_lap.py` : politique sans apprentissage qui vise le prochain checkpoint (direction + régulation vitesse) et passe par `GymTimeAttack(laps=3)` ; évaluation avec le même chrono. Sert à prouver que 3 tours sont faisables avec la physique figée et à donner un ordre de grandeur de temps.
   - fini quand : rapport (20 épisodes, seed 0, `--static`, laps 3) : finish_rate et temps total moyen, ajoutés à `metrics.json` (modèle `heuristic`, via eval.py ou option équivalente) ; même sans 20/20, indiquer où il échoue
   - dépend de : rien
