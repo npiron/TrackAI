@@ -12,11 +12,11 @@
   - dépend de : T2
   - essais : 1
 
-- [ ] **T8** · Banc physique : virage et adhérence · P1
+- [x] **T8** · Banc physique : virage et adhérence · P1
   - but : étendre le script : rayon de virage à braquage plein à vitesses 5/15/22, angle de dérive (heading vs vel) en régime établi, temps de réaction du volant (STEER_SPEED), absence de glissement irréaliste ; vérifie aussi que actions hors bornes (steer=5, accel=-1) ne cassent pas la physique
   - fini quand : valeurs dans le JSON + journal ; chaque scénario a un seuil « réaliste » écrit dans le script et un statut pass/fail
   - dépend de : T7
-  - essais : 0
+  - essais : 1
 
 - [ ] **T9** · Banc physique : murs, boost, checkpoints, arrivée · P1
   - but : scénarios : voiture lancée perpendiculairement/en biais contre un mur (reste dans la piste, jamais de téléportation, `speed` cohérent avec `|vel|` après choc), traversée de boost (vitesse plafonnée), checkpoints dans l'ordre et pas de saut, finish uniquement après tous les checkpoints, départ à vitesse 0 ; reproductibilité à graine égale

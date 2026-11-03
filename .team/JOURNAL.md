@@ -98,3 +98,20 @@
 
 - Relancé le banc 2× (--metrics /tmp) : JSON identique (cmp OK), chiffres = ceux du worker (terminal 22.32 px/frame = 69.75 % de MAX_SPEED, freinage 39 frames/476 px). pytest hors e2e : 22 passed, 1 skipped. metrics.json du dépôt intact.
 - Remarque mineure : `coast_decel_pct_per_frame` a une formule alambiquée (équivaut à 100*decel/v0), sans conséquence.
+
+## 2026-11-03 22:18 · worker · T8 Banc physique virage/adhérence
+
+- Fichiers : `scripts/physics_check.py` (+`measure_turn`, `measure_out_of_range`, seuils en tête de fichier, clés `turn` et `out_of_range_actions` du JSON), `tests/test_physics.py` (+1 test).
+- Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/physics_check.py --metrics /tmp/aN.json` 2× → sortie identique (cmp OK). pytest hors e2e : 23 passed, 1 skipped.
+- Mesures (braquage plein, vitesse maintenue, régime établi, FPS=50) :
+  - v=5 : rayon 61.5 px, rotation 3.81 rad/s, dérive 16.8° → **fail** (seuil 15°)
+  - v=15 : rayon 206.6 px, 3.44 rad/s, dérive 15.2° → **fail** (marginal)
+  - v=22 : rayon 329.9 px, 3.18 rad/s, dérive 14.2° → pass
+  - Le rayon croît avec la vitesse (pass) mais la vitesse de rotation est quasi constante (~TURN_SPEED·50 rad/s) : pas de limite d'adhérence latérale, pas de vrai sous-virage physique. Dérive 14–17° en virage établi : vient de LATERAL_GRIP=0.2 (vel rattrape le cap lentement), à trancher en T10.
+  - Réaction volant : braquage plein en 7 frames (0.14 s) → pass (seuil 15).
+- Actions hors bornes (écarts confirmés) : **steer=5 → `car.steering` monte à 5.0** (non borné), rotation 17.2 rad/s (5× le max) → fail ; **accel=3 → vitesse après 50 frames 22.15 vs 7.38 pour accel=1** (accel non borné, triple l'accélération) → fail. accel=-1 et brake=-1 : sans effet (gardes `>0`) → pass ; aucun NaN. Sans clip dans `env.step`, un agent qui sort de [-1,1] triche ; les politiques SB3 clippent normalement, mais pas les appels directs.
+- Limites : vitesse maintenue par réécriture de `car.speed` à chaque frame (frottement appliqué après → vitesse effective ≈0.992·v) ; pas de test sur piste avec murs (T9).
+
+## 2026-11-03 22:18 · reviewer · T8 validée
+
+- Banc relancé 2× : stdout identique, JSON identique hors horodatage `date`. Chiffres = ceux du worker (v5 16.77° fail, v15 15.25° fail, v22 14.16° pass ; steer=5 → 5.0 ; accel3 22.15 vs 7.38). pytest hors e2e : 23 passed, 1 skipped. Les fails sont des écarts réels assumés (critère = statuts pass/fail présents), à trancher en T10.

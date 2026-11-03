@@ -1,4 +1,4 @@
-"""Banc physique (headless) : mouvement longitudinal.
+"""Banc physique (headless) : mouvement longitudinal, virage et adhérence.
 
 Usage : SDL_VIDEODRIVER=dummy python scripts/physics_check.py [--metrics chemin.json]
 Piste fixe (build_track). Pour isoler la physique longitudinale, murs et boost sont
@@ -41,6 +41,105 @@ def _terminal(env):
         if len(curve) > 1 and abs(curve[-1] - curve[-2]) < 1e-9:
             break
     return curve[-1], curve
+
+
+# Seuils « réalistes » (voir journal T8) : chaque scénario a un statut pass/fail.
+TURN_RADIUS_RANGE = (20.0, 600.0)   # px, braquage plein ; ordre de grandeur largeur piste 90 px
+MAX_DRIFT_DEG = 15.0                # angle heading/vel en régime établi
+MAX_STEER_REACTION_FRAMES = 15      # braquage plein atteint en <= 15 frames
+MAX_YAW_RATE_RAD_S = 6.0            # vitesse de rotation max plausible
+TURN_SPEEDS = (5.0, 15.0, 22.0)
+
+
+def _wrap(a):
+    return (a + math.pi) % (2 * math.pi) - math.pi
+
+
+def _turn(v, steer=1.0, frames=300):
+    """Braquage constant, vitesse maintenue ~v ; mesure en régime établi (50 dernières frames)."""
+    env = _free_env()
+    c = env.car
+    h0 = c.heading
+    c.speed = v
+    c.vel = c.vel * 0 + [math.cos(h0) * v, math.sin(h0) * v]
+    hs, drifts, speeds, steer_frames = [], [], [], None
+    for i in range(frames):
+        c.speed = v  # maintien de la vitesse (cible)
+        env.step((steer, 0.0, 0.0))
+        if steer_frames is None and abs(c.steering - steer) < 1e-9:
+            steer_frames = i + 1
+        hs.append(c.heading)
+        speeds.append(c.speed)
+        drifts.append(abs(_wrap(math.atan2(c.vel[1], c.vel[0]) - c.heading)))
+    w = (hs[-1] - hs[-51]) / 50
+    vel_mag = float(math.hypot(*c.vel))
+    return {
+        "yaw_rate_rad_frame": w,
+        "radius_px": vel_mag / abs(w) if w else float("inf"),
+        "drift_deg": math.degrees(max(drifts[-50:])),
+        "steer_frames": steer_frames,
+    }
+
+
+def measure_turn():
+    out, ok = {}, True
+    radii = []
+    for v in TURN_SPEEDS:
+        r = _turn(v)
+        rad = r["radius_px"]
+        radii.append(rad)
+        yaw_s = abs(r["yaw_rate_rad_frame"]) * FPS
+        passed = (TURN_RADIUS_RANGE[0] <= rad <= TURN_RADIUS_RANGE[1]
+                  and r["drift_deg"] <= MAX_DRIFT_DEG and yaw_s <= MAX_YAW_RATE_RAD_S)
+        ok &= passed
+        out[f"v{int(v)}"] = {
+            "turn_radius_px": round(rad, 2),
+            "yaw_rate_rad_s": round(yaw_s, 3),
+            "drift_deg_steady": round(r["drift_deg"], 3),
+            "pass": bool(passed),
+        }
+    out["steer_full_lock_frames"] = _turn(15.0)["steer_frames"]
+    out["steer_reaction_pass"] = bool(out["steer_full_lock_frames"] <= MAX_STEER_REACTION_FRAMES)
+    out["radius_increases_with_speed"] = bool(radii == sorted(radii))
+    out["pass"] = bool(ok and out["steer_reaction_pass"] and out["radius_increases_with_speed"])
+    return out
+
+
+def measure_out_of_range():
+    """Actions hors bornes : steer=5, accel=-1, brake=-1, accel=3. Physique doit rester bornée."""
+    res = {}
+    # steer=5 : le braquage effectif doit rester <= 1 et la rotation plausible
+    t = _turn(15.0, steer=5.0, frames=200)
+    env = _free_env()
+    for _ in range(100):
+        env.step((5.0, 0.0, 0.0))
+    res["steer5_steering_value"] = round(float(env.car.steering), 3)
+    res["steer5_yaw_rate_rad_s"] = round(abs(t["yaw_rate_rad_frame"]) * FPS, 3)
+    res["steer5_pass"] = bool(env.car.steering <= 1.0 + 1e-9)
+    # accel=-1 : ne doit pas accélérer ni produire de NaN
+    env = _free_env()
+    for _ in range(50):
+        env.step((0.0, -1.0, 0.0))
+    res["accel_neg1_speed"] = round(float(env.car.speed), 4)
+    res["accel_neg1_pass"] = bool(env.car.speed <= 1e-9)
+    # brake=-1 : un frein négatif ne doit pas accélérer
+    env = _free_env()
+    for _ in range(50):
+        env.step((0.0, 0.0, -1.0))
+    res["brake_neg1_speed"] = round(float(env.car.speed), 4)
+    res["brake_neg1_pass"] = bool(env.car.speed <= 1e-9)
+    # accel=3 : ne doit pas dépasser accel=1
+    e1, e3 = _free_env(), _free_env()
+    for _ in range(50):
+        e1.step((0.0, 1.0, 0.0))
+        e3.step((0.0, 3.0, 0.0))
+    res["accel3_speed_after_50"] = round(float(e3.car.speed), 4)
+    res["accel1_speed_after_50"] = round(float(e1.car.speed), 4)
+    res["accel3_pass"] = bool(e3.car.speed <= e1.car.speed + 1e-9)
+    # finitude
+    res["all_finite"] = bool(all(math.isfinite(x) for x in (*e3.car.pos, *e3.car.vel, e3.car.heading)))
+    res["pass"] = bool(all(v for k, v in res.items() if k.endswith("_pass")) and res["all_finite"])
+    return res
 
 
 def measure():
@@ -89,6 +188,8 @@ def measure():
         "coast_decel_px_frame2": round(coast_decel, 4),
         "coast_decel_pct_per_frame": round(100 * (1 - (1 - coast_decel / v0)), 3),
         "reverse_possible": reverse_possible,
+        "turn": measure_turn(),
+        "out_of_range_actions": measure_out_of_range(),
     }
 
 
