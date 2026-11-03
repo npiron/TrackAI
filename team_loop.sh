@@ -47,15 +47,35 @@ if [[ "$branch" != team/* ]]; then
   exit 1
 fi
 
+# Empreinte de l'objectif et des contraintes seulement (le critère est réécrit par le planificateur)
+goal_hash() { [ -f "$TEAM/GOAL.md" ] && sed '/^## Critère de réussite/,$d' "$TEAM/GOAL.md" | shasum | cut -c1-12; }
+check_goal() {  # objectif modifié -> replanifier ; objectif atteint -> arrêter
+  local h; h="$(goal_hash)"
+  if [ -n "$h" ] && [ "$h" != "$(cat "$TEAM/.goal_hash" 2>/dev/null)" ]; then
+    echo "$h" > "$TEAM/.goal_hash"
+    rm -f "$TEAM/GOAL_REACHED"
+    touch "$TEAM/REPLAN"
+    journal "Objectif modifié" "Nouvel objectif : $(sed -n '3p' "$TEAM/GOAL.md")"
+    log "Objectif modifié : replanification."
+  fi
+  if [ -f "$TEAM/GOAL_REACHED" ]; then
+    journal "Objectif atteint" "Le planificateur a constaté que le critère de réussite est rempli, arrêt de la boucle."
+    log "🎯 Objectif atteint : arrêt."
+    return 1
+  fi
+}
+
 rm -f "$TEAM/STOP"
 journal "Démarrage" "Session de $MAX_ITER itérations sur \`$branch\`."
 idle=0
 
 for ((i = 1; i <= MAX_ITER; i++)); do
   log "===== Itération $i/$MAX_ITER ====="
+  check_goal || break
 
   if (( i == 1 || (i - 1) % PLAN_EVERY == 0 )) || [ -f "$TEAM/REPLAN" ]; then
     run_agent planner "Fais un passage de planification complet selon tes instructions."
+    check_goal || break
     git add "$TEAM" && git commit -qm "chore(team): replanification" -m "Co-Authored-By: Claude <noreply@anthropic.com>" 2>/dev/null || true
   fi
   [ -f "$TEAM/STOP" ] && break

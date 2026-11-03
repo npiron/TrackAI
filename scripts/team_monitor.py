@@ -2,7 +2,7 @@
 """Moniteur TUI de l'équipe d'agents TrackAI (curses, sans dépendance).
 
 Usage : python3 scripts/team_monitor.py
-Boutons (clic ou touche) : s démarrer · +/- itérations · x arrêt propre · p replanifier · K tuer (2 fois)
+Boutons (clic ou touche) : g éditer l'objectif · s démarrer · +/- itérations · x arrêt propre · p replanifier · K tuer (2 fois)
 Navigation : ↑/↓ défiler · tab changer de panneau · l log plein écran · q quitter
 """
 import curses
@@ -84,6 +84,60 @@ def loop_state():
     }
 
 
+GOAL = TEAM / "GOAL.md"
+GOAL_TEMPLATE = """# Objectif
+
+Décris ici le but que l'équipe doit atteindre.
+
+## Contraintes
+
+- 
+
+## Critère de réussite
+
+> Rempli par le planificateur, ne pas éditer à la main.
+
+- critère : à définir
+- statut : non évalué
+"""
+
+
+def goal():
+    text = read(GOAL)
+    human = text.split("## Critère de réussite")[0]
+    obj, cons, sec = [], [], None
+    for line in human.splitlines():
+        if line.startswith("# "):
+            sec = "obj"
+        elif line.startswith("## "):
+            sec = "cons" if "ontrainte" in line else None
+        elif line.strip() and not line.startswith(">"):
+            (obj if sec == "obj" else cons if sec == "cons" else []).append(line.strip())
+    crit = re.search(r"^- crit[eè]re\s*:\s*(.+)$", text, re.M)
+    stat = re.search(r"^- statut\s*:\s*(.+)$", text, re.M)
+    return {"exists": bool(text), "objective": " ".join(obj), "constraints": [c.lstrip("- ") for c in cons if c != "-"],
+            "criterion": crit[1].strip() if crit else "à définir", "status": stat[1].strip() if stat else "non évalué",
+            "human": human}
+
+
+def edit_goal(scr):
+    if not GOAL.exists():
+        GOAL.write_text(GOAL_TEMPLATE, encoding="utf-8")
+    before = goal()["human"]
+    editor = os.environ.get("EDITOR") or "nano"
+    curses.def_prog_mode()
+    curses.endwin()
+    try:
+        subprocess.call([*editor.split(), str(GOAL)])
+    finally:
+        curses.reset_prog_mode()
+        scr.refresh()
+    if goal()["human"] != before:
+        (TEAM / "REPLAN").touch()
+        return "Objectif modifié : replanification demandée."
+    return "Objectif inchangé."
+
+
 # ---------- contrôle ----------
 
 def loop_pids():
@@ -140,6 +194,7 @@ def state():
         "journal": journal(),
         "metrics": metrics,
         "inbox": [p.name for p in sorted((TEAM / "inbox").glob("*.md"))],
+        "goal": goal(),
         "branch": sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip(),
         "commits": sh("git", "log", "--oneline", "-15").strip().splitlines(),
         "dirty": len(sh("git", "status", "--short").strip().splitlines()),
@@ -266,9 +321,25 @@ def header(scr, d):
     put(scr, 0, w - 10, time.strftime("%H:%M:%S"), C["mute"])
 
 
+def lines_goal(d, w):
+    g = d["goal"]
+    if not g["exists"]:
+        return [[("Aucun objectif. Appuie sur g pour en écrire un.", C["warn"])]]
+    st = g["status"]
+    col = "ok" if st.startswith("atteint") else "bad" if st.startswith("hors") else "info" if st.startswith("en cours") else "mute"
+    out = []
+    for i, l in enumerate(textwrap.wrap(g["objective"] or "(objectif vide)", max(10, w - 6))[:2]):
+        out.append([("▸  " if i == 0 else "   ", C["title"]), (l, curses.A_BOLD)])
+    out.append([("   critère : ", C["mute"]), (g["criterion"], 0)])
+    out.append([("   statut  : ", C["mute"]), (st, C[col] | curses.A_BOLD),
+                ("   contraintes : " + " · ".join(g["constraints"]) if g["constraints"] else "", C["mute"])])
+    return out
+
+
 def buttons(d, n_iter, armed):
     running = d["loop"]["running"]
     return [
+        ("g", " ✎ Objectif ", True, "title"),
         ("s", f" ▶ Démarrer ×{n_iter} ", not running, "ok"),
         ("-", " − ", not running, "mute"),
         ("+", " + ", not running, "mute"),
@@ -311,31 +382,37 @@ def main(scr):
         if msg and time.time() - msg_t > 6:
             msg = ""
         zones = footer(scr, buttons(d, n_iter, armed), msg)
-        if H < 16 or W < 70:
-            put(scr, 2, 1, "Terminal trop petit (70x16 minimum)")
+        if H < 22 or W < 80:
+            put(scr, 2, 1, "Terminal trop petit (80x22 minimum)")
             scr.refresh()
         else:
             body_h = H - 3
             if full_log:
                 wins = {"log": (body_h, W, 1, 0)}
             else:
-                top = max(8, body_h - max(6, body_h // 5))
+                gh = 6
+                rest = body_h - gh
+                top = max(6, rest - max(5, rest // 5))
                 lw = W // 3
                 rw = W // 3
+                y0 = 1 + gh
                 wins = {
-                    "todo": (top, lw, 1, 0),
-                    "journal": (top, W - lw - rw, 1, lw),
-                    "side": (top, rw, 1, W - rw),
-                    "log": (body_h - top, W, 1 + top, 0),
+                    "goal": (gh, W, 1, 0),
+                    "todo": (top, lw, y0, 0),
+                    "journal": (top, W - lw - rw, y0, lw),
+                    "side": (top, rw, y0, W - rw),
+                    "log": (rest - top, W, y0 + top, 0),
                 }
             scr.noutrefresh()
             content = {}
             for name, (h, w, y, x) in wins.items():
                 win = curses.newwin(h, w, y, x)
-                title = {"todo": "Todo", "journal": "Journal", "side": "État",
+                title = {"goal": "Objectif", "todo": "Todo", "journal": "Journal", "side": "État",
                          "log": f"Dernier log · {d['loop']['log'] or '—'}"}[name]
                 box(win, title, panels[active] == name or full_log)
-                if name == "todo":
+                if name == "goal":
+                    lines = lines_goal(d, w)
+                elif name == "todo":
                     lines = lines_tasks(d, w)
                 elif name == "journal":
                     lines = lines_journal(d, w)
@@ -348,6 +425,7 @@ def main(scr):
                     if not (panels[active] == "log" or full_log):
                         scroll["log"] = max(0, len(lines) - (h - 2))  # suivre la fin
                 content[name] = (len(lines), h)
+                scroll.setdefault(name, 0)
                 scroll[name] = max(0, min(scroll[name], len(lines) - (h - 2)))
                 draw_lines(win, lines, scroll[name])
                 win.noutrefresh()
@@ -373,6 +451,8 @@ def main(scr):
             n_iter = max(1, n_iter - 1)
         elif k == ord("x"):
             act = request_stop()
+        elif k == ord("g"):
+            act = edit_goal(scr)
         elif k == ord("p"):
             act = request_replan()
         elif k == ord("K"):

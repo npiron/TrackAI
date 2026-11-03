@@ -10,6 +10,7 @@ Trois agents Claude Code améliorent le projet en boucle, en se coordonnant uniq
 
 ## Fichiers partagés
 
+- `GOAL.md` : l'objectif fixé par l'humain et ses contraintes. Le planificateur y ajoute le critère de réussite mesurable et son statut. Modifier l'objectif ou les contraintes déclenche une replanification. Quand le critère est rempli, le planificateur crée `GOAL_REACHED` et la boucle s'arrête.
 - `ROADMAP.md` : vision, jalons, décisions. Change de direction quand les faits l'exigent.
 - `TODO.md` : tâches priorisées avec un critère de fin vérifiable.
 - `inbox/` : un fichier par message (`AAAAMMJJ-HHMM-<auteur>-<sujet>.md`). N'importe quel agent y propose une tâche, signale un blocage ou une découverte. Le planificateur les intègre puis les déplace dans `inbox/traite/`.

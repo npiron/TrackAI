@@ -59,3 +59,4 @@ replays/*.json
 
 # Équipe d agents
 .team/logs/
+.team/.goal_hash
