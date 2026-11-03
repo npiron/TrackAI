@@ -259,5 +259,41 @@
     "mean_total_time": 41.7,
     "best_total_time": 41.7,
     "mean_laps_done": 3.0
+  },
+  {
+    "date": "2026-11-03 23:38",
+    "model": "heuristic",
+    "episodes": 20,
+    "seed": 0,
+    "static": true,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 8076.5549,
+    "mean_checkpoints": 8.0,
+    "success_rate": 1.0,
+    "mean_lap_time": 17.94,
+    "mean_episode_steps": 897.0,
+    "finish_rate": 1.0,
+    "mean_total_time": 17.94,
+    "best_total_time": 17.94,
+    "mean_laps_done": 3.0
+  },
+  {
+    "date": "2026-11-03 23:38",
+    "model": "heuristic",
+    "episodes": 20,
+    "seed": 0,
+    "static": true,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 8076.5549,
+    "mean_checkpoints": 8.0,
+    "success_rate": 1.0,
+    "mean_lap_time": 17.94,
+    "mean_episode_steps": 897.0,
+    "finish_rate": 1.0,
+    "mean_total_time": 17.94,
+    "best_total_time": 17.94,
+    "mean_laps_done": 3.0
   }
 ]

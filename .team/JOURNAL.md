@@ -350,3 +350,13 @@
 - T21-T24 validées. Fiabilité atteinte : BC t24 20/20 sur 3 tours, 41,7 s (heuristique 45,5 s). PPO brut toujours à 0 tour. GOAL : statut mis à jour (vitesse en cours), pas de GOAL_REACHED car le temps humain est absent (data/human_best.json, action de Nicolas : `python scripts/human_lap.py --laps 3`).
 - Inbox T23 traitée (pistes imitation faite ; reprise PPO → T27) et archivée.
 - Nouvelles tâches : T25 heuristique plus rapide, T26 ré-imitation/DAgger, T27 affinage PPO depuis BC, T28 robustesse sur seeds/bruit.
+
+## 2026-11-03 23:38 · worker · T25 Heuristique plus rapide
+- Fichiers : `scripts/heuristic_lap.py` (constantes : SPEED_PER_RADIUS 0.06→0.2, PREDICT_FRAMES 18→10, LOOK_MIN/GAIN 25/40→200/240), `scripts/sweep_heuristic.py` (nouveau, balayage), `docs/SPEED_T25.md` (5 balayages, ~450 combinaisons), `.team/metrics.json` (entrée heuristic).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` ×4 → identique : finish_rate 1.0 (20/20), mean_total_time 17.94 s (897 steps), 8 cp, 3 tours (avant : 45,46 s). pytest hors e2e : 40 passed, 1 skipped.
+- Gain essentiellement dû à la visée lointaine sur la spline (trajectoire tendue) ; LOOK 300-400 dégrade. Plafond local du réglage, pas prouvé global.
+- Limites : utilise la spline, piste fixe uniquement ; la trajectoire coupe sans doute les virages (à vérifier visuellement) ; le BC T24 (41,7 s) a donc maintenant un professeur 2,3× plus rapide pour T26.
+
+## 2026-11-03 23:39 · reviewer · T25 validée
+
+- Relancé heuristic_lap (static, laps 3, 20 ép., seed 0) : finish_rate 1.0, 17.94 s, identique à metrics.json. pytest hors e2e : 40 passed, 1 skipped. Diff limité aux constantes + sweep + doc. Réserve : coupe possible des virages non mesurée (inbox).

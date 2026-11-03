@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T25** · Heuristique plus rapide (nouveau plancher de temps et professeur plus fort) · P1
+- [?] **T25** · Heuristique plus rapide (nouveau plancher de temps et professeur plus fort) · P1
   - but : dans `scripts/heuristic_lap.py`, régler la vitesse cible/visée (SPEED_PER_RADIUS, LOOK, PREDICT_FRAMES, éventuellement trajectoire plus tendue dans les virages, limites de vitesse par courbure) pour baisser le temps 3 tours sous 41,7 s en gardant 20/20. Balayage scripté, résultat dans `docs/SPEED_T25.md`.
   - fini quand : `metrics.json` contient `heuristic` laps 3 20/20 avec mean_total_time < 41,7 (sinon table du balayage prouvant le plafond) ; trois lancements identiques ; pytest hors e2e vert
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T26** · Ré-imitation depuis l'heuristique rapide (+ DAgger léger) · P1
   - but : étendre `scripts/imitate.py` : professeur = heuristique T25, données avec bruit, 1-2 tours de DAgger (la politique apprise conduit, l'heuristique corrige les actions), plus d'époques ; entraînement ≤ 5 min.
