@@ -16,3 +16,11 @@ def test_turn_and_out_of_range_deterministic():
     assert a["out_of_range_actions"] == b["out_of_range_actions"]
     assert a["turn"]["radius_increases_with_speed"]
     assert a["out_of_range_actions"]["all_finite"]
+
+
+def test_world_scenarios_deterministic():
+    from scripts.physics_check import measure_world
+    a, b = measure_world(), measure_world()
+    assert a == b
+    assert a["checkpoints"]["pass"] and a["reproducibility"]["pass"]
+    assert a["walls"]["perpendicular"]["pass_inside"]

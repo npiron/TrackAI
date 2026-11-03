@@ -12,6 +12,8 @@ import os
 import sys
 import time
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.core.constants import FPS, MAX_SPEED
@@ -142,6 +144,136 @@ def measure_out_of_range():
     return res
 
 
+# ---- T9 : murs, boost, checkpoints, arrivée, départ, reproductibilité ----
+MAX_TELEPORT_PX = 1.0               # saut de position toléré au-delà de |vel| de la frame
+MAX_SPEED_VEL_MISMATCH = 0.25       # |speed-|vel|| / max(speed,1) toléré juste après un choc
+BOOST_CAP = MAX_SPEED * 1.2
+
+
+def _real_env(seed=42):
+    return TimeAttackEnv(build_track(seed), procedural=False)
+
+
+def _wall_run(angle_off, v=15.0, frames=200):
+    env = _real_env()
+    c = env.car
+    c.heading = env.track.start_heading + angle_off
+    c.speed = v
+    c.vel = c.vel * 0 + [math.cos(c.heading) * v, math.sin(c.heading) * v]
+    outside, max_jump, max_mismatch, hit = 0, 0.0, 0.0, False
+    for _ in range(frames):
+        p0 = c.pos.copy()
+        env.step((0.0, 1.0, 0.0))
+        if not env.track.inside_track(c.pos):
+            outside += 1
+        jump = float(math.hypot(*(c.pos - p0)))
+        vm = float(math.hypot(*c.vel))
+        max_jump = max(max_jump, jump - vm)
+        if jump < 0.5 * vm or vm < 0.5 * c.speed:  # frame de contact (déplacement freiné)
+            hit = True
+            max_mismatch = max(max_mismatch, abs(c.speed - vm) / max(c.speed, 1.0))
+    finite = all(math.isfinite(x) for x in (*c.pos, *c.vel, c.heading, c.speed))
+    return {"frames_outside_track": outside, "max_jump_over_vel_px": round(max_jump, 3),
+            "max_speed_vel_mismatch": round(max_mismatch, 3), "contact_seen": hit,
+            "final_speed": round(float(c.speed), 3), "finite": bool(finite)}
+
+
+def measure_walls():
+    res = {}
+    ok = True
+    for name, off in (("perpendicular", math.pi / 2), ("oblique", math.pi / 4)):
+        r = _wall_run(off)
+        r["pass_inside"] = r["frames_outside_track"] == 0 and r["finite"]
+        r["pass_no_teleport"] = r["max_jump_over_vel_px"] <= MAX_TELEPORT_PX
+        r["pass_speed_vel_coherent"] = r["max_speed_vel_mismatch"] <= MAX_SPEED_VEL_MISMATCH
+        ok &= r["pass_inside"] and r["pass_no_teleport"] and r["pass_speed_vel_coherent"]
+        res[name] = r
+    res["pass"] = bool(ok)
+    return res
+
+
+def measure_boost():
+    env = _free_env()
+    import pygame
+    env.track.boost_zones = [pygame.Rect(-100000, -100000, 200000, 200000)]
+    env.track.on_boost = type(env.track).on_boost.__get__(env.track)
+    peak = 0.0
+    for _ in range(400):
+        env.step((0.0, 1.0, 0.0))
+        peak = max(peak, env.car.speed)
+    return {"peak_speed": round(float(peak), 3), "cap": BOOST_CAP,
+            "over_max_speed": bool(peak > MAX_SPEED + 1e-9),
+            "pass": bool(peak <= BOOST_CAP + 1e-9)}
+
+
+def _teleport(env, cp):
+    env.car.pos = np.array([cp[0], cp[1]], dtype=float)
+
+
+def measure_checkpoints():
+    env = _real_env()
+    cps, n = env.track.checkpoints, len(env.track.checkpoints)
+    res = {"n_checkpoints": n}
+    # départ
+    res["start_speed_zero"] = bool(env.car.speed == 0.0 and not env.car.vel.any())
+    # hors ordre : dernier checkpoint d'abord ne doit rien valider
+    env.reset()
+    _teleport(env, cps[-1])
+    env.step((0.0, 0.0, 0.0))
+    res["out_of_order_ignored"] = bool(not any(env.cp_visited)) if n > 1 else True
+    # finish avant les checkpoints
+    env.reset()
+    fx, fy = env.track.finish_pos[:2]
+    env.car.pos = np.array([fx, fy], dtype=float)
+    _, _, done, _ = env.step((0.0, 0.0, 0.0))
+    res["finish_before_cps_ignored"] = bool(not done)
+    # dans l'ordre : un par un (une seule validation par frame, pas de saut)
+    env.reset()
+    visited_counts = []
+    for cp in cps:
+        _teleport(env, cp)
+        env.step((0.0, 0.0, 0.0))
+        visited_counts.append(sum(env.cp_visited))
+    res["in_order_counts"] = visited_counts
+    res["in_order_ok"] = visited_counts == list(range(1, n + 1))
+    # plusieurs CP dans le rayon d'un coup : au plus 1 par frame ?
+    env.reset()
+    _teleport(env, cps[0])
+    env.step((0.0, 0.0, 0.0))
+    res["max_one_cp_per_frame"] = bool(sum(env.cp_visited) <= 1)
+    # arrivée après tous les CP
+    env.reset()
+    for cp in cps:
+        _teleport(env, cp)
+        env.step((0.0, 0.0, 0.0))
+    env.car.pos = np.array([fx, fy], dtype=float)
+    _, reward, done, _ = env.step((0.0, 0.0, 0.0))
+    res["finish_after_all_cps"] = bool(done and reward == 100.0)
+    keys = ("start_speed_zero", "out_of_order_ignored", "finish_before_cps_ignored",
+            "in_order_ok", "max_one_cp_per_frame", "finish_after_all_cps")
+    res["pass"] = bool(all(res[k] for k in keys))
+    return res
+
+
+def measure_reproducibility():
+    def run():
+        env = _real_env(7)
+        rng = np.random.RandomState(0)
+        out = []
+        for _ in range(300):
+            env.step((float(rng.uniform(-1, 1)), float(rng.uniform(0, 1)), float(rng.uniform(0, 0.3))))
+            out.append((round(float(env.car.pos[0]), 9), round(float(env.car.pos[1]), 9)))
+        return out
+    return {"pass": bool(run() == run())}
+
+
+def measure_world():
+    res = {"walls": measure_walls(), "boost": measure_boost(),
+           "checkpoints": measure_checkpoints(), "reproducibility": measure_reproducibility()}
+    res["pass"] = bool(all(v["pass"] for v in res.values()))
+    return res
+
+
 def measure():
     env = _free_env()
     start_speed = env.car.speed
@@ -190,6 +322,7 @@ def measure():
         "reverse_possible": reverse_possible,
         "turn": measure_turn(),
         "out_of_range_actions": measure_out_of_range(),
+        "world": measure_world(),
     }
 
 

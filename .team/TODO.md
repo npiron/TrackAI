@@ -18,11 +18,11 @@
   - dépend de : T7
   - essais : 1
 
-- [ ] **T9** · Banc physique : murs, boost, checkpoints, arrivée · P1
+- [x] **T9** · Banc physique : murs, boost, checkpoints, arrivée · P1
   - but : scénarios : voiture lancée perpendiculairement/en biais contre un mur (reste dans la piste, jamais de téléportation, `speed` cohérent avec `|vel|` après choc), traversée de boost (vitesse plafonnée), checkpoints dans l'ordre et pas de saut, finish uniquement après tous les checkpoints, départ à vitesse 0 ; reproductibilité à graine égale
   - fini quand : scénarios dans le JSON avec pass/fail ; les échecs sont listés dans le journal comme « écarts de réalisme » numérotés
   - dépend de : T7
-  - essais : 0
+  - essais : 1
 
 - [ ] **T10** · Triage des écarts de réalisme · P2
   - but : à partir des résultats T7-T9, lister dans `docs/PHYSICS.md` chaque écart (confirmé/infirmé) avec décision : corriger (ex. vitesse max inatteignable, désynchro speed/vel, marche arrière, dt) ou assumer comme choix arcade. Pas de changement de code

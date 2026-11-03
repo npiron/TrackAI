@@ -115,3 +115,18 @@
 ## 2026-11-03 22:18 · reviewer · T8 validée
 
 - Banc relancé 2× : stdout identique, JSON identique hors horodatage `date`. Chiffres = ceux du worker (v5 16.77° fail, v15 15.25° fail, v22 14.16° pass ; steer=5 → 5.0 ; accel3 22.15 vs 7.38). pytest hors e2e : 23 passed, 1 skipped. Les fails sont des écarts réels assumés (critère = statuts pass/fail présents), à trancher en T10.
+
+## 2026-11-03 22:19 · worker · T9 Banc physique murs/boost/checkpoints/arrivée
+
+- Fichiers : `scripts/physics_check.py` (+`measure_world` : walls, boost, checkpoints, reproducibility ; clé `world` du JSON), `tests/test_physics.py` (+1 test).
+- Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/physics_check.py --metrics /tmp/cN.json` 2× → stdout identique (cmp OK). pytest hors e2e : 24 passed, 1 skipped.
+- Résultats : checkpoints (8) dans l'ordre, pas de saut, hors-ordre ignoré, finish refusé avant les CP et accepté après (reward 100), départ à vitesse 0, reproductibilité à graine égale : **pass**. Murs (piste seed 42, vitesse 15, perpendiculaire et biais 45°, 200 frames, accel pleine) : 0 frame hors piste, aucune téléportation (saut ≤ |vel|), valeurs finies : pass.
+- Écarts de réalisme :
+  1. **Désynchro speed/|vel| au choc** : écart relatif max 0.85 (perpendiculaire) et 0.87 (biais) > seuil 0.25 → fail. Le glissement annule une composante de vel mais `speed` n'est réduit que de 10 % (et ×0.5 si coincé), donc speed reste élevé alors que la voiture est quasi arrêtée ; la vitesse observée (obs speed_n) ment.
+  2. **Boost dépasse MAX_SPEED** : pic 36.8 px/frame (115 % de MAX_SPEED=32) sous boost permanent, cap 38.4 respecté → pass du seuil 120 %, mais contredit le clamp MAX_SPEED (le clamp ne s'applique qu'avant le boost). À trancher en T10 (choix arcade probable). Note : build_track n'a aucune zone de boost (boost_zones=[]), le test injecte une zone sur toute la carte.
+  3. Pas de dégâts/rebond : la voiture colle au mur et glisse (choix arcade ?).
+- Limites : scénarios de mur sur un seul point de départ ; la détection du « contact » est heuristique (déplacement < 50 % de |vel|) ; `.team/metrics.json` du dépôt non modifié.
+
+## 2026-11-03 22:20 · reviewer · T9 validée
+
+- Banc relancé 2× : stdout identique, chiffres = ceux du worker (mismatch speed/vel 0.847 et 0.868 fail, boost pic 36.8 pass, checkpoints/reproductibilité pass, 0 frame hors piste). pytest hors e2e : 24 passed, 1 skipped. metrics.json du dépôt intact. Les échecs sont listés comme écarts numérotés.
