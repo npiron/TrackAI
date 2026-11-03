@@ -261,3 +261,12 @@
 ## 2026-11-03 22:48 · reviewer · T17 validée
 
 - Diff relu (eval.py, tests). Relancé eval random --static --laps 3 --episodes 20 --seed 0 ×2 : sorties identiques (hors date), nouvelles clés présentes, anciennes conservées. pytest hors e2e : 32 passed, 1 skipped. Réserve : mean_total_time non exercé en réel (couvert en unitaire).
+
+## 2026-11-03 22:49 · worker · T18 Chrono humain
+- Fichiers : `scripts/human_lap.py` (nouveau : `replay`, `load_best`, `record`, mode jeu pygame `--laps N`, écrit `data/human_best.json` si record), `scripts/eval.py` (champ `human_best_total`, null si fichier absent), `tests/test_human_lap.py` (3 tests).
+- Vérifs : pytest `--ignore=tests/test_e2e_training.py` → 35 passed, 1 skipped. Test : total du rejeu = n/FPS = `total_time` du wrapper du banc (fin de tour forcée par patch). eval.py : `human_best_total` null sans fichier, 99.0 avec un fichier factice (supprimé ensuite).
+- Limites : le mode jeu pygame n'a pas été lancé (pas d'affichage) ; pas de `data/human_best.json` réel : Nicolas doit jouer `python scripts/human_lap.py --laps 3`. Le record n'est comparé qu'à `laps` identique.
+
+## 2026-11-03 22:50 · reviewer · T18 validée
+
+- Relu human_lap.py, eval.py, tests. pytest hors e2e : 35 passed, 1 skipped. eval random --static --laps 3 : human_best_total null sans fichier. Imports pygame du mode jeu vérifiés par grep (non lancé, pas d affichage). Le test de rejeu utilise une fin de tour patchée, acceptable.

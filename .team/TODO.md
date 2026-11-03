@@ -18,11 +18,11 @@
   - dépend de : T16
   - essais : 1
 
-- [ ] **T18** · Chrono humain : mode de mesure du meilleur temps humain sur la piste fixe · P1
+- [x] **T18** · Chrono humain : mode de mesure du meilleur temps humain sur la piste fixe · P1
   - but : ajouter dans `trackmania_clone.py` (ou un script `scripts/human_lap.py`) l'enregistrement du temps de chaque tour avec le même chrono que le banc (`1/FPS` par frame, via `TimeAttackEnv`), `laps` configurable, écriture du meilleur total dans `data/human_best.json`. Jouable par Nicolas. Pas de screenshot.
   - fini quand : un test headless rejoue une liste d'actions et obtient un total identique au chrono du banc ; `data/human_best.json` est lu par `eval.py` s'il existe (champ `human_best_total` dans l'entrée métrique, null sinon)
   - dépend de : T16
-  - essais : 0
+  - essais : 1
 
 - [ ] **T19** · Référence PPO 1 tour sur piste fixe (reprise T4-T6 adaptée) · P2
   - but : entraînement PPO ≤ 10 min avec `rl_train_ppo.py --static --steps <≤200k>`, avec la physique actuelle (MAX_SPEED 23, frein moteur) ; évaluer avec `eval.py --static --laps 1 --episodes 20 --seed 0`. Copier le meilleur dans `data/models/best/` avec un `best.json` (mesure).

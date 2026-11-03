@@ -92,6 +92,11 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
     }
 
 
+def _human_best():
+    from scripts.human_lap import load_best
+    return load_best()
+
+
 def append_metrics(path, entry):
     data = []
     if os.path.exists(path):
@@ -113,7 +118,8 @@ def main(argv=None):
     a = p.parse_args(argv)
     res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static, laps_n=a.laps)
     entry = {"date": time.strftime("%Y-%m-%d %H:%M"), "model": a.model, "episodes": a.episodes,
-             "seed": a.seed, "static": a.static, "laps": a.laps, **res}
+             "seed": a.seed, "static": a.static, "laps": a.laps,
+             "human_best_total": _human_best(), **res}
     append_metrics(a.metrics, entry)
     print(json.dumps(entry, ensure_ascii=False))
     return entry
