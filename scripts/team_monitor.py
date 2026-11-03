@@ -2,11 +2,14 @@
 """Moniteur TUI de l'équipe d'agents TrackAI (curses, sans dépendance).
 
 Usage : python3 scripts/team_monitor.py
-Touches : q quitter · ↑/↓ défiler le panneau actif · tab changer de panneau · l log plein écran
+Boutons (clic ou touche) : s démarrer · +/- itérations · x arrêt propre · p replanifier · K tuer (2 fois)
+Navigation : ↑/↓ défiler · tab changer de panneau · l log plein écran · q quitter
 """
 import curses
 import json
 import locale
+import os
+import signal
 import re
 import subprocess
 import textwrap
@@ -79,6 +82,51 @@ def loop_state():
         "replan": (TEAM / "REPLAN").exists(),
         "stop": (TEAM / "STOP").exists(),
     }
+
+
+# ---------- contrôle ----------
+
+def loop_pids():
+    pids = []
+    for l in sh("ps", "-Ao", "pid,command").splitlines():
+        if "team_loop.sh" in l and "grep" not in l:
+            pids.append(int(l.split()[0]))
+    return pids
+
+
+def start_loop(n):
+    if loop_pids():
+        return "La boucle tourne déjà."
+    (TEAM / "logs").mkdir(parents=True, exist_ok=True)
+    out = open(TEAM / "logs" / f"{time.strftime('%Y%m%d-%H%M%S')}-loop.log", "w")
+    subprocess.Popen(["./team_loop.sh", str(n)], cwd=ROOT, stdout=out, stderr=subprocess.STDOUT,
+                     stdin=subprocess.DEVNULL, start_new_session=True)
+    return f"Boucle lancée pour {n} itération(s)."
+
+
+def request_stop():
+    if not loop_pids():
+        return "La boucle n'est pas lancée."
+    (TEAM / "STOP").touch()
+    return "Arrêt demandé : la boucle s'arrêtera à la fin de l'étape en cours."
+
+
+def request_replan():
+    (TEAM / "REPLAN").touch()
+    return "Replanification demandée pour la prochaine itération."
+
+
+def kill_loop():
+    pids = loop_pids()
+    if not pids:
+        return "La boucle n'est pas lancée."
+    for pid in pids:
+        sh("pkill", "-TERM", "-P", str(pid))  # agent claude en cours
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            pass
+    return "Boucle tuée. Le travail en cours du worker reste non commité."
 
 
 def state():
@@ -218,17 +266,41 @@ def header(scr, d):
     put(scr, 0, w - 10, time.strftime("%H:%M:%S"), C["mute"])
 
 
-def footer(scr):
+def buttons(d, n_iter, armed):
+    running = d["loop"]["running"]
+    return [
+        ("s", f" ▶ Démarrer ×{n_iter} ", not running, "ok"),
+        ("-", " − ", not running, "mute"),
+        ("+", " + ", not running, "mute"),
+        ("x", " ■ Arrêt propre ", running and not d["loop"]["stop"], "warn"),
+        ("p", " ↻ Replanifier ", not d["loop"]["replan"], "info"),
+        ("K", " ✖ Confirmer ? " if armed else " ✖ Tuer ", running, "bad"),
+        ("q", " Quitter ", True, "mute"),
+    ]
+
+
+def footer(scr, btns, msg):
     h, w = scr.getmaxyx()
-    put(scr, h - 1, 1, "q quitter · ↑↓/PgUp/PgDn défiler · tab panneau · l log", C["mute"])
+    zones, x = [], 1
+    for key, label, enabled, col in btns:
+        attr = (C[col] | curses.A_REVERSE | curses.A_BOLD) if enabled else C["mute"]
+        put(scr, h - 1, x, label, attr)
+        zones.append((x, x + len(label), key, enabled))
+        x += len(label) + 1
+    put(scr, h - 1, x + 1, "tab panneau · ↑↓ défiler · l log", C["mute"])
+    if msg:
+        put(scr, h - 2, 1, msg, C["warn"] | curses.A_BOLD)
+    return zones
 
 
 def main(scr):
     curses.curs_set(0)
     init_colors()
     scr.timeout(int(REFRESH * 1000))
+    curses.mousemask(curses.ALL_MOUSE_EVENTS)
     panels = ["todo", "journal", "side", "log"]
     active, scroll, full_log = 1, {p: 0 for p in panels}, False
+    n_iter, armed, msg, msg_t, zones = 5, False, "", 0, []
     d, last = state(), time.time()
     while True:
         if time.time() - last >= REFRESH:
@@ -236,16 +308,18 @@ def main(scr):
         H, W = scr.getmaxyx()
         scr.erase()
         header(scr, d)
-        footer(scr)
+        if msg and time.time() - msg_t > 6:
+            msg = ""
+        zones = footer(scr, buttons(d, n_iter, armed), msg)
         if H < 16 or W < 70:
             put(scr, 2, 1, "Terminal trop petit (70x16 minimum)")
             scr.refresh()
         else:
-            body_h = H - 2
+            body_h = H - 3
             if full_log:
                 wins = {"log": (body_h, W, 1, 0)}
             else:
-                top = max(8, int(body_h * 0.68))
+                top = max(8, body_h - max(6, body_h // 5))
                 lw = W // 3
                 rw = W // 3
                 wins = {
@@ -258,7 +332,7 @@ def main(scr):
             content = {}
             for name, (h, w, y, x) in wins.items():
                 win = curses.newwin(h, w, y, x)
-                title = {"todo": "Todo", "journal": "Journal", "side": "Métriques · inbox · git",
+                title = {"todo": "Todo", "journal": "Journal", "side": "État",
                          "log": f"Dernier log · {d['loop']['log'] or '—'}"}[name]
                 box(win, title, panels[active] == name or full_log)
                 if name == "todo":
@@ -280,6 +354,38 @@ def main(scr):
             curses.doupdate()
 
         k = scr.getch()
+        if k == curses.KEY_MOUSE:
+            try:
+                _, mx, my, _, bstate = curses.getmouse()
+            except curses.error:
+                continue
+            k = -1
+            if my == H - 1 and bstate & (curses.BUTTON1_CLICKED | curses.BUTTON1_PRESSED | curses.BUTTON1_RELEASED):
+                for x0, x1, key, enabled in zones:
+                    if x0 <= mx < x1 and enabled:
+                        k = ord(key)
+        act = None
+        if k == ord("s") and not d["loop"]["running"]:
+            act = start_loop(n_iter)
+        elif k in (ord("+"), ord("=")):
+            n_iter = min(50, n_iter + 1)
+        elif k == ord("-") and k != -1:
+            n_iter = max(1, n_iter - 1)
+        elif k == ord("x"):
+            act = request_stop()
+        elif k == ord("p"):
+            act = request_replan()
+        elif k == ord("K"):
+            if armed:
+                act, armed = kill_loop(), False
+            else:
+                armed, act = True, "Appuie encore sur K (ou clique) pour confirmer."
+        if k not in (-1, ord("K")):
+            armed = False
+        if act:
+            msg, msg_t = act, time.time()
+            d, last = state(), 0
+            continue
         if k in (ord("q"), 27):
             break
         name = "log" if full_log else panels[active]
