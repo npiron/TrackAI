@@ -385,3 +385,14 @@
 
 - T25/T26 validées : 17,74 s sur 3 tours, 20/20 (best/). Rangées en Terminées. GOAL : mesure mise à jour, toujours pas atteint (temps humain absent : `python scripts/human_lap.py --laps 3`).
 - Nouvelles tâches : T29 audit de validité (coupe de virages, checkpoints), T30 optimisation du professeur + ré-imitation. T28 passée P1, T27 (PPO) en dernier. Inbox vide.
+
+## 2026-11-03 23:48 · worker · T29 Audit de validité des tours rapides
+- Fichiers : `scripts/audit_lap.py` (nouveau), `docs/AUDIT_T29.md`.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/audit_lap.py --static --laps 3 --out docs/AUDIT_T29.md` ×2 → identique (cmp).
+- Résultats (best/ 17,74 s ; heuristique 17,94 s) : 8 cp dans l'ordre à chaque tour, couverture ligne centrale ≈ 1,00, 0 frame hors piste, 0 contact mur, v moy 9-10,3, v max 15,4-16,9, chemin 2660-2840 px (ligne centrale 3032). Verdict : valide, pas de faille.
+- Correction en cours de route : demi-largeur réelle de route = 59 px (mesurée sur le masque), pas TRACK_WIDTH/2 = 45. La voiture rase le bord (≈ -0,9 px, précision de la spline).
+- Limites : piste fixe, seed 0 ; CHECKPOINT_RADIUS 100 px très permissif (non exploité). Effet de bord : l'env écrit `replays/personal_best.json` (comportement existant).
+
+## 2026-11-03 23:49 · reviewer · T29 validée
+
+- Relancé audit_lap (static, laps 3) : tableaux identiques à docs/AUDIT_T29.md (seul le bloc verdict est rédigé à la main). 8 cp dans l ordre, 0 hors piste, 0 mur. pytest hors e2e : 41 passed, 1 skipped. Verdict valide, pas de faille.

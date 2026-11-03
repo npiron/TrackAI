@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T29** · Audit de validité des tours rapides (coupe de virages) · P1
+- [x] **T29** · Audit de validité des tours rapides (coupe de virages) · P1
   - but : script `scripts/audit_lap.py` : pour `best/` et l'heuristique, laps 3, `--static`, rapporter par tour : temps, vitesse moyenne/max, ordre des checkpoints franchis, distance min au bord de piste, nombre de frames hors piste/contact mur. Vérifier que 17,7 s n'exploite pas un défaut de comptage (checkpoints sautés, tour validé sans parcourir la piste).
   - fini quand : `docs/AUDIT_T29.md` chiffré, verdict explicite (valide / faille + correctif proposé dans l'inbox si faille) ; sortie identique sur 2 lancements
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T30** · Réduire encore le temps : optimisation de l'heuristique par recherche · P1
   - but : étendre `scripts/sweep_heuristic.py` (recherche aléatoire / hill-climbing, éventuellement paramètres par secteur de courbure) pour passer sous 17,74 s en gardant 20/20, puis ré-imitation (`imitate.py --dagger 5`) du nouveau professeur. ≤ 10 min de calcul par lancement.
