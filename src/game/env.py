@@ -19,7 +19,11 @@ class TimeAttackEnv:
              lidar_1, lidar_2, lidar_3, lidar_4, lidar_5]
       action = (steer, accel, brake) in [-1..1], [0..1], [0..1]
     """
-    def __init__(self, track: Optional[Track] = None, procedural: bool = True):
+    def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1):
+        self.laps = max(1, int(laps))
+        self.lap_count = 0
+        self.lap_times: List[float] = []
+        self._lap_start_t = 0.0
         self.procedural = procedural
         if track:
             self.track = track
@@ -56,6 +60,9 @@ class TimeAttackEnv:
         )
         self.t = 0.0
         self.done = False
+        self.lap_count = 0
+        self.lap_times = []
+        self._lap_start_t = 0.0
         self.cp_visited = [False] * len(self.track.checkpoints)
         self.ghost = []
         self.off_track_counter = 0  # Reset timeout counter
@@ -193,11 +200,22 @@ class TimeAttackEnv:
         self._update_checkpoints()
         
         # 6. Finish
+        lap_finished = False
         if self._check_finish():
-            self.done = True
-            if self.best_time is None or self.t < self.best_time:
-                self.best_time = self.t
-                self.best_ghost = list(self.ghost)
+            # Time at the end of this frame (same clock as the single-lap case)
+            t_end = self.t + 1.0 / FPS
+            self.lap_times.append(t_end - self._lap_start_t)
+            self.lap_count += 1
+            if self.lap_count < self.laps:
+                # Next lap: checkpoints must be validated again
+                lap_finished = True
+                self._lap_start_t = t_end
+                self.cp_visited = [False] * len(self.track.checkpoints)
+            else:
+                self.done = True
+                if self.best_time is None or self.t < self.best_time:
+                    self.best_time = self.t
+                    self.best_ghost = list(self.ghost)
 
         # Record ghost
         if len(self.ghost) == 0 or np.linalg.norm(self.car.pos - vec(*self.ghost[-1])) > 5.0:
@@ -209,7 +227,7 @@ class TimeAttackEnv:
         reward = 0.0
         # If done (win) -> Big Reward?
         # Typically handled in wrapper.
-        if self.done:
+        if self.done or lap_finished:
             reward = 100.0
 
         return self._obs(), reward, self.done, {}

@@ -242,3 +242,12 @@
 - Nouvelles tâches T16-T20 : multi-tours, banc `--laps`, chrono humain, PPO 1 tour, fiabilité 3 tours. Piège noté : `eval.py` est procédural par défaut, il faut `--static`.
 - Inbox : note reviewer T13 déjà traitée (T15 a dédoublonné metrics.json) ; seul reste mineur : aligner un test sur pi/2, non retenu. Fichier archivé.
 - Le temps humain n'existe pas encore : il demande que Nicolas joue (T18).
+
+## 2026-11-03 22:45 · worker · T16 Mode multi-tours laps
+- Fichiers : `src/game/env.py` (param `laps=1`, `lap_count`, `lap_times`, reset des checkpoints à chaque tour, done au dernier tour, +100 par fin de tour), `src/rl/wrappers.py` (param `laps`, info `laps_done`/`lap_times`/`total_time`/`is_success`, timeout 2000×laps, pas de saut de progress au changement de tour), `tests/test_laps.py` (3 tests).
+- Vérifs : pytest --ignore=tests/test_e2e_training.py → 30 passed, 1 skipped. Comparaison one-shot de l'env HEAD (git show) et du nouveau à laps=1 sur 1500 steps aléatoires : obs/récompense/done identiques.
+- Limites : à laps>1 le `time_bonus`/PB du wrapper utilise le temps total ; pas de bonus de tour dans le wrapper hormis +100 de l'env.
+
+## 2026-11-03 22:46 · reviewer · T16 validée
+
+- Relu diff env.py/wrappers.py/test_laps.py ; laps=1 inchangé (test trajectoire identique), laps=3 par téléportation donne 3 lap_times, info wrapper OK. pytest hors e2e : 30 passed, 1 skipped. Reset de _last_cp_count non nécessaire (pas de récompense quand le compte baisse).

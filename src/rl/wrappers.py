@@ -28,14 +28,15 @@ class GymTimeAttack(gym.Env):
     """
     metadata = {"render_modes": ["human"]}
 
-    def __init__(self, render_mode=None, procedural=True):
+    def __init__(self, render_mode=None, procedural=True, laps=1):
         super().__init__()
+        self.laps = max(1, int(laps))
         # Initialize with procedural config
         # If procedural=True, track=None (auto-gen). If False, we need a static track.
         if procedural:
-            self.ta = TimeAttackEnv(track=None, procedural=True)
+            self.ta = TimeAttackEnv(track=None, procedural=True, laps=self.laps)
         else:
-            self.ta = TimeAttackEnv(build_track(), procedural=False)
+            self.ta = TimeAttackEnv(build_track(), procedural=False, laps=self.laps)
 
         # Obs: 14 floats (Pilot-Centric)
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(14,), dtype=np.float32)
@@ -103,6 +104,7 @@ class GymTimeAttack(gym.Env):
         dist = np.sqrt(dx*dx + dy*dy)
         
         self._last_progress = -dist
+        self._last_lap_count = 0
         self._last_speed = 0.0
         self._last_cp_count = 0
         
@@ -134,7 +136,7 @@ class GymTimeAttack(gym.Env):
         # Timeout: Terminate episode after max steps (prevents infinite stuck episodes)
         # With larger tracks, we need more time, but not infinite
         # 2000 steps = 40 seconds at 50 FPS (enough for even long tracks)
-        MAX_EPISODE_STEPS = 2000
+        MAX_EPISODE_STEPS = 2000 * self.laps
         if self.episode_steps >= MAX_EPISODE_STEPS:
             # Force termination
             obs = self.ta._obs()
@@ -143,6 +145,7 @@ class GymTimeAttack(gym.Env):
                 "is_success": False,
                 "lap_time": 0.0
             }
+            self._add_lap_info(info)
             return obs, -50.0, True, False, info  # Penalty for timeout
         if self.step_counter % 60 == 0:
             self._load_config()
@@ -194,11 +197,16 @@ class GymTimeAttack(gym.Env):
                 "is_success": False,
                 "lap_time": 0.0
             }
+            self._add_lap_info(info)
             return obs, -100.0, True, False, info  # Stuck penalty
         
         # Record position for replay
         self._current_trajectory.append((float(car.pos[0]), float(car.pos[1])))
         
+        # New lap just started: checkpoints were reset, target changed
+        lap_started = self.ta.lap_count != self._last_lap_count
+        self._last_lap_count = self.ta.lap_count
+
         # Find next checkpoint target
         next_obj = None
         for i, visited in enumerate(self.ta.cp_visited):
@@ -219,7 +227,7 @@ class GymTimeAttack(gym.Env):
         
         # 1.1 Distance reduction
         progress = -dist
-        progress_delta = (progress - self._last_progress)
+        progress_delta = 0.0 if lap_started else (progress - self._last_progress)
         progress_reward = progress_delta * self.config.get("progress_weight", 4.0)
         self._last_progress = progress
         
@@ -340,7 +348,7 @@ class GymTimeAttack(gym.Env):
         time_bonus = 0.0
         pb_improvement_bonus = 0.0
         
-        if done and current_cp_count == len(self.ta.track.checkpoints):
+        if done and self.ta.lap_count >= self.laps:
             lap_time = self.ta.t
             base_bonus = self.config.get("time_bonus", 200.0)
             time_bonus = max(0, base_bonus - lap_time * 2)
@@ -387,12 +395,18 @@ class GymTimeAttack(gym.Env):
             self.render()
 
         info["checkpoints_reached"] = current_cp_count
-        info["is_success"] = bool(done and current_cp_count == len(self.ta.track.checkpoints))
+        info["is_success"] = bool(done and self.ta.lap_count >= self.laps)
         info["lap_time"] = self.ta.t if info["is_success"] else 0.0
+        self._add_lap_info(info)
              
         terminated = bool(done)
         truncated = False
         return obs, total_reward, terminated, truncated, info
+
+    def _add_lap_info(self, info):
+        info["laps_done"] = self.ta.lap_count
+        info["lap_times"] = list(self.ta.lap_times)
+        info["total_time"] = float(sum(self.ta.lap_times))
 
     def render(self):
         if self.screen is None:

@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T16** · Mode multi-tours `laps` (défaut 1) dans `TimeAttackEnv` et `GymTimeAttack` · P1
+- [x] **T16** · Mode multi-tours `laps` (défaut 1) dans `TimeAttackEnv` et `GymTimeAttack` · P1
   - but : paramètre `laps=1` ; à chaque passage de la ligne d'arrivée avec tous les checkpoints validés, si tour < laps : incrémenter le compteur, remettre `cp_visited` à faux, enregistrer le temps du tour ; `done` seulement au dernier tour. `info` du wrapper expose `laps_done`, `lap_times` (liste), `total_time`, `is_success` (= laps tours finis). Aucun changement de physique ni de comportement à `laps=1`.
   - fini quand : test pytest `laps=1` identique à l'avant (même trajectoire/récompense sur actions fixes) ; test `laps=3` avec voiture téléportée/rejouée sur le tracé qui renvoie 3 `lap_times` ; pytest hors e2e vert
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T17** · Banc : `--laps N` et métriques multi-tours dans `scripts/eval.py` · P1
   - but : option `--laps` (défaut 1) ; sortie : `finish_rate` (épisodes qui finissent les N tours), `mean_total_time`, `best_total_time`, `mean_laps_done`. Rétrocompatible (mêmes clés qu'avant à `--laps 1`). Rappel : la piste fixe est `--static` (sinon le banc est procédural).
