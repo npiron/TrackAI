@@ -376,3 +376,12 @@
 ## 2026-11-03 23:44 · boucle · Fin
 
 - Session terminée après 12 itération(s), 2 tâche(s) validée(s) au total.
+
+## 2026-11-03 23:47 · boucle · Démarrage
+
+- Session de 12 itérations sur `team/main`.
+
+## 2026-11-03 23:47 · planner · Replanification
+
+- T25/T26 validées : 17,74 s sur 3 tours, 20/20 (best/). Rangées en Terminées. GOAL : mesure mise à jour, toujours pas atteint (temps humain absent : `python scripts/human_lap.py --laps 3`).
+- Nouvelles tâches : T29 audit de validité (coupe de virages, checkpoints), T30 optimisation du professeur + ré-imitation. T28 passée P1, T27 (PPO) en dernier. Inbox vide.
