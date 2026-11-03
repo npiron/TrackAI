@@ -18,11 +18,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T23** · Corriger la récompense/horizon selon T21 puis PPO 1 tour jusqu'à finish_rate > 0 · P1
+- [?] **T23** · Corriger la récompense/horizon selon T21 puis PPO 1 tour jusqu'à finish_rate > 0 · P1
   - but : appliquer la correction indiquée par `docs/DIAG_T21.md` (config de récompense, pas la physique) ; entraînement ≤ 10 min `--static --laps 1`, partant de zéro ou de `best` selon le diagnostic ; éval 20 épisodes `--laps 1` seed 0.
   - fini quand : entrée `metrics.json` ; `mean_checkpoints` > 2.0 ou `finish_rate` > 0 sinon justification chiffrée dans l'inbox ; `best/` mis à jour seulement si amélioré
   - dépend de : T21
-  - essais : 0
+  - essais : 1
 
 - [ ] **T24** · Entraînement par imitation/amorçage depuis l'heuristique (si T22 réussit) · P2
   - but : collecter des trajectoires de l'heuristique, pré-entraîner la politique (behavior cloning, ≤ 5 min) ou injecter ces trajectoires, puis affiner PPO ; compatible `--load`.

@@ -319,3 +319,13 @@
 ## 2026-11-03 23:23 · reviewer · T22 validée
 
 - Relancé heuristic_lap (static, laps 3, 20 ép., seed 0) : finish_rate 1.0, temps total moyen 45.46 s, identique à metrics.json (doublon créé par ma relance retiré). pytest hors e2e : 39 passed, 1 skipped. Réserve : politique non pure-observation (utilise la spline), assumé et documenté par le worker.
+
+## 2026-11-03 23:31 · worker · T23 Récompense corrigée + PPO 1 tour
+- Fichiers : `src/rl/wrappers.py` (bonus « sur piste » configurable `on_track_bonus` défaut 0 au lieu de +0.1 ; `urgency_penalty` défaut -0.3 sans seuil de distance ; wall_stuck sur arrêt <0.05 même sur piste), `.team/metrics.json` (entrée t23), inbox.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python rl_train_ppo.py --static --laps 1 --steps 200000 --run-id t23` (depuis zéro, ~8 min). Éval : `scripts/eval.py --model data/checkpoints/ppo_t23_final.zip --static --laps 1 --episodes 20 --seed 0` → finish_rate 0.0, mean_checkpoints 2.0, mean_return -153.5, épisodes 275 steps (wall_stuck).
+- Vitesse moyenne 2.1 (vs 0.1 avant) mais bloqué au mur après cp 2. Critère « > 2.0 » non atteint : justification dans l'inbox. best/ non modifié. pytest hors e2e : 39 passed, 1 skipped.
+- Limites : un seul run, 200k steps ; rewards_config.json (tracké) est prioritaire sur les défauts mais ne contient pas les nouvelles clés.
+
+## 2026-11-03 23:32 · reviewer · T23 validée
+
+- Relancé eval t23 (static, laps 1, 20 ép., seed 0) : finish_rate 0, cp 2.0, return -153.54, 275 steps, identique à metrics.json (doublon retiré). pytest hors e2e : 39 passed, 1 skipped. Diff wrappers cohérent (défauts configurables). Critère : échec justifié chiffré dans inbox, best/ intact. Réserve : rewards_config.json peut masquer les nouvelles clés. Reste à faire : T24 imitation.

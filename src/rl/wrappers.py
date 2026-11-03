@@ -185,7 +185,8 @@ class GymTimeAttack(gym.Env):
         
         # === WALL-STUCK DETECTION ===
         # If car is off-track AND nearly stationary for 3 seconds (150 frames @ 50 FPS), terminate
-        if on_track < 0.5 and speed < 0.1:  # Off-track and slow
+        # (T23) Arrêt prolongé n'importe où (y compris contre un mur "sur piste")
+        if speed < 0.05:  # quasi immobile
             self.wall_stuck_counter += 1
         else:
             self.wall_stuck_counter = 0  # Reset if moving or back on track
@@ -305,7 +306,7 @@ class GymTimeAttack(gym.Env):
         # 2.2 Urgency
         urgency_penalty = 0.0
         if dist > 0.3 and speed < 0.2:
-             urgency_penalty = -0.1
+             urgency_penalty = -self.config.get("urgency_penalty", 0.3)
         
         # === PRIORITY #3: STAY ON TRACK ===
         
@@ -314,7 +315,7 @@ class GymTimeAttack(gym.Env):
         if on_track < 0.5:
             track_penalty = -self.config.get("track_penalty", 2.0)
         else:
-            track_penalty = 0.1
+            track_penalty = self.config.get("on_track_bonus", 0.0)
         
         # 3.2 Wall collision
         wall_penalty = 0.0
