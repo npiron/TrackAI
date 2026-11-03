@@ -56,3 +56,6 @@ runs/
 # Project specific
 replays/*.json
 !replays/.gitkeep
+
+# Équipe d agents
+.team/logs/
