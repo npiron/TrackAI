@@ -30,11 +30,11 @@
   - dépend de : T17
   - essais : 1
 
-- [ ] **T20** · Entraînement fiabilité 3 tours (reprise du modèle de T19) · P2
+- [x] **T20** · Entraînement fiabilité 3 tours (reprise du modèle de T19) · P2
   - but : reprendre `--load` le meilleur modèle, entraînement ≤ 10 min avec `laps=3` ; adapter récompense seulement si nécessaire (checkpoints qui se répètent à chaque tour) ; évaluer 20 épisodes `--laps 3`.
   - fini quand : entrée `metrics.json` avec `finish_rate` ; `best/` mis à jour seulement si le finish_rate ou le temps s'améliore ; décision à noter dans l'inbox (reste à faire pour 20/20)
   - dépend de : T19
-  - essais : 0
+  - essais : 1
 
 > Plus tard (après fiabilité 20/20) : paliers de vitesse (bonus de temps, pénalité de temps par tour, reprise de modèle) ; comparaison au temps humain. Les anciens modèles de `data/models/production` sont invalides (physique changée).
 > Reportées : T4, T5, T6 remplacées par T19.

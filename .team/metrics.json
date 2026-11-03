@@ -169,5 +169,23 @@
     "mean_total_time": null,
     "best_total_time": null,
     "mean_laps_done": 0.0
+  },
+  {
+    "date": "2026-11-03 23:14",
+    "model": "data/checkpoints/ppo_t20_final.zip",
+    "episodes": 20,
+    "seed": 0,
+    "static": true,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 364.8389,
+    "mean_checkpoints": 2.0,
+    "success_rate": 0.0,
+    "mean_lap_time": null,
+    "mean_episode_steps": 6000.0,
+    "finish_rate": 0.0,
+    "mean_total_time": null,
+    "best_total_time": null,
+    "mean_laps_done": 0.0
   }
 ]

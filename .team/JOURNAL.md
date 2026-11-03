@@ -280,3 +280,14 @@
 ## 2026-11-03 23:02 · reviewer · T19 validée
 
 - Relancé eval du modèle t19 (static, laps 1, 20 ép., seed 0) : finish_rate 0.0, mean_checkpoints 1.0, return -3.1875, identique à metrics.json. pytest hors e2e : 35 passed, 1 skipped. Fix tensorboard optionnel OK. best/ est gitignoré (non commité, normal). Référence faible (0 tour) assumée par le critère.
+
+## 2026-11-03 23:14 · worker · T20 Fiabilité 3 tours (reprise)
+- Fichiers : `rl_train_ppo.py` (`--laps`, reprise des stats VecNormalize via `--load`), `.team/metrics.json` (entrée), inbox (décision).
+- Entraînement : `SDL_VIDEODRIVER=dummy .venv/bin/python rl_train_ppo.py --static --laps 3 --steps 200000 --run-id t20 --load data/models/best/best.zip` (~9 min).
+- Éval : `scripts/eval.py --model data/checkpoints/ppo_t20_final.zip --static --laps 3 --episodes 20 --seed 0` → finish_rate 0.0, mean_checkpoints 2.0, mean_return 364.8, épisodes à 6000 steps (timeout).
+- best/ non modifié (finish_rate inchangé). pytest hors e2e : 35 passed, 1 skipped.
+- Limites : 0/20 ; récompense non adaptée, pistes dans l'inbox.
+
+## 2026-11-03 23:15 · reviewer · T20 validée
+
+- Relancé eval du modèle t20 (static, laps 3, 20 ép., seed 0) : finish_rate 0.0, mean_checkpoints 2.0, return 364.8389, identique à metrics.json. pytest hors e2e : 35 passed, 1 skipped. Diff rl_train_ppo.py (--laps, reprise VecNormalize) cohérent. best/ non modifié, décision notée dans l inbox. Reste : 20/20 non atteint (0 tour fini), à replanifier (récompense/durée).

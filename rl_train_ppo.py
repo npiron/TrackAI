@@ -38,6 +38,7 @@ def main():
     parser.add_argument("--use-best-params", action="store_true", help="Load hyperparameters from logs/best_hyperparams.txt")
     parser.add_argument("--static", action="store_true", help="Disable procedural generation (use fixed track)")
     parser.add_argument("--curriculum", action="store_true", help="Enable curriculum learning (progressive difficulty)")
+    parser.add_argument("--laps", type=int, default=1, help="Nombre de tours par épisode")
     args = parser.parse_args()
     
     # NOW load the heavy stuff (only when actually training)
@@ -90,7 +91,7 @@ def main():
         print("🎨 Launching Visual training mode (single core)...")
         
         def make_env():
-            env = GymTimeAttack(render_mode="human", procedural=procedural_mode)
+            env = GymTimeAttack(render_mode="human", procedural=procedural_mode, laps=args.laps)
             os.makedirs("data/monitoring", exist_ok=True)
             return Monitor(env, f"data/monitoring/monitor_visual_{args.run_id}.csv", info_keywords=("checkpoints_reached", "is_success", "lap_time"))
         
@@ -102,7 +103,7 @@ def main():
         print(f"🚀 Launching Headless training on {n_cpu} parallel environments...")
         
         def make_env():
-            env = GymTimeAttack(render_mode=None, procedural=procedural_mode)
+            env = GymTimeAttack(render_mode=None, procedural=procedural_mode, laps=args.laps)
             os.makedirs("data/monitoring", exist_ok=True)
             return Monitor(env, f"data/monitoring/monitor_headless_{args.run_id}_{os.getpid()}.csv", info_keywords=("checkpoints_reached", "is_success", "lap_time"))
 
@@ -111,7 +112,14 @@ def main():
         print("✅ Environments ready.")
 
     # Wrap in VecNormalize (critical for PPO)
-    venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_obs=10.0)
+    load_stats = args.load.replace(".zip", "_vecnormalize.pkl") if args.load else None
+    if load_stats and os.path.exists(load_stats):
+        print(f"📥 Reprise des stats VecNormalize: {load_stats}")
+        venv = VecNormalize.load(load_stats, venv)
+        venv.training = True
+        venv.norm_reward = True
+    else:
+        venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_obs=10.0)
 
     # Checkpoint callback (PPO converges faster, so checkpoint more frequently)
     checkpoint_callback = CheckpointCallback(
