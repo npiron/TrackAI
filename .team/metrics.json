@@ -457,5 +457,47 @@
     "mean_total_time": 15.9,
     "best_total_time": 15.9,
     "mean_laps_done": 3.0
+  },
+  {
+    "date": "2026-11-04 00:02",
+    "model": "data/models/best/best.zip",
+    "episodes": 100,
+    "seed": 1000,
+    "static": true,
+    "laps": 3,
+    "action_noise_eps": 0.0,
+    "finish_rate": 1.0,
+    "n_ok": 100,
+    "mean_total_time": 15.9,
+    "std_total_time": 0.0,
+    "worst_total_time": 15.9
+  },
+  {
+    "date": "2026-11-04 00:02",
+    "model": "data/models/best/best.zip",
+    "episodes": 100,
+    "seed": 1000,
+    "static": true,
+    "laps": 3,
+    "action_noise_eps": 0.05,
+    "finish_rate": 0.97,
+    "n_ok": 97,
+    "mean_total_time": 18.5944,
+    "std_total_time": 1.4038,
+    "worst_total_time": 22.78
+  },
+  {
+    "date": "2026-11-04 00:03",
+    "model": "data/models/best/best.zip",
+    "episodes": 100,
+    "seed": 1000,
+    "static": true,
+    "laps": 3,
+    "action_noise_eps": 0.1,
+    "finish_rate": 0.91,
+    "n_ok": 91,
+    "mean_total_time": 19.9363,
+    "std_total_time": 1.7,
+    "worst_total_time": 25.72
   }
 ]

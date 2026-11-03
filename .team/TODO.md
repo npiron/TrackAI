@@ -24,11 +24,11 @@
   - dépend de : rien (T26 utile mais non bloquant)
   - essais : 0
 
-- [ ] **T28** · Robustesse du meilleur modèle · P1
+- [?] **T28** · Robustesse du meilleur modèle · P1
   - but : évaluer `best/` sur 100 épisodes avec seeds différents (`--static`, laps 3) et avec petit bruit d'action (eps 0,05) pour vérifier que 20/20 n'est pas un artefact de déterminisme ; rapport `docs/ROBUST_T28.md`.
   - fini quand : taux de finish chiffré dans le doc et une entrée `metrics.json` ; si < 100 %, cause principale identifiée (virage/checkpoint)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 > Action humaine (non assignable) : jouer `python scripts/human_lap.py --laps 3` pour créer `data/human_best.json` ; sans lui le critère vitesse n'est pas évaluable (le banc affiche `human_best_total: null`).
 > Anciens modèles de `data/models/production` invalides.

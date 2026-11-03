@@ -408,3 +408,14 @@
 ## 2026-11-04 00:01 · reviewer · T30 validée
 
 - Relancé : heuristic_lap (static, 3 tours, 20 ép.) → 20/20, 15,90 s ; eval best/best.zip → 20/20, 15,90 s (identique au journal). audit_lap : 8 cp dans l ordre, 0 hors piste, 0 mur. pytest hors e2e : 41 passed, 1 skipped. Diff limité aux constantes, script de recherche et doc. Réserve : surapprentissage possible à la piste fixe/éval déterministe.
+
+## 2026-11-04 00:05 · worker · T28 Robustesse du meilleur modèle
+- Fichiers : `scripts/robust_eval.py` (nouveau : N épisodes, bruit d'action eps), `docs/ROBUST_T28.md`, `.team/metrics.json` (3 entrées).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/robust_eval.py --model data/models/best/best.zip --static --laps 3 --episodes 100 --seed 1000 --eps 0 0.05 0.1 --out docs/ROBUST_T28.md` (55 s).
+- Résultats best/ : eps 0 → 100/100, 15,9 s, écart-type 0 (déterministe, graines sans effet sur piste statique) ; eps 0,05 → 97/100, 18,59 s moy, pire 22,78 ; eps 0,1 → 91/100, 19,94 s.
+- Cause des échecs : 11/12 bloqués vers (181, 510) après 5 cp (virage serré, mur) ; détail dans le doc. Pistes : DAgger bruité / vitesse limitée dans ce virage.
+- Limites : piste fixe ; le bruit est uniforme, pas de variation de départ. Effet de bord : replays/personal_best.json réécrit par l'env.
+
+## 2026-11-04 00:04 · reviewer · T28 validée
+
+- Relancé robust_eval (100 ép., eps 0/0,05/0,1) : 100/100, 97/100 (18,59 s), 91/100 (19,94 s), identique au journal. Cause (virage ~181,510 après cp5) cohérente avec le doc. pytest hors e2e : 41 passed, 1 skipped. Mes 3 entrées dupliquées dans metrics.json retirées.
