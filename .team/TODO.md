@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T7** · Banc physique `scripts/physics_check.py` : mouvement longitudinal · P1
+- [x] **T7** · Banc physique `scripts/physics_check.py` : mouvement longitudinal · P1
   - but : script headless (SDL_VIDEODRIVER=dummy) qui crée l'env sur une piste fixe (non procédurale, ou graine fixe) et mesure : vitesse terminale en pleine accélération (valeur vs MAX_SPEED), temps 0→90 % de vitesse, distance de freinage depuis vitesse max, décélération en roue libre ; affiche un JSON et ajoute une entrée `physics_check` à `metrics.json` (`--metrics` pour changer)
   - fini quand : commande lancée 2× donne le même JSON ; chiffres commentés dans le journal (en m/s-équivalents px/frame et px/s) ; test pytest `tests/test_physics.py` minimal
   - dépend de : T2
-  - essais : 0
+  - essais : 1
 
 - [ ] **T8** · Banc physique : virage et adhérence · P1
   - but : étendre le script : rayon de virage à braquage plein à vitesses 5/15/22, angle de dérive (heading vs vel) en régime établi, temps de réaction du volant (STEER_SPEED), absence de glissement irréaliste ; vérifie aussi que actions hors bornes (steer=5, accel=-1) ne cassent pas la physique

@@ -86,3 +86,15 @@
 - Objectif modifié (vérifier gameplay/physique, simulation réaliste, sans screenshot) : critère défini dans GOAL.md = banc `scripts/physics_check.py` avec scénarios déterministes + écarts corrigés ou documentés ; statut « en cours », aucune mesure.
 - Lecture de `env.step`/constants : suspicions (vitesse terminale ≈22 < MAX_SPEED 32, pas de dt, pas de marche arrière, désynchro speed/vel après mur, drift non stocké, actions non bornées). À confirmer par mesure, pas acquis.
 - Plan RL mis en pause (T4-T6 reportées : la physique peut changer et invaliderait les entraînements). Nouvelles tâches T7-T10 ; T3 gardée en P3. Inbox vide.
+
+## 2026-11-03 22:16 · worker · T7 Banc physique longitudinal
+
+- Fichiers : `scripts/physics_check.py` (nouveau), `tests/test_physics.py`. Murs/boost/checkpoints neutralisés sur l'instance pour isoler le longitudinal (piste fixe `build_track`).
+- Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/physics_check.py --metrics /tmp/m.json` lancée 3× → JSON identique. pytest hors e2e : 22 passed, 1 skipped.
+- Mesures (FPS=50) : vitesse terminale 22.32 px/frame = 1116 px/s, soit 69.75 % de MAX_SPEED=32 → **MAX_SPEED inatteignable** par accélération seule (ACCEL·FRICTION/(1-FRICTION)). 90 % du terminal en 287 frames (5.74 s). Freinage plein depuis le terminal : 39 frames, 476 px. Roue libre : −0.148 px/frame² en moyenne sur 50 frames (≈0.66 %/frame, friction 0.8 %/frame). Marche arrière impossible (speed borné à 0).
+- Limites : pas de dt variable (1 frame = 1/FPS fixe) ; le boost seul peut dépasser le terminal (T9). `.team/metrics.json` du dépôt non modifié (testé avec --metrics /tmp).
+
+## 2026-11-03 22:16 · reviewer · T7 validée
+
+- Relancé le banc 2× (--metrics /tmp) : JSON identique (cmp OK), chiffres = ceux du worker (terminal 22.32 px/frame = 69.75 % de MAX_SPEED, freinage 39 frames/476 px). pytest hors e2e : 22 passed, 1 skipped. metrics.json du dépôt intact.
+- Remarque mineure : `coast_decel_pct_per_frame` a une formule alambiquée (équivaut à 100*decel/v0), sans conséquence.
