@@ -55,7 +55,7 @@ check_goal() {  # objectif modifié -> replanifier ; objectif atteint -> arrête
     echo "$h" > "$TEAM/.goal_hash"
     rm -f "$TEAM/GOAL_REACHED"
     touch "$TEAM/REPLAN"
-    journal "Objectif modifié" "Nouvel objectif : $(sed -n '3p' "$TEAM/GOAL.md")"
+    journal "Objectif modifié" "Nouvel objectif : $(sed '/^## /,$d' "$TEAM/GOAL.md" | grep -v '^#' | grep -v '^[[:space:]]*$' | tr '\n' ' ' | cut -c1-300)"
     log "Objectif modifié : replanification."
   fi
   if [ -f "$TEAM/GOAL_REACHED" ]; then
