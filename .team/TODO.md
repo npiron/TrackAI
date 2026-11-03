@@ -18,7 +18,7 @@
   - dépend de : T11
   - essais : 1
 
-- [?] **T13** · Corriger #2 : resynchroniser `speed` après collision · P1
+- [x] **T13** · Corriger #2 : resynchroniser `speed` après collision · P1
   - but : après résolution du glissement mur, recaler `speed` sur la composante de `vel` selon le cap (ou |vel|) dans `env.py`
   - fini quand : scénarios walls du banc (perpendiculaire et 45°) passent le seuil 0.25 ; toujours 0 frame hors piste et 0 téléportation ; test pytest ; suite verte ; PHYSICS.md #2 marqué corrigé
   - dépend de : T11
@@ -40,5 +40,5 @@
 
 ## Terminées
 
-T1, T2, T3, T7, T8, T9, T10, T11, T12 (validées).
+T1, T2, T3, T7, T8, T9, T10, T11, T12, T13 (validées).
 
