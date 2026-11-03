@@ -11,12 +11,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Actions : 0 idle, 1 acc, 2 frein, 3 gauche, 4 droite, 5 G+acc, 6 D+acc, 7 G+frein, 8 D+frein
-STEER_DEADZONE = 0.0375   # rad : en dessous on va tout droit
+STEER_DEADZONE = 0.0345   # rad : en dessous on va tout droit
 MAX_V_N = 1.0           # vitesse normalisée maximale visée
-PREDICT_FRAMES = 8
-SPEED_PER_RADIUS = 0.2836   # px/frame par px de rayon
+PREDICT_FRAMES = 9
+SPEED_PER_RADIUS = 0.2567   # px/frame par px de rayon
 MAX_SPEED_PX = 23.0
-LOOK_MIN, LOOK_GAIN = 125, 384  # indices de spline en avance (± vitesse)
+LOOK_MIN, LOOK_GAIN = 139, 400  # indices de spline en avance (± vitesse)
+SECTOR_MULT = [0.9738, 1.19, 1.0158, 0.9957, 1.0729, 1.1127]        # multiplicateurs de SPEED_PER_RADIUS par secteur de spline (vide = 1 partout)
 CORNER_V_N = 0.35       # vitesse visée pour un virage serré
 
 
@@ -31,6 +32,9 @@ def curve_speed_limit(ta, i, window=220, step=15):
                   np.linalg.norm(a - c, axis=1))
     cross = np.abs((b[:, 0] - a[:, 0]) * (c[:, 1] - a[:, 1]) - (b[:, 1] - a[:, 1]) * (c[:, 0] - a[:, 0]))
     radius = ab * bc * ca / (2 * cross + 1e-9)
+    if SECTOR_MULT:
+        mult = np.array(SECTOR_MULT)[idx * len(SECTOR_MULT) // n]
+        return float(min(1.0, (SPEED_PER_RADIUS * mult * radius).min() / MAX_SPEED_PX))
     return float(min(1.0, SPEED_PER_RADIUS * radius.min() / MAX_SPEED_PX))
 
 

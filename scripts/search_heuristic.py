@@ -21,10 +21,73 @@ SPACE = {
 
 def evaluate(h, ev, params):
     for k, v in params.items():
-        setattr(h, k, v)
+        setattr(h, k, list(v) if k == "SECTOR_MULT" else v)
     r = ev.run_eval("heuristic", 1, 0, procedural=False, laps_n=3)
     ok = r["finish_rate"] == 1.0
     return ok, (r["mean_total_time"] if ok else None)
+
+
+def climb(h, ev, rng, start, budget, max_seconds, sectors):
+    """Hill-climbing (paramètres globaux + multiplicateurs de secteurs). Renvoie (best, temps, nb essais, journal)."""
+    best = {k: (list(v) if isinstance(v, list) else v) for k, v in start.items()}
+    ok, bt = evaluate(h, ev, best)
+    if not ok:
+        return best, None, 0, []
+    log = [(0, bt)]
+    t0, n = time.time(), 0
+    keys = list(SPACE) + (["SECTOR_MULT"] if sectors else [])
+    while n < budget and time.time() - t0 < max_seconds:
+        n += 1
+        cand = {k: (list(v) if isinstance(v, list) else v) for k, v in best.items()}
+        for k in rng.sample(keys, rng.choice([1, 2])):
+            if k == "SECTOR_MULT":
+                j = rng.randrange(sectors)
+                cand[k][j] = round(min(2.0, max(0.5, cand[k][j] + rng.gauss(0, 0.08))), 4)
+            else:
+                lo, hi, s, isint = SPACE[k]
+                v = min(hi, max(lo, cand[k] + rng.gauss(0, s)))
+                cand[k] = int(round(v)) if isint else round(v, 4)
+        if cand == best:
+            continue
+        ok, t = evaluate(h, ev, cand)
+        if ok and t < bt - 1e-9:
+            best, bt = cand, t
+            log.append((n, bt))
+    return best, bt, n, log
+
+
+def multi(a, h, ev, random):
+    start = {k: getattr(h, k) for k in SPACE}
+    if a.sectors:
+        start["SECTOR_MULT"] = [1.0] * a.sectors
+    per = a.max_seconds / a.restarts
+    rows, overall = [], (None, 1e9)
+    for i in range(a.restarts):
+        rng = random.Random(a.seed + i)
+        st = {k: (list(v) if isinstance(v, list) else v) for k, v in start.items()}
+        if i > 0:  # départ perturbé
+            for k in SPACE:
+                lo, hi, s, isint = SPACE[k]
+                v = min(hi, max(lo, st[k] + rng.gauss(0, s)))
+                st[k] = int(round(v)) if isint else round(v, 4)
+            if a.sectors:
+                st["SECTOR_MULT"] = [round(min(1.5, max(0.7, 1 + rng.gauss(0, 0.1))), 4) for _ in range(a.sectors)]
+            ok, _ = evaluate(h, ev, st)
+            if not ok:
+                st = {k: (list(v) if isinstance(v, list) else v) for k, v in start.items()}
+        best, bt, n, log = climb(h, ev, rng, st, a.budget, per, a.sectors)
+        rows.append((i, a.seed + i, n, bt, best))
+        print("restart", i, "essais", n, "temps", bt, best, flush=True)
+        if bt is not None and bt < overall[1]:
+            overall = (best, bt)
+    with open(a.out, "w") as f:
+        f.write("# Recherche heuristique élargie (T33)\n\nHill-climbing, 3 tours, piste fixe, seed 0, %d secteurs de spline, %d redémarrages (graine %d+i), %.0f s chacun.\n\n" % (a.sectors, a.restarts, a.seed, per))
+        f.write("| restart | graine | essais | temps (s) | paramètres |\n|---|---|---|---|---|\n")
+        for i, sd, n, t, b in rows:
+            f.write("| %d | %d | %d | %s | %s |\n" % (i, sd, n, t, b))
+        f.write("\nMeilleur : %s s — `%s`\n" % (overall[1], overall[0]))
+    print("meilleur", overall[1], overall[0])
+    return overall
 
 
 def main(argv=None):
@@ -37,7 +100,11 @@ def main(argv=None):
     p.add_argument("--max-seconds", type=float, default=540)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="docs/SEARCH_T30.md")
+    p.add_argument("--sectors", type=int, default=0, help="nb de secteurs de spline (multiplicateurs de vitesse), 0 = off")
+    p.add_argument("--restarts", type=int, default=1, help="redémarrages (graine seed+i, départ perturbé si i>0)")
     a = p.parse_args(argv)
+    if a.restarts > 1 or a.sectors:
+        return multi(a, h, ev, random)
     rng = random.Random(a.seed)
     best = {k: getattr(h, k) for k in SPACE}
     ok, bt = evaluate(h, ev, best)

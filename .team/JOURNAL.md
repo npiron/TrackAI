@@ -461,3 +461,13 @@
 ## 2026-11-04 00:22 · reviewer · T32 validée
 
 - Relancé lower_bound.py : sortie identique (cmp) au doc ; borne 13,96 s, écart +1,94 s, recommandation explicite. Limite (non rigoureux) bien déclarée. pytest hors e2e : 41 passed, 1 skipped. Aucun changement hors sujet.
+
+## 2026-11-04 00:33 · worker · T33 Recherche élargie du professeur
+- Fichiers : `scripts/search_heuristic.py` (options `--sectors N`, `--restarts R` ; multiplicateurs de vitesse par secteur de spline), `scripts/heuristic_lap.py` (`SECTOR_MULT` 6 secteurs + constantes mises à jour : SPR 0.2567, PREDICT 9, LOOK 139/400, deadzone 0.0345), `docs/SEARCH_T33.md`, `.team/metrics.json`.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/search_heuristic.py --sectors 6 --restarts 4 --max-seconds 560 --budget 100000 --out docs/SEARCH_T33.md` (9 min 22 s ; 4 redémarrages de 140 s, ~700 essais chacun) : 15,90 / 15,90 / 16,38 / **15,68 s**.
+- Vérif : `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` ×2 : 20/20, 15,68 s (784 steps), identique. `audit_lap.py --models heuristic` : 8 cp dans l'ordre à chaque tour, 0 frame hors piste, 0 contact mur, bord au pire -1,4 px (précision spline), couverture tour 1 0,96. pytest hors e2e : 41 passed, 1 skipped.
+- Limites : gain de 0,22 s seulement, un seul restart sur 4 l'a trouvé (recherche non globale) ; borne T32 ≈ 13,96 s ; surapprentissage à la piste fixe. best/ non modifié (T34).
+
+## 2026-11-04 00:33 · reviewer · T33 validée
+
+- Relancé heuristic_lap (20 ép., laps 3) : 20/20, 15,68 s (< 15,90) ; audit_lap : 8 cp dans l ordre, 0 hors piste, 0 mur. pytest hors e2e : 41 passed, 1 skipped. Diff limité à search_heuristic/heuristic_lap. Ma entrée dupliquée retirée de metrics.json. Réserve : gain de 0,22 s, surapprentissage piste fixe (déclaré).

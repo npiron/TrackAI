@@ -18,11 +18,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T33** · Recherche élargie du professeur (paramètres par secteur, redémarrages) · P1
+- [x] **T33** · Recherche élargie du professeur (paramètres par secteur, redémarrages) · P1
   - but : étendre `scripts/search_heuristic.py` : vitesse cible par secteur de courbure (3 à 8 secteurs de la piste), plusieurs graines de redémarrage, budget ≤ 10 min ; vérifier 20/20 et audit (`audit_lap.py`: 0 hors piste, 0 mur, cp dans l'ordre).
   - fini quand : heuristique < 15,90 s, 20/20, audit propre, entrée `metrics.json` ; sinon table prouvant le plafond (≥ 3 redémarrages)
   - dépend de : rien (T32 oriente l'effort)
-  - essais : 0
+  - essais : 1
 
 - [ ] **T34** · Ré-imitation du meilleur professeur de T33 et remplacement de best/ · P1
   - but : `imitate.py --dagger 5` (avec bruit de T31 si validé) sur le nouveau professeur, éval 20 ép. laps 3 seed 0 et robustesse 100 ép. eps 0/0,05.
