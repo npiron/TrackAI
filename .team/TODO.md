@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T32** · Borne inférieure théorique du temps sur 3 tours · P1
+- [x] **T32** · Borne inférieure théorique du temps sur 3 tours · P1
   - but : script `scripts/lower_bound.py` : estimer le temps minimal atteignable sur la ligne centrale/ligne de course (profil de vitesse à partir de ACCEL, FRICTION, MAX_SPEED effectifs, courbure et limite d'adhérence mesurée par scénarios numériques dans la physique actuelle, sans la modifier), pour savoir s'il reste une marge au-delà de 15,90 s.
   - fini quand : `docs/BOUND_T32.md` chiffré (hypothèses, borne, écart avec 15,90 s) ; sortie identique sur 2 lancements ; recommandation explicite (continuer la recherche / plafond proche)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T33** · Recherche élargie du professeur (paramètres par secteur, redémarrages) · P1
   - but : étendre `scripts/search_heuristic.py` : vitesse cible par secteur de courbure (3 à 8 secteurs de la piste), plusieurs graines de redémarrage, budget ≤ 10 min ; vérifier 20/20 et audit (`audit_lap.py`: 0 hors piste, 0 mur, cp dans l'ordre).

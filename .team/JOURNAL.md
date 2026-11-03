@@ -450,3 +450,14 @@
 ## 2026-11-04 00:19 · reviewer · T31 validée
 
 - Relancé robust_eval sur best/ (100 ép.) : 100/100, 100/100 (18,63 s), 99/100 (19,20 s), identique au journal ; critères T31 atteints (eps 0 15,90 s). pytest hors e2e : 41 passed, 1 skipped. Diff limité à --dagger-eps (défaut = ancien comportement). Mes 3 entrées dupliquées retirées de metrics.json.
+
+## 2026-11-04 00:22 · worker · T32 Borne inférieure théorique
+- Fichiers : `scripts/lower_bound.py` (nouveau), `docs/BOUND_T32.md`.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/lower_bound.py --out docs/BOUND_T32.md` ×2 → `cmp` identique. Physique mesurée sur le vrai env.step (murs désactivés) : v terminale 22,5 px/frame, courbure max en régime établi kappa_max(v) (rayon 62 px à v=5, 384 px à v=23), freinage jusqu'à -0,6…-1,0/frame.
+- Résultat : la courbure ponctuelle donne une « borne » (21,1 s) supérieure au temps réel → invalide ; j'ai donc calibré la fenêtre de courbure sur la trajectoire réelle de l'heuristique (k=16 nœuds, 1,4 % de points encore en violation). Borne 3 tours : 13,96 s (ligne de course), 14,77 s (ligne centrale) ; sensibilité k=12…24 : 12,9-15,0 s. Écart avec 15,90 s : +1,94 s (intervalle 0,9-3,0 s).
+- Recommandation écrite dans le doc : continuer la recherche (T33), avec marge réelle plus faible que l'écart (borne optimiste, non rigoureuse).
+- Limites : borne modèle-dépendante (fenêtre calibrée), ligne de course = lissage borné par le couloir (pas optimum temps).
+
+## 2026-11-04 00:22 · reviewer · T32 validée
+
+- Relancé lower_bound.py : sortie identique (cmp) au doc ; borne 13,96 s, écart +1,94 s, recommandation explicite. Limite (non rigoureux) bien déclarée. pytest hors e2e : 41 passed, 1 skipped. Aucun changement hors sujet.
