@@ -6,33 +6,39 @@
 
 ## En cours / à faire
 
-- [x] **T29** · Audit de validité des tours rapides (coupe de virages) · P1
-  - but : script `scripts/audit_lap.py` : pour `best/` et l'heuristique, laps 3, `--static`, rapporter par tour : temps, vitesse moyenne/max, ordre des checkpoints franchis, distance min au bord de piste, nombre de frames hors piste/contact mur. Vérifier que 17,7 s n'exploite pas un défaut de comptage (checkpoints sautés, tour validé sans parcourir la piste).
-  - fini quand : `docs/AUDIT_T29.md` chiffré, verdict explicite (valide / faille + correctif proposé dans l'inbox si faille) ; sortie identique sur 2 lancements
+- [ ] **T31** · Robustesse au bruit : DAgger bruité · P1
+  - but : dans `scripts/imitate.py`, option pour injecter du bruit d'action (eps 0,05-0,1) pendant les tours DAgger (états de récupération, notamment le virage ~(181,510) après cp5), ré-entraîner depuis le professeur actuel (15,90 s), évaluer avec `robust_eval.py`.
+  - fini quand : nouveau modèle 20/20 à eps 0 avec temps ≤ 16,2 s ET finish_rate ≥ 99/100 à eps 0,05 et ≥ 95/100 à eps 0,1 (100 ép., seed 1000) dans `metrics.json` ; `best/` remplacé seulement si eps 0 temps ≤ 15,90 s ou robustesse nettement meilleure avec écart de temps ≤ 0,3 s (décision justifiée dans le journal) ; sinon table des essais
   - dépend de : rien
-  - essais : 1
+  - essais : 0
 
-- [x] **T30** · Réduire encore le temps : optimisation de l'heuristique par recherche · P1
-  - but : étendre `scripts/sweep_heuristic.py` (recherche aléatoire / hill-climbing, éventuellement paramètres par secteur de courbure) pour passer sous 17,74 s en gardant 20/20, puis ré-imitation (`imitate.py --dagger 5`) du nouveau professeur. ≤ 10 min de calcul par lancement.
-  - fini quand : heuristique améliorée dans `metrics.json` (20/20, temps < 17,74) ; si modèle BC évalué 20/20 et plus rapide que best/, `best/` remplacé ; sinon table prouvant le plafond
-  - dépend de : T29 (verdict valide)
-  - essais : 1
-
-- [x] **T27** · Affinage PPO 3 tours depuis le BC, sous pression de temps · P2
-  - but : tester `rl_train_ppo.py --load` sur `ppo_t24_bc.zip` (ou le best de T26) avec `--laps 3`, LR faible, récompense de vitesse/temps renforcée (config, pas physique ; vérifier que `rewards_config.json` ne masque pas les clés), ≤ 10 min. Surveiller l'effondrement : checkpoint à mi-parcours évalué.
-  - fini quand : éval 20 ép. laps 3 seed 0 dans `metrics.json` ; compatibilité `--load` du zip BC confirmée ou corrigée ; `best/` mis à jour seulement si 20/20 et temps plus bas
-  - dépend de : rien (T26 utile mais non bloquant)
-  - essais : 1
-
-- [x] **T28** · Robustesse du meilleur modèle · P1
-  - but : évaluer `best/` sur 100 épisodes avec seeds différents (`--static`, laps 3) et avec petit bruit d'action (eps 0,05) pour vérifier que 20/20 n'est pas un artefact de déterminisme ; rapport `docs/ROBUST_T28.md`.
-  - fini quand : taux de finish chiffré dans le doc et une entrée `metrics.json` ; si < 100 %, cause principale identifiée (virage/checkpoint)
+- [ ] **T32** · Borne inférieure théorique du temps sur 3 tours · P1
+  - but : script `scripts/lower_bound.py` : estimer le temps minimal atteignable sur la ligne centrale/ligne de course (profil de vitesse à partir de ACCEL, FRICTION, MAX_SPEED effectifs, courbure et limite d'adhérence mesurée par scénarios numériques dans la physique actuelle, sans la modifier), pour savoir s'il reste une marge au-delà de 15,90 s.
+  - fini quand : `docs/BOUND_T32.md` chiffré (hypothèses, borne, écart avec 15,90 s) ; sortie identique sur 2 lancements ; recommandation explicite (continuer la recherche / plafond proche)
   - dépend de : rien
-  - essais : 1
+  - essais : 0
+
+- [ ] **T33** · Recherche élargie du professeur (paramètres par secteur, redémarrages) · P1
+  - but : étendre `scripts/search_heuristic.py` : vitesse cible par secteur de courbure (3 à 8 secteurs de la piste), plusieurs graines de redémarrage, budget ≤ 10 min ; vérifier 20/20 et audit (`audit_lap.py`: 0 hors piste, 0 mur, cp dans l'ordre).
+  - fini quand : heuristique < 15,90 s, 20/20, audit propre, entrée `metrics.json` ; sinon table prouvant le plafond (≥ 3 redémarrages)
+  - dépend de : rien (T32 oriente l'effort)
+  - essais : 0
+
+- [ ] **T34** · Ré-imitation du meilleur professeur de T33 et remplacement de best/ · P1
+  - but : `imitate.py --dagger 5` (avec bruit de T31 si validé) sur le nouveau professeur, éval 20 ép. laps 3 seed 0 et robustesse 100 ép. eps 0/0,05.
+  - fini quand : modèle 20/20 plus rapide que 15,90 s dans `metrics.json` et `best/` remplacé ; sinon constat que T33 n'a rien produit (tâche close)
+  - dépend de : T33 (amélioration trouvée)
+  - essais : 0
+
+- [ ] **T35** · Clôture documentaire de l'état du meilleur modèle · P2
+  - but : `docs/BEST_STATUS.md` : modèle, commande de reproduction (imitate + eval), mesures (20 ép., 100 ép. bruités, audit), limites (spline, piste fixe, PPO dégrade), et rappel de l'action humaine `human_lap.py`.
+  - fini quand : le testeur reproduit la mesure 15,90 s (ou le meilleur courant) avec les commandes du doc
+  - dépend de : rien
+  - essais : 0
 
 > Action humaine (non assignable) : jouer `python scripts/human_lap.py --laps 3` pour créer `data/human_best.json` ; sans lui le critère vitesse n'est pas évaluable (le banc affiche `human_best_total: null`).
 > Anciens modèles de `data/models/production` invalides.
 
 ## Terminées
 
-T1, T2, T3, T7-T15, T16-T20 (T19/T20 : finish_rate 0), T21 (diagnostic), T22 (heuristique 20/20, 45,5 s), T23 (PPO corrigé, cp 2, échec), T24 (BC : 20/20, 41,7 s, best/), T25 (heuristique 20/20, 17,94 s), T26 (BC+DAgger 20/20, 17,74 s, best/).
+T1, T2, T3, T7-T15, T16-T20 (T19/T20 : finish_rate 0), T21 (diagnostic), T22 (heuristique 20/20, 45,5 s), T23 (PPO corrigé, cp 2, échec), T24 (BC : 20/20, 41,7 s, best/), T25 (heuristique 20/20, 17,94 s), T26 (BC+DAgger 20/20, 17,74 s), T27 (PPO affinage : 17,48 s, dégrade vs BC), T28 (robustesse : 100/100 eps 0, 97 % eps 0,05, 91 % eps 0,1), T29 (audit valide), T30 (heuristique 15,90 s, BC 15,90 s, best/).

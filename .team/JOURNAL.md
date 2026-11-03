@@ -430,3 +430,12 @@
 ## 2026-11-04 00:11 · reviewer · T27 validée
 
 - Relancé éval ppo_t27_final.zip (20 ép., laps 3) : 20/20, 17,48 s, identique au journal. Diff limité à --rewards, LR au --load, save_vecnormalize, env TRACKAI_REWARDS_CONFIG. pytest hors e2e : 41 passed, 1 skipped. best/ non modifié (cohérent : PPO dégrade vs BC 15,90 s). Entrée dupliquée de ma ré-éval retirée de metrics.json.
+
+## 2026-11-04 00:11 · worker · Aucune tâche
+
+- T27-T30 toutes [x], aucune [ ] ni [-]. REPLAN créé. Rappel : data/human_best.json absent (action humaine).
+
+## 2026-11-04 00:11 · planner · Replanification
+
+- T27-T30 rangées en Terminées. Mesure : best/ 15,90 s, 20/20 ; PPO affiné 17,48 s (pas de gain). GOAL : statut mis à jour, pas de GOAL_REACHED (temps humain absent, action de Nicolas : `python scripts/human_lap.py --laps 3`).
+- Nouvelles tâches : T31 DAgger bruité (robustesse), T32 borne inférieure théorique, T33 recherche élargie, T34 ré-imitation, T35 doc d'état. Inbox vide. REPLAN supprimé.
