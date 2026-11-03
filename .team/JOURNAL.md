@@ -439,3 +439,14 @@
 
 - T27-T30 rangées en Terminées. Mesure : best/ 15,90 s, 20/20 ; PPO affiné 17,48 s (pas de gain). GOAL : statut mis à jour, pas de GOAL_REACHED (temps humain absent, action de Nicolas : `python scripts/human_lap.py --laps 3`).
 - Nouvelles tâches : T31 DAgger bruité (robustesse), T32 borne inférieure théorique, T33 recherche élargie, T34 ré-imitation, T35 doc d'état. Inbox vide. REPLAN supprimé.
+
+## 2026-11-04 00:18 · worker · T31 DAgger bruité
+- Fichiers : `scripts/imitate.py` (option `--dagger-eps`, niveaux de bruit alternés par épisode, défaut 0 0.05 = ancien comportement), `docs/ROBUST_T31.md`, `.team/metrics.json` (4 entrées), `data/models/best/` remplacé (gitignoré ; ancien t30 copié dans /tmp/best_t30*).
+- Entraînement (4 min 11 s) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --dagger 5 --dagger-episodes 30 --dagger-eps 0 0.05 0.1 --epochs 40 --out data/checkpoints/ppo_t31a` (179 561 échantillons, précision 0,991). Premier essai, une seule configuration.
+- eval.py 20 ép. laps 3 seed 0 : 20/20, 15,90 s. robust_eval 100 ép. seed 1000 : eps 0 → 100/100, 15,9 s ; eps 0,05 → 100/100 (18,63 s moy, pire 22,22) ; eps 0,1 → 99/100 (19,20 s, pire 23,22). Avant (T30/T28) : 100, 97, 91.
+- Décision best/ : temps eps 0 identique (15,90 s, pas plus rapide) mais robustesse nettement meilleure (écart 0 s ≤ 0,3 s) → remplacé ; best/ réévalué : 20/20, 15,90 s. pytest hors e2e : 41 passed, 1 skipped.
+- Limites : piste fixe, bruit uniforme ; 1 seule graine d'entraînement ; temps bruités un peu plus lents (inévitable). Effet de bord : replays/personal_best.json réécrit par l'env.
+
+## 2026-11-04 00:19 · reviewer · T31 validée
+
+- Relancé robust_eval sur best/ (100 ép.) : 100/100, 100/100 (18,63 s), 99/100 (19,20 s), identique au journal ; critères T31 atteints (eps 0 15,90 s). pytest hors e2e : 41 passed, 1 skipped. Diff limité à --dagger-eps (défaut = ancien comportement). Mes 3 entrées dupliquées retirées de metrics.json.

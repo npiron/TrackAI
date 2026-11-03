@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T31** · Robustesse au bruit : DAgger bruité · P1
+- [?] **T31** · Robustesse au bruit : DAgger bruité · P1
   - but : dans `scripts/imitate.py`, option pour injecter du bruit d'action (eps 0,05-0,1) pendant les tours DAgger (états de récupération, notamment le virage ~(181,510) après cp5), ré-entraîner depuis le professeur actuel (15,90 s), évaluer avec `robust_eval.py`.
   - fini quand : nouveau modèle 20/20 à eps 0 avec temps ≤ 16,2 s ET finish_rate ≥ 99/100 à eps 0,05 et ≥ 95/100 à eps 0,1 (100 ép., seed 1000) dans `metrics.json` ; `best/` remplacé seulement si eps 0 temps ≤ 15,90 s ou robustesse nettement meilleure avec écart de temps ≤ 0,3 s (décision justifiée dans le journal) ; sinon table des essais
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T32** · Borne inférieure théorique du temps sur 3 tours · P1
   - but : script `scripts/lower_bound.py` : estimer le temps minimal atteignable sur la ligne centrale/ligne de course (profil de vitesse à partir de ACCEL, FRICTION, MAX_SPEED effectifs, courbure et limite d'adhérence mesurée par scénarios numériques dans la physique actuelle, sans la modifier), pour savoir s'il reste une marge au-delà de 15,90 s.

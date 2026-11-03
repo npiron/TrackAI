@@ -85,6 +85,8 @@ def main(argv=None):
     p.add_argument("--epochs", type=int, default=30)
     p.add_argument("--dagger", type=int, default=0, help="tours de DAgger (la politique conduit)")
     p.add_argument("--dagger-episodes", type=int, default=20)
+    p.add_argument("--dagger-eps", type=float, nargs="+", default=[0.0, 0.05],
+                   help="niveaux de bruit d'action pendant DAgger (alternés par épisode)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
@@ -104,9 +106,9 @@ def main(argv=None):
     print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
     for r in range(a.dagger):
         pol = make_policy(model, venv)
-        # eps 0 et 0.05 en alternance : la politique apprise explore ses propres erreurs
+        # niveaux --dagger-eps en alternance (défaut 0 et 0.05) : la politique apprise explore ses propres erreurs
         O2, A2 = collect(a.dagger_episodes, a.laps, not a.static, a.seed + 1000 * (r + 1),
-                         eps_levels=(0.0, 0.05), policy=pol)
+                         eps_levels=tuple(a.dagger_eps), policy=pol)
         O, A = np.concatenate([O, O2]), np.concatenate([A, A2])
         On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
         loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed + r + 1)
