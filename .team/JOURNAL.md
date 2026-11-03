@@ -54,3 +54,7 @@
 - Deux lancements `--model random --episodes 3 --seed 1` → résultats identiques (-2835.2134, 1.0 cp, 0 succès), égal au journal worker.
 - pytest hors e2e : 21 passed, 1 skipped.
 - Note : chemin « modèle » non testé (pas de modèle) ; à couvrir quand T4 produira un modèle.
+
+## 2026-11-03 21:58 · boucle · Fin
+
+- Session terminée après 2 itération(s), 2 tâche(s) validée(s) au total.
