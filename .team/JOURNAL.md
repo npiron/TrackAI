@@ -215,3 +215,10 @@
 ## 2026-11-03 22:30 · boucle · Fin
 
 - Session terminée après 10 itération(s), 5 tâche(s) validée(s) au total.
+
+## 2026-11-03 22:33 · humain · Physique : frein moteur
+
+- Demande de Nicolas : la voiture glissait trop quand on lâche l'accélérateur.
+- Ajout de `COAST_FRICTION = 0.975` (src/core/constants.py), appliqué dans `env.step` quand `accel == 0`. `FRICTION = 0.992` reste appliqué en accélération, donc la vitesse terminale ne change pas.
+- Effet : la vitesse tombe de moitié en 0,56 s au lieu de 1,74 s. Tests rapides : 27 passed, 1 skipped.
+- À prendre en compte : les mesures physiques et d'éval antérieures ont été faites avec l'ancien comportement.

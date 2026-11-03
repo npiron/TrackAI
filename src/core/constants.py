@@ -10,6 +10,7 @@ MAX_SPEED = 23.0  # ~ vitesse terminale ACCEL*FRICTION/(1-FRICTION)=22.32 (cf. d
 ACCEL = 0.18        # Reduced for smoother acceleration
 BRAKE = 0.5
 FRICTION = 0.992
+COAST_FRICTION = 0.975  # frein moteur quand on lâche l'accélérateur (0.992 = effet glace)
 TURN_SPEED = 0.08
 LATERAL_GRIP = 0.2  # Increased for better grip (less drift)
 COLLISION_SPEED_LOSS = 0.9

@@ -78,8 +78,8 @@ class TimeAttackEnv:
         if brake > 0:
             self.car.speed -= brake * BRAKE
             
-        # Friction / Drag (air resistance)
-        self.car.speed *= FRICTION
+        # Friction / Drag (air resistance), plus frein moteur sans accélération
+        self.car.speed *= FRICTION if accel > 0 else COAST_FRICTION
         
         # Cap speed
         self.car.speed = max(0.0, min(self.car.speed, MAX_SPEED))
