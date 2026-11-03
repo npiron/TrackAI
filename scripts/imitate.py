@@ -17,8 +17,11 @@ import numpy as np
 EPS_LEVELS = (0.0, 0.1, 0.2, 0.3)
 
 
-def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000):
-    """Renvoie (obs[N,14], actions[N]) ; l'étiquette est toujours l'action de l'heuristique."""
+def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None):
+    """Renvoie (obs[N,14], actions[N]) ; l'étiquette est toujours l'action de l'heuristique.
+
+    policy : fonction obs -> action ; si fournie, c'est elle qui conduit (DAgger), l'heuristique corrige.
+    """
     from src.rl.wrappers import GymTimeAttack
     from scripts.heuristic_lap import heuristic_action
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps)
@@ -33,6 +36,8 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
             a = heuristic_action(obs, env.ta)
             O.append(obs.copy())
             A.append(a)
+            if policy is not None:
+                a = int(policy(obs))
             if rng.rand() < eps:
                 a = int(rng.randint(env.action_space.n))
             obs, _, term, trunc, _ = env.step(a)
@@ -64,12 +69,22 @@ def behavior_clone(model, obs_n, acts, epochs, lr=1e-3, batch=256, seed=0):
     return float(loss), acc
 
 
+def make_policy(model, venv):
+    """Politique déterministe sur obs brute, normalisée avec les stats courantes de venv."""
+    def pol(obs):
+        o = np.clip((obs - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10)
+        return model.predict(o.astype(np.float32), deterministic=True)[0]
+    return pol
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--episodes", type=int, default=40)
     p.add_argument("--laps", type=int, default=1)
     p.add_argument("--static", action="store_true")
     p.add_argument("--epochs", type=int, default=30)
+    p.add_argument("--dagger", type=int, default=0, help="tours de DAgger (la politique conduit)")
+    p.add_argument("--dagger-episodes", type=int, default=20)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
@@ -87,6 +102,15 @@ def main(argv=None):
                 policy_kwargs=dict(net_arch=[dict(pi=[256, 256], vf=[256, 256])]))
     loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed)
     print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
+    for r in range(a.dagger):
+        pol = make_policy(model, venv)
+        # eps 0 et 0.05 en alternance : la politique apprise explore ses propres erreurs
+        O2, A2 = collect(a.dagger_episodes, a.laps, not a.static, a.seed + 1000 * (r + 1),
+                         eps_levels=(0.0, 0.05), policy=pol)
+        O, A = np.concatenate([O, O2]), np.concatenate([A, A2])
+        On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
+        loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed + r + 1)
+        print(f"DAgger {r + 1}: +{len(O2)} échantillons (total {len(O)}), perte {loss:.4f}, précision {acc:.3f}")
     model.save(a.out)
     venv.save(a.out + "_vecnormalize.pkl")
     print("sauvé", a.out + ".zip")

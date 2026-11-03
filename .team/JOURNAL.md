@@ -360,3 +360,15 @@
 ## 2026-11-03 23:39 · reviewer · T25 validée
 
 - Relancé heuristic_lap (static, laps 3, 20 ép., seed 0) : finish_rate 1.0, 17.94 s, identique à metrics.json. pytest hors e2e : 40 passed, 1 skipped. Diff limité aux constantes + sweep + doc. Réserve : coupe possible des virages non mesurée (inbox).
+
+## 2026-11-03 23:43 · worker · T26 Ré-imitation + DAgger
+- Fichiers : `scripts/imitate.py` (`collect(policy=...)`, `make_policy`, options `--dagger N`, `--dagger-episodes`), `tests/test_imitate.py` (+1 test), `.team/metrics.json` (2 entrées eval), `data/models/best/` remplacé (gitignoré).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --dagger 5 --dagger-episodes 20 --epochs 40 --out data/checkpoints/ppo_t26_bc` (2 min 20 s ; 40 épisodes bruités + 5 tours DAgger, 97 083 échantillons, précision finale 0.985).
+- Éval `scripts/eval.py --model data/checkpoints/ppo_t26_bc.zip --static --laps 3 --episodes 20 --seed 0` : finish_rate 1.0 (20/20), mean_total_time 17.74 s (heuristique 17.94 s ; t24 41.7 s). Même éval sur best/ : identique.
+- Essai précédent (2 tours DAgger, 40 ép.) : 0/20, 2 tours faits, 5 cp, arrêt à 912 steps (entrée metrics conservée) → 5 tours nécessaires.
+- pytest hors e2e : 41 passed, 1 skipped.
+- Limites : piste fixe, éval déterministe (voir T28) ; professeur utilise la spline.
+
+## 2026-11-03 23:44 · reviewer · T26 validée
+
+- Relancé eval t26_bc (static, laps 3, 20 ép., seed 0) : finish_rate 1.0, 17.74 s, identique à metrics.json (doublon retiré). pytest hors e2e : 41 passed, 1 skipped. Diff limité à imitate.py + test. Réserve : piste fixe, éval déterministe, professeur dépend de la spline.

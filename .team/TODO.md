@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T26** · Ré-imitation depuis l'heuristique rapide (+ DAgger léger) · P1
+- [x] **T26** · Ré-imitation depuis l'heuristique rapide (+ DAgger léger) · P1
   - but : étendre `scripts/imitate.py` : professeur = heuristique T25, données avec bruit, 1-2 tours de DAgger (la politique apprise conduit, l'heuristique corrige les actions), plus d'époques ; entraînement ≤ 5 min.
   - fini quand : modèle évalué `--static --laps 3 --episodes 20 --seed 0` : finish_rate 1.0 et mean_total_time < 41,7 (sinon entrée metrics + analyse chiffrée) ; `best/` remplacé seulement si 20/20 et plus rapide
   - dépend de : T25
-  - essais : 0
+  - essais : 1
 
 - [ ] **T27** · Affinage PPO 3 tours depuis le BC, sous pression de temps · P2
   - but : tester `rl_train_ppo.py --load` sur `ppo_t24_bc.zip` (ou le best de T26) avec `--laps 3`, LR faible, récompense de vitesse/temps renforcée (config, pas physique ; vérifier que `rewards_config.json` ne masque pas les clés), ≤ 10 min. Surveiller l'effondrement : checkpoint à mi-parcours évalué.
