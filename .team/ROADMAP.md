@@ -22,6 +22,10 @@ Heuristique 17,94 s et BC+DAgger 17,74 s (20/20, best/) : le temps a été divis
 
 T27-T30 faits : best/ = BC t30, 15,90 s, 20/20, audit valide, 100/100 (91-97 % avec bruit d'action). PPO n'améliore pas le BC (17,48 s). Suite : robustesse bruitée (T31), borne théorique (T32) pour savoir s'il reste de la marge, recherche élargie (T33) + ré-imitation (T34), doc (T35). Temps humain toujours absent : pas de GOAL_REACHED.
 
+## Point 00:45
+
+T31-T33 faits : best/ 15,90 s robuste (100/100, 100/99 % bruités) ; professeur T33 15,68 s (borne ≈ 13,96 s, marge faible). Premier essai T34 : 15,68 s mais fragile sous bruit (49/31 %) → pas de remplacement ; T36 refait l'imitation avec DAgger bruité, T37 cherche un professeur robuste. Temps humain toujours absent : pas de GOAL_REACHED.
+
 ## Ancien objectif (clos, 2026-11-03 22:30) : physique/gameplay : vérifier gameplay/physique, simulation réaliste
 
 Priorité absolue sur l'ancien plan RL (jalons 0-1 mis en pause : T3-T6 reportées, sauf T3 random qui sert de test de bon sens). Contrainte : aucune capture d'écran ; tout se vérifie par scénarios numériques headless.
@@ -58,3 +62,4 @@ Un agent RL qui boucle proprement les circuits du clone Trackmania, avec des pro
 - 2026-11-03 23:35 : PPO brut abandonné comme voie principale (T19/T20/T23 : 0 tour) ; l'imitation (T24) donne la fiabilité. Phase vitesse T25-T28. Pas de GOAL_REACHED tant que le temps humain manque.
 - 2026-11-03 23:47 : T25/T26 validées (17,74 s). Priorité à la validité des mesures (T29, T28) avant l'optimisation (T30). Pas de GOAL_REACHED : temps humain manquant.
 - 2026-11-04 00:11 : PPO relégué (T27 dégrade). Effort sur le professeur (T32-T34) et la robustesse (T31) ; best/ remplacé seulement sur mesure.
+- 2026-11-04 00:45 : un gain de temps ne remplace best/ que si la robustesse bruitée de T31 est conservée (T34 → T36/T37).

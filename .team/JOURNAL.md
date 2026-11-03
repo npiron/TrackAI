@@ -471,3 +471,11 @@
 ## 2026-11-04 00:33 · reviewer · T33 validée
 
 - Relancé heuristic_lap (20 ép., laps 3) : 20/20, 15,68 s (< 15,90) ; audit_lap : 8 cp dans l ordre, 0 hors piste, 0 mur. pytest hors e2e : 41 passed, 1 skipped. Diff limité à search_heuristic/heuristic_lap. Ma entrée dupliquée retirée de metrics.json. Réserve : gain de 0,22 s, surapprentissage piste fixe (déclaré).
+
+## 2026-11-04 00:43 · boucle · Démarrage
+
+- Session de 15 itérations sur `team/main`.
+
+## 2026-11-04 00:44 · planner · Replanification
+
+- T34 en cours : mesure partielle 15,68 s mais robustesse 49 %/31 % (bruit) vs 100/99 % pour best/ ; règle de remplacement de best/ précisée. Ajout T36 (ré-imitation avec DAgger bruité) et T37 (professeur robuste au bruit). Inbox vide. GOAL : statut inchangé (temps humain absent), pas de GOAL_REACHED. REPLAN absent.
