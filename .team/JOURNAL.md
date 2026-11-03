@@ -419,3 +419,14 @@
 ## 2026-11-04 00:04 · reviewer · T28 validée
 
 - Relancé robust_eval (100 ép., eps 0/0,05/0,1) : 100/100, 97/100 (18,59 s), 91/100 (19,94 s), identique au journal. Cause (virage ~181,510 après cp5) cohérente avec le doc. pytest hors e2e : 41 passed, 1 skipped. Mes 3 entrées dupliquées dans metrics.json retirées.
+
+## 2026-11-04 00:10 · worker · T27 Affinage PPO 3 tours depuis le BC
+- Fichiers : `rl_train_ppo.py` (`--rewards` ; `--lr` désormais appliqué au `--load` via custom_objects, sinon ignoré ; checkpoints avec `save_vecnormalize`), `src/rl/wrappers.py` (env `TRACKAI_REWARDS_CONFIG` remplace le chemin de rewards_config.json, sans toucher le fichier tracké), `data/rewards_t27.json` (speed_weight 0.3→1.0, time_bonus 300→600 ; rewards_config.json ne masque rien car les clés y sont explicitement remplacées), `.team/metrics.json` (2 entrées).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python rl_train_ppo.py --static --laps 3 --steps 150000 --lr 3e-5 --load data/checkpoints/ppo_t30_bc.zip --rewards data/rewards_t27.json --run-id t27` (5 min 24 s). Compatibilité `--load` du zip BC + stats VecNormalize confirmée (log « Model loaded »).
+- Éval 20 ép. laps 3 seed 0 : checkpoint 80k steps → 20/20, 18,30 s ; final 150k → 20/20, 17,48 s. Pas d'effondrement, mais la base BC t30 fait 15,90 s : PPO dégrade (-1,6 s). best/ NON modifié.
+- pytest hors e2e : voir sortie ci-dessus du lancement (41 attendus).
+- Limites : un seul run, 150k steps, LR 3e-5 ; pas de gain, plafond non prouvé. Eval sur le zip de mi-parcours nécessite de copier le .pkl vecnormalize vers <zip>_vecnormalize.pkl.
+
+## 2026-11-04 00:11 · reviewer · T27 validée
+
+- Relancé éval ppo_t27_final.zip (20 ép., laps 3) : 20/20, 17,48 s, identique au journal. Diff limité à --rewards, LR au --load, save_vecnormalize, env TRACKAI_REWARDS_CONFIG. pytest hors e2e : 41 passed, 1 skipped. best/ non modifié (cohérent : PPO dégrade vs BC 15,90 s). Entrée dupliquée de ma ré-éval retirée de metrics.json.

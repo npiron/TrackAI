@@ -50,7 +50,7 @@ class GymTimeAttack(gym.Env):
         self.font = None
         
         # Configurable Rewards
-        self.config_path = "rewards_config.json"
+        self.config_path = os.environ.get("TRACKAI_REWARDS_CONFIG", "rewards_config.json")
         
         # Try to find process-specific config first
         self.pid = os.getpid()

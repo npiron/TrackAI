@@ -18,11 +18,11 @@
   - dépend de : T29 (verdict valide)
   - essais : 1
 
-- [ ] **T27** · Affinage PPO 3 tours depuis le BC, sous pression de temps · P2
+- [x] **T27** · Affinage PPO 3 tours depuis le BC, sous pression de temps · P2
   - but : tester `rl_train_ppo.py --load` sur `ppo_t24_bc.zip` (ou le best de T26) avec `--laps 3`, LR faible, récompense de vitesse/temps renforcée (config, pas physique ; vérifier que `rewards_config.json` ne masque pas les clés), ≤ 10 min. Surveiller l'effondrement : checkpoint à mi-parcours évalué.
   - fini quand : éval 20 ép. laps 3 seed 0 dans `metrics.json` ; compatibilité `--load` du zip BC confirmée ou corrigée ; `best/` mis à jour seulement si 20/20 et temps plus bas
   - dépend de : rien (T26 utile mais non bloquant)
-  - essais : 0
+  - essais : 1
 
 - [x] **T28** · Robustesse du meilleur modèle · P1
   - but : évaluer `best/` sur 100 épisodes avec seeds différents (`--static`, laps 3) et avec petit bruit d'action (eps 0,05) pour vérifier que 20/20 n'est pas un artefact de déterminisme ; rapport `docs/ROBUST_T28.md`.

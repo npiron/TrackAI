@@ -39,7 +39,10 @@ def main():
     parser.add_argument("--static", action="store_true", help="Disable procedural generation (use fixed track)")
     parser.add_argument("--curriculum", action="store_true", help="Enable curriculum learning (progressive difficulty)")
     parser.add_argument("--laps", type=int, default=1, help="Nombre de tours par épisode")
+    parser.add_argument("--rewards", type=str, default=None, help="Fichier JSON de récompenses (remplace rewards_config.json, hérité par les sous-processus)")
     args = parser.parse_args()
+    if args.rewards:
+        os.environ["TRACKAI_REWARDS_CONFIG"] = args.rewards
     
     # NOW load the heavy stuff (only when actually training)
     print("⏳ Loading Pytorch (~1s)...")
@@ -126,6 +129,7 @@ def main():
         save_freq=max(1000, 20000 // n_cpu),  # More frequent than DQN
         save_path="./data/checkpoints/",
         name_prefix=f"ppo_{args.run_id}",
+        save_vecnormalize=True,
         verbose=1
     )
     
@@ -227,7 +231,9 @@ def main():
             args.load,
             env=venv,
             device=device,
-            print_system_info=True
+            print_system_info=True,
+            # PPO.load garde sinon le LR sauvegardé : on applique --lr (constant)
+            custom_objects={"learning_rate": args.lr, "lr_schedule": (lambda _: args.lr)},
         )
         print("✅ Model loaded successfully. Resuming training...")
     else:
