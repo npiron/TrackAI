@@ -6,29 +6,37 @@
 
 ## En cours / à faire
 
-- [ ] **T3** · Mesurer la référence · P1
-  - but : entrée `random` dans `metrics.json`, et DQN si un modèle existe
-  - fini quand : les chiffres sont dans `metrics.json` et commentés dans le journal
+- [ ] **T7** · Banc physique `scripts/physics_check.py` : mouvement longitudinal · P1
+  - but : script headless (SDL_VIDEODRIVER=dummy) qui crée l'env sur une piste fixe (non procédurale, ou graine fixe) et mesure : vitesse terminale en pleine accélération (valeur vs MAX_SPEED), temps 0→90 % de vitesse, distance de freinage depuis vitesse max, décélération en roue libre ; affiche un JSON et ajoute une entrée `physics_check` à `metrics.json` (`--metrics` pour changer)
+  - fini quand : commande lancée 2× donne le même JSON ; chiffres commentés dans le journal (en m/s-équivalents px/frame et px/s) ; test pytest `tests/test_physics.py` minimal
   - dépend de : T2
   - essais : 0
 
-- [ ] **T4** · Smoke test PPO 5k steps · P2
-  - but : `rl_train_ppo.py` (ou équivalent) lance 5 000 steps en headless (`SDL_VIDEODRIVER=dummy`) et sauvegarde un modèle dans un dossier ignoré par git
-  - fini quand : la commande exacte et le chemin du modèle sont dans le journal, code de sortie 0, durée < 10 min
-  - dépend de : T1
+- [ ] **T8** · Banc physique : virage et adhérence · P1
+  - but : étendre le script : rayon de virage à braquage plein à vitesses 5/15/22, angle de dérive (heading vs vel) en régime établi, temps de réaction du volant (STEER_SPEED), absence de glissement irréaliste ; vérifie aussi que actions hors bornes (steer=5, accel=-1) ne cassent pas la physique
+  - fini quand : valeurs dans le JSON + journal ; chaque scénario a un seuil « réaliste » écrit dans le script et un statut pass/fail
+  - dépend de : T7
   - essais : 0
 
-- [ ] **T5** · Évaluer le modèle du smoke PPO sur le banc · P2
-  - but : `scripts/eval.py --model <modèle T4> --episodes 5 --seed 1` valide le chemin « modèle » (VecNormalize inclus) ; ajouter un test unitaire léger (modèle minuscule 64 steps généré dans tmp_path)
-  - fini quand : entrée `ppo_smoke_5k` dans `metrics.json`, test pytest passe, chiffres comparés à `random` dans le journal
-  - dépend de : T3, T4
+- [ ] **T9** · Banc physique : murs, boost, checkpoints, arrivée · P1
+  - but : scénarios : voiture lancée perpendiculairement/en biais contre un mur (reste dans la piste, jamais de téléportation, `speed` cohérent avec `|vel|` après choc), traversée de boost (vitesse plafonnée), checkpoints dans l'ordre et pas de saut, finish uniquement après tous les checkpoints, départ à vitesse 0 ; reproductibilité à graine égale
+  - fini quand : scénarios dans le JSON avec pass/fail ; les échecs sont listés dans le journal comme « écarts de réalisme » numérotés
+  - dépend de : T7
   - essais : 0
 
-- [ ] **T6** · Entraînement PPO 50k steps (jalon 1) · P2
-  - but : lancer `rl_train_ppo.py --steps 50000` headless en arrière-plan avec log, modèle dans dossier ignoré par git ; durée mesurée
-  - fini quand : modèle sauvegardé, commande + durée dans le journal, éval 10 épisodes seed 1 ajoutée à `metrics.json` (entrée `ppo_50k`)
-  - dépend de : T5
+- [ ] **T10** · Triage des écarts de réalisme · P2
+  - but : à partir des résultats T7-T9, lister dans `docs/PHYSICS.md` chaque écart (confirmé/infirmé) avec décision : corriger (ex. vitesse max inatteignable, désynchro speed/vel, marche arrière, dt) ou assumer comme choix arcade. Pas de changement de code
+  - fini quand : `docs/PHYSICS.md` créé, chaque écart a mesure + décision ; le planner convertira les « corriger » en tâches
+  - dépend de : T8, T9
   - essais : 0
+
+- [ ] **T3** · Mesurer la référence random (reporté, utile comme test de bon sens) · P3
+  - but : entrée `random` dans `metrics.json`
+  - fini quand : chiffres dans `metrics.json` et journal
+  - dépend de : T2
+  - essais : 0
+
+> Reportées (plan RL en pause) : T4 smoke PPO, T5 éval du modèle, T6 PPO 50k. À reprendre après correction de la physique, car changer la physique invalide les entraînements.
 
 ## Terminées
 

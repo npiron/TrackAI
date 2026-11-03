@@ -72,3 +72,17 @@
 ## 2026-11-03 22:06 · boucle · Fin
 
 - Session terminée après 1 itération(s), 0 tâche(s) validée(s) au total.
+
+## 2026-11-03 22:14 · boucle · Démarrage
+
+- Session de 10 itérations sur `team/main`.
+
+## 2026-11-03 22:14 · boucle · Objectif modifié
+
+- Nouvel objectif : verifier le gameplay et la physique du jeu, et avoir une simulation realiste 
+
+## 2026-11-03 22:15 · planner · Replanification
+
+- Objectif modifié (vérifier gameplay/physique, simulation réaliste, sans screenshot) : critère défini dans GOAL.md = banc `scripts/physics_check.py` avec scénarios déterministes + écarts corrigés ou documentés ; statut « en cours », aucune mesure.
+- Lecture de `env.step`/constants : suspicions (vitesse terminale ≈22 < MAX_SPEED 32, pas de dt, pas de marche arrière, désynchro speed/vel après mur, drift non stocké, actions non bornées). À confirmer par mesure, pas acquis.
+- Plan RL mis en pause (T4-T6 reportées : la physique peut changer et invaliderait les entraînements). Nouvelles tâches T7-T10 ; T3 gardée en P3. Inbox vide.
