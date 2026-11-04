@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T47** · Mesurer les chocs de `best/` T38 et du professeur heuristique (état de départ) · P1
+- [?] **T47** · Mesurer les chocs de `best/` T38 et du professeur heuristique (état de départ) · P1
   - but : baseline : combien de chocs par course pour best/ (eps 0) et pour `heuristic_lap` ; où (secteurs/checkpoints) ; entrée `metrics.json` + `docs/WALL_BASELINE.md`.
   - fini quand : doc avec chocs moyen/max/clean_rate sur 20 ép. (seed 0) pour les deux, et localisation des secteurs de choc ; entrées metrics.json
   - dépend de : T46
-  - essais : 0
+  - essais : 1
 
 - [ ] **T48** · Option `wall_fatal` et `wall_penalty` dans `GymTimeAttack` (défaut : désactivées) · P1
   - but : paramètres `wall_fatal=False`, `wall_penalty=0.0` (pénalité par choc, ajoutée à la récompense) ; si `wall_fatal`, le choc met `terminated=True`, `end_cause="wall_fatal"`, récompense -100 ; exposés en options de `imitate.py` et du script d'entraînement PPO. Défaut = comportement identique (hash T40 inchangé), physique intacte.

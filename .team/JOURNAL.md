@@ -597,3 +597,9 @@
 
 ## 2026-11-04 21:25 · reviewer · T46 validée
 - Diff relu (env, wrapper, eval, robust_eval, 2 tests). pytest hors e2e : 45 passed, 1 skipped. eval best/ laps 3 seed 0 20 ép. : 20/20, 15,80 s, mean_wall_hits 11,0, max 11, clean_rate 0,0 (identique au journal). Physique inchangée (compteurs seuls ; test de hash T40 passe).
+
+## 2026-11-04 21:26 · worker · T47 Baseline chocs murs
+- Fichiers : `scripts/wall_locate.py` (nouveau), `docs/WALL_BASELINE.md`, `.team/metrics.json` (entrée heuristique ; best/ déjà là via T46).
+- Commandes : `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` ; `wall_locate.py --model data/models/best/best.zip --static` ; idem `--model heuristic` (SDL_VIDEODRIVER=dummy).
+- Résultat : best/ et heuristique identiques : 20/20, 15,80 s, mean_wall_hits 11, max 11, clean_rate 0,0. Chocs par secteur (12) cumul 20 ép. : [0,0,0,20,60,60,0,40,0,0,0,40] (secteurs 3,4,5,7,11).
+- Limites : pas de choc, pas de contact ; effets de bord : replays/personal_best réécrits par l'env. Pas de pytest relancé (aucun code existant modifié).
