@@ -732,3 +732,14 @@
 ## 2026-11-04 23:20 · planner · Replanification
 - T43, T56-T59 rangées. Critère fiabilité toujours rempli (best/ T53b, 3 graines) ; vitesse ouverte (20,46 s ; professeur H=29 14,62 s ; t57 15,94 s mais 1 choc). GOAL_REACHED non créé : temps humain absent, vitesse non plafonnée.
 - Nouvelles tâches : T60 (réseau plus gros pour imiter H=29), T61 (professeur intermédiaire), T62 (robustesse H=29 + docs), T63 (bonus pistes aléatoires). Inbox vide, pas de REPLAN.
+
+## 2026-11-04 23:30 · worker · T60 Réseau plus gros pour imiter H=29 (échec, best/ non remplacé)
+- Fichier : `scripts/imitate.py` (+`--net-arch`, défaut 256 256 = ancien comportement, appliqué sans `--init`). Physique/env intacts.
+- Commandes (SDL_VIDEODRIVER=dummy, `imitate.py --static --laps 3 --wall-penalty -50`, éval `eval.py --static --laps 3 --episodes 20 --seed 0`) :
+  - t60 : depuis zéro, `--net-arch 256 256 256 --episodes 12 --dagger 12 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 10 --lr 5e-4 --seed 1200` (2 min 53, 92k éch., précision finale 0,929) → 20/20, **15,90 s, 1 choc/course**.
+  - t60b : `--init t60 --dagger 20 --dagger-eps 0 0.05 --epochs 8 --lr 2e-4 --seed 1300` (précision 0,91) → 20/20, 16,32 s, 1 choc.
+  - t60c : `--init t60 --dagger 12 --dagger-eps 0 --epochs 30 --lr 3e-4 --seed 1400` (précision 0,997) → 20/20, 18,22 s, 4 chocs.
+- Verdict : critère (0 choc, < 20,46 s) non atteint ; best/ T53b conservé. Le réseau 3×256 depuis zéro donne 15,90 s (≈ t57) mais toujours 1 choc ; plus de précision BC (0,997) n'a pas aidé (surapprentissage sur trajectoires eps 0, 4 chocs). Le goulot n'est donc pas que la précision du MLP. Pas d'entrée robust_eval. Pas de pytest relancé (seule option CLI ajoutée). Checkpoints : data/checkpoints/ppo_t60{,b,c}.
+
+## 2026-11-04 23:31 · reviewer · T60 validée
+- Relancé eval t60 static laps 3 20 ép. seed 0 : 20/20, 15,90 s, 1 choc (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff code = option --net-arch (défaut inchangé). best/ non remplacé, verdict négatif honnête. t60b/t60c non relancés. Mon éval a ajouté une entrée metrics.json.

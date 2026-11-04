@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T60** · Imiter le professeur H=29 (14,62 s, 0 choc) avec un réseau plus gros · P1
+- [x] **T60** · Imiter le professeur H=29 (14,62 s, 0 choc) avec un réseau plus gros · P1
   - but : t57 (15,94 s, 1 choc) a échoué par précision du MLP (0,84-0,97). Ajouter une option `--net-arch` (ex. 256 256 ou 256 256 256) à `imitate.py` (sans toucher à la physique ni à l'env), puis DAgger depuis zéro ou depuis best/ avec professeur H=29, `--wall-penalty -50`, eps 0 puis 0,05, ≤ 10 min (checkpoint repris si besoin).
   - fini quand : eval.py 20 ép. laps 3 seed 0 dans metrics.json ; si 20/20, 0 choc et < 20,46 s → remplace best/ (ancien copié dans `data/models/best_t53b/`, best.json mis à jour) ; sinon verdict chiffré (finis, chocs, temps, précision BC)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T61** · Professeur intermédiaire plus facile à imiter (H=30 à 32 déjà testés ; viser 16-18 s à 0 choc) + imitation · P1
   - but : si T60 échoue ou en parallèle, choisir un H dont la politique est plus lisse (balayage 5 ép. puis 20 ép.) et imiter depuis best/ T53b ; gain visé entre 17 et 20 s à 0 choc.

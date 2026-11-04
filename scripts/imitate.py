@@ -93,6 +93,8 @@ def main(argv=None):
     p.add_argument("--init", default=None, help="modèle .zip de départ (poids + <nom>_vecnormalize.pkl) ; "
                    "la 1re collecte est alors conduite par ce modèle, étiquetée par le professeur")
     p.add_argument("--lr", type=float, default=1e-3, help="taux d'apprentissage du BC")
+    p.add_argument("--net-arch", type=int, nargs="+", default=[256, 256],
+                   help="couches cachées du MLP (sans --init), ex. 256 256 256")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
     from stable_baselines3 import PPO
@@ -128,7 +130,7 @@ def main(argv=None):
         venv.obs_rms.mean, venv.obs_rms.var, venv.obs_rms.count = O.mean(0).astype(np.float64), O.var(0).astype(np.float64) + 1e-8, len(O)
         On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
         model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed,
-                    policy_kwargs=dict(net_arch=[dict(pi=[256, 256], vf=[256, 256])]))
+                    policy_kwargs=dict(net_arch=[dict(pi=list(a.net_arch), vf=list(a.net_arch))]))
         loss, acc = behavior_clone(model, On, A, a.epochs, lr=a.lr, seed=a.seed)
         print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
     for r in range(a.dagger):
