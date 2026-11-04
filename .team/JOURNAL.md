@@ -779,3 +779,7 @@
 
 ## 2026-11-04 23:47 · reviewer · T63 validée
 - Relancé eval t63 20 ép. seed 0 : no-static 18/20, 18,87 s, 8,65 chocs ; static 20/20, 20,52 s, 6 chocs (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, best/ non remplacé (critère statique perdu), verdict honnête. Mes évals ont ajouté des entrées metrics.json.
+
+## 2026-11-04 23:47 · planner · Replanification
+- T60-T63 rangées (échecs documentés, best/ T53b inchangé : 20/20, 0 choc, 20,46 s). Critère fiabilité rempli, vitesse ouverte, temps humain absent : pas de GOAL_REACHED.
+- Constat : agents rapides (15,9-16 s) gardent 1 choc ; précision BC non en cause. Nouvelles tâches : T64 diagnostic des chocs, T65 DAgger ciblé, T66 départ de zéro avec professeurs H=30/34, T67 entraînement mixte (bonus). Si T65-T66 échouent, clore la phase vitesse. Inbox vide, pas de REPLAN.

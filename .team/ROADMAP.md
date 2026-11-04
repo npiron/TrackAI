@@ -37,7 +37,11 @@ T38-T41 faits : best/ = T38, 15,80 s, 100/100 à eps 0/0,05/0,1. T39 : plafond d
 ### Point 23:20
 T56-T59 et T43 faits. best/ T53b reste (20,46 s, 0 choc, 3 graines). Professeur H=29 : 14,62 s à 0 choc, mais imiter à 0 choc échoue (t57 : 15,94 s/1 choc) : goulot = précision du MLP. Suite : T60 réseau plus gros, T61 professeur intermédiaire, T62 robustesse/docs, T63 bonus pistes aléatoires. Pas de GOAL_REACHED : vitesse ouverte, temps humain absent.
 
+### Point 23:47
+T60-T63 faits : aucun agent ne bat best/ T53b (20,46 s, 0 choc). Les agents rapides (15,9-16 s) gardent 1 choc ; plus de précision BC n'aide pas (t60c). Professeur H=29 fragile au bruit (65/100). T63 : gain sur pistes aléatoires (18,87 s, 8,65 chocs) mais static régresse. Suite : diagnostic des chocs (T64), DAgger ciblé (T65), départ de zéro avec professeurs H=30/34 (T66), entraînement mixte (T67). Si T65-T66 échouent, clore la phase vitesse : best/ T53b reste la réponse, temps humain en attente.
+
 ## Décisions
+- 2026-11-04 23:47 : on cible le lieu des chocs plutôt que la capacité du réseau (t60c l'a écartée).
 - 2026-11-04 23:20 : le goulot est la capacité/précision de l'imitateur, pas le professeur ; on teste la capacité (T60) avant de changer encore le professeur.
 - 2026-11-04 01:40 : phase vitesse close (T39 plafond). Le critère vitesse attend `data/human_best.json` ; intermédiaire proposé : temps ≤ 15,80 s déjà tenu. Effort sur fiabilité/hygiène.
 - 2026-11-04 : le critère vitesse reste non évaluable sans `data/human_best.json` ; on continue à gagner du temps tant que robustesse ≥ T31, mais on plafonne l'effort (rendements décroissants) : si T38 et T39 échouent, clore la phase vitesse.
