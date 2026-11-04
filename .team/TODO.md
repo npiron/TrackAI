@@ -31,11 +31,11 @@
   - essais : 2
   - note planner 00:45 : mesure partielle ppo_t34 = 15,68 s mais robustesse 49 % (eps 0,05) / 31 % (eps 0,1) contre 100/99 % pour best/ (T31). Ne PAS remplacer best/ avec ce modèle ; best/ ne change que si temps < 15,90 s ET robustesse ≥ celle de T31 (≥ 99 % eps 0,05, ≥ 95 % eps 0,1). Sinon clore T34 et passer à T36.
 
-- [ ] **T36** · Ré-imitation du professeur 15,68 s avec DAgger bruité · P1
+- [?] **T36** · Ré-imitation du professeur 15,68 s avec DAgger bruité · P1
   - but : `imitate.py --static --laps 3 --dagger 5 --dagger-episodes 30 --dagger-eps 0 0.05 0.1 --epochs 40` (comme T31, qui a donné 100/99 %) sur le professeur T33 ; éventuellement plus d'itérations DAgger / bruit plus fort si la robustesse reste basse (≤ 2 essais de 10 min).
   - fini quand : modèle avec eps 0 20/20 < 15,90 s ET ≥ 99/100 à eps 0,05 et ≥ 95/100 à eps 0,1 (100 ép., seed 1000) dans `metrics.json`, `best/` remplacé ; sinon table des essais et best/ inchangé
   - dépend de : T34 (clos)
-  - essais : 0
+  - essais : 2
 
 - [ ] **T37** · Recherche du professeur robuste au bruit · P2
   - but : dans `search_heuristic.py`, option de score = moyenne du temps sous bruit d'action eps 0,05 (≥ 5 épisodes, finish obligatoire) pour trouver un professeur rapide ET tolérant (virage ~(181,510) à ralentir) ; budget ≤ 10 min.

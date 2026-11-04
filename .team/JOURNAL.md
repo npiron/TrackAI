@@ -489,3 +489,22 @@
 ## 2026-11-04 00:45 · reviewer · T34 validée (close sans remplacement de best/)
 
 - Relancé robust_eval sur ppo_t34 (100 ép., seed 1000) : eps 0 → 100/100 15,68 s ; eps 0,05 → 49/100 (18,31 s), identique au journal. pytest hors e2e : 41 passed, 1 skipped. Aucun code modifié ; best/ inchangé, conforme à la règle du planner (robustesse < T31). Mes entrées dupliquées de metrics.json retirées. Suite : T36/T37.
+
+## 2026-11-04 00:59 · worker · T36 Ré-imitation 15,68 s avec DAgger bruité (échec, best/ inchangé)
+- Fichiers : aucun code modifié ; `data/checkpoints/ppo_t36a.zip`, `ppo_t36b.zip`, entrées dans `.team/metrics.json` (robust_eval).
+- Essai a (4 min) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --dagger 5 --dagger-episodes 30 --dagger-eps 0 0.05 0.1 --epochs 40 --out data/checkpoints/ppo_t36a` (165 698 éch., précision 0,985).
+- Essai b (~6 min) : même commande avec `--dagger 7 --dagger-episodes 40 --dagger-eps 0 0.1 0.15 0.2`, `--out ppo_t36b` (276 965 éch., précision 0,987).
+- Mesure : `robust_eval.py --model <zip> --static --laps 3 --episodes 100 --seed 1000 --eps 0 0.05 0.1`
+
+| essai | eps 0 | eps 0,05 | eps 0,1 |
+|---|---|---|---|
+| T34 (réf.) | 100 %, 15,68 s | 49 % | 31 % |
+| t36a | 100 %, 15,68 s | 49 % | 31 % |
+| t36b | 100 %, 15,76 s | 39 % | 33 % |
+| best/ T31 (réf.) | 100 %, 15,90 s | 100 % | 99 % |
+
+- Constat : t36a redonne exactement les chiffres de T34 ; plus de bruit et d'itérations ne change rien. La fragilité vient donc probablement du professeur T33 (trajectoire agressive, virage ~(181,510) sans marge), pas du volume DAgger (hypothèse non testée directement). Critère non atteint, best/ inchangé. Suite : T37 (professeur robuste au bruit).
+
+## 2026-11-04 01:00 · reviewer · T36 validée (échec documenté, best/ inchangé)
+
+- Relancé robust_eval ppo_t36b (100 ép., seed 1000, eps 0,05) : 39/100, identique au journal. pytest hors e2e : 41 passed, 1 skipped. Aucun code modifié, best/ inchangé (robustesse < T31), table des essais fournie, 2 essais conformes. Mes mesures parasites retirées de metrics.json. Suite : T37.
