@@ -49,11 +49,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T38** · Ré-imiter le professeur T37 (15,80 s, robuste) · P1
+- [x] **T38** · Ré-imiter le professeur T37 (15,80 s, robuste) · P1
   - but : `imitate.py --static --laps 3 --dagger 5 --dagger-episodes 30 --dagger-eps 0 0.05 0.1 --epochs 40 --out data/checkpoints/ppo_t38` (professeur courant = T37), puis `robust_eval.py` 100 ép. seed 1000 eps 0/0,05/0,1 et `eval.py` 20 ép. seed 0.
   - fini quand : eps 0 20/20 avec temps < 15,90 s ET ≥ 99/100 à eps 0,05 et ≥ 95/100 à eps 0,1, entrées dans `metrics.json`, `best/` remplacé (avec mesure) ; sinon table de l'essai et best/ inchangé (≤ 2 essais)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T39** · Professeur plus rapide et robuste : recherche repartant de T37 · P1
   - but : `search_heuristic.py --start` (paramètres T37), contrainte `--t0-max 15.7`, score bruité eps 0,05, 8 secteurs, budget ≤ 10 min ; garder le meilleur seulement s'il tient les critères.
