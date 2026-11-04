@@ -49,6 +49,30 @@
   - dépend de : rien
   - essais : 1
 
+- [ ] **T38** · Ré-imiter le professeur T37 (15,80 s, robuste) · P1
+  - but : `imitate.py --static --laps 3 --dagger 5 --dagger-episodes 30 --dagger-eps 0 0.05 0.1 --epochs 40 --out data/checkpoints/ppo_t38` (professeur courant = T37), puis `robust_eval.py` 100 ép. seed 1000 eps 0/0,05/0,1 et `eval.py` 20 ép. seed 0.
+  - fini quand : eps 0 20/20 avec temps < 15,90 s ET ≥ 99/100 à eps 0,05 et ≥ 95/100 à eps 0,1, entrées dans `metrics.json`, `best/` remplacé (avec mesure) ; sinon table de l'essai et best/ inchangé (≤ 2 essais)
+  - dépend de : rien
+  - essais : 0
+
+- [ ] **T39** · Professeur plus rapide et robuste : recherche repartant de T37 · P1
+  - but : `search_heuristic.py --start` (paramètres T37), contrainte `--t0-max 15.7`, score bruité eps 0,05, 8 secteurs, budget ≤ 10 min ; garder le meilleur seulement s'il tient les critères.
+  - fini quand : heuristique eps 0 < 15,80 s, 20/20, audit propre (`audit_lap.py`), finish ≥ 95/100 à eps 0,05 (100 ép., seed 1000) dans `metrics.json` ; sinon table des essais prouvant le plafond (T37 conservé)
+  - dépend de : rien
+  - essais : 0
+
+- [ ] **T40** · Non-régression 1 tour / multi-tours · P2
+  - but : test pytest (ou vérif scriptée) montrant que `laps=1` (défaut) donne les mêmes observations/récompenses/terminaisons qu'avant l'ajout multi-tours (comparaison à une trajectoire de référence ou au comportement `laps` omis) et que `laps=3` termine après 3 franchissements ordonnés.
+  - fini quand : test ajouté, pytest hors e2e vert, test lancé 2 fois identique
+  - dépend de : rien
+  - essais : 0
+
+- [ ] **T41** · Rapport de décision sur le critère vitesse · P2
+  - but : `docs/SPEED_STATUS.md` : trajectoire du temps (45,5 → 15,90 s), borne T32 (13,96 s), marge restante, estimation du coût/bénéfice de continuer, et ce qu'il faut de Nicolas (`human_lap.py --laps 3`) pour conclure.
+  - fini quand : doc chiffré, chaque valeur retrouvée dans `metrics.json` ou docs existants (vérifié par le testeur)
+  - dépend de : rien
+  - essais : 0
+
 > Action humaine (non assignable) : jouer `python scripts/human_lap.py --laps 3` pour créer `data/human_best.json` ; sans lui le critère vitesse n'est pas évaluable (le banc affiche `human_best_total: null`).
 > Anciens modèles de `data/models/production` invalides.
 

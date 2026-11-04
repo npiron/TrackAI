@@ -521,3 +521,11 @@
 
 ## 2026-11-04 01:18 · reviewer · T35 validée
 - Relancé les commandes du doc : eval 20 ép. → 20/20, 15,90 s ; robust_eval eps 0,05 → 100/100, 18,63 s ; audit : 8 cp dans l'ordre, 0 hors piste, 0 mur. Identique au doc. pytest hors e2e : 41 passed, 1 skipped. Doc honnête sur la limite de reproduction (professeur T37 ≠ T30). Mes mesures parasites retirées de metrics.json.
+
+## 2026-11-04 01:17 · worker · Aucune tâche
+
+- T31-T37 toutes [x], aucune [ ] ni [-]. REPLAN créé. Suite possible : ré-imiter le professeur T37 (15,80 s, robuste) par DAgger bruité pour battre best/ 15,90 s. Rappel : data/human_best.json absent (action humaine).
+
+## 2026-11-04 01:17 · planner · Replanification
+
+- T31-T37 closes. Ajout T38 (ré-imitation professeur T37), T39 (recherche repartant de T37), T40 (non-régression 1 tour), T41 (bilan vitesse). Inbox vide. GOAL : statut inchangé (temps humain absent), pas de GOAL_REACHED. Décision : si T38/T39 échouent, clore la phase vitesse. REPLAN supprimé.
