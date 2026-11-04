@@ -6,7 +6,7 @@
 
 ## En cours / à faire
 
-- [?] **T64** · Diagnostic : où et pourquoi les agents rapides touchent 1 mur · P1
+- [x] **T64** · Diagnostic : où et pourquoi les agents rapides touchent 1 mur · P1
   - but : t57 (15,94 s) et t60 (15,90 s) font 1 choc/course (piste statique déterministe : toujours le même ?). Script /tmp ou `scripts/` (sans toucher physique/env) qui rejoue t60 et t57 et note pour chaque choc : pas, position, progression sur la piste (checkpoint/virage), vitesse, action de l'agent vs action du professeur H=29 au même état.
   - fini quand : tableau chiffré dans `docs/WALL_BASELINE.md` (section T64) : nombre et lieu des chocs pour t57 et t60, conclusion (même virage ? écart d'action ?)
   - dépend de : rien
