@@ -39,3 +39,15 @@ SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model shield:data/model
 | T53b (best/ actuel) seul | 20/20 | 20,46 s | 0,0 | 1,0 |
 
 Borne : T38 + garde-fou donne 0 choc 20/20 en 16,42 s, soit 4 s de mieux que T53b (agent seul), mais le garde-fou simule la physique (pas un agent pur). T53b + garde-fou échoue (0/20 finis, bloqué vers 306 pas) : le garde-fou perturbe un modèle déjà prudent. Décision pour l'humain : accepter ou non le garde-fou dans le critère.
+
+## T58 · Pistes aléatoires jamais vues (`--no-static`, bonus)
+
+`SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model <zip> --laps 3 --episodes 20 --seed 0` (sans `--static`) ; professeur : `heuristic_lap.py --laps 3 --episodes 20 --seed 0` (SAFE_HORIZON=29).
+
+| Politique | finis | temps moyen | mean_wall_hits | max | clean_rate |
+|---|---|---|---|---|---|
+| best/ T53b | 18/20 (90 %) | 26,27 s | 36,9 | 202 | 0,0 |
+| best_t38 | 14/20 (70 %) | 24,08 s | 116,5 | 227 | 0,0 |
+| heuristique (professeur 0 choc) | 18/20 (90 %) | 15,61 s | 0,0 | 0 | 0,9 |
+
+Verdict : le bonus (agent généraliste, 0 choc, pistes inconnues) n'est PAS atteint. L'agent T53b finit 90 % des pistes aléatoires mais touche ~37 murs/course (clean 0) : l'imitation sur la piste fixe ne transfère pas la prudence. Le professeur lui-même ne finit que 90 % (clean 0,9 = chocs nuls sur les finis). Faisabilité : plausible mais demande un DAgger sur pistes aléatoires (`imitate.py` sans `--static`, professeur rapide ~0,6 s/ép.), non tenté ici ; une seule graine (0).

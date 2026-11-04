@@ -18,11 +18,11 @@
   - dépend de : T56 (si T56 remplace best/, repartir de lui)
   - essais : 1
 
-- [ ] **T58** · Bonus : mesurer best/ sur pistes aléatoires jamais vues (`--no-static`) · P2
+- [x] **T58** · Bonus : mesurer best/ sur pistes aléatoires jamais vues (`--no-static`) · P2
   - but : `eval.py --no-static --laps 3 --episodes 20 --seed 0` sur best/ (et best_t38) : finis, chocs, clean_rate ; diagnostic court (l'heuristique lit la spline : attendu faible).
   - fini quand : entrée metrics.json + paragraphe dans `docs/WALL_BASELINE.md` (ou doc dédié) avec verdict de faisabilité du bonus
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T59** · Reproductibilité du critère : eval de best/ sur 3 graines (0, 1, 2) à eps 0 · P2
   - but : vérifier que 20/20 et 0 choc ne tiennent pas qu'à la graine 0 (eval.py laps 3, 20 ép., seeds 1 et 2) ; si échec, secteurs de choc.

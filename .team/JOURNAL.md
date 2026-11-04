@@ -704,3 +704,12 @@
 
 ## 2026-11-04 23:13 · reviewer · T57 validée
 - Relancé heuristic_lap seed 0, 20 ép., laps 3 : 20/20, 14,62 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff minime (SAFE_HORIZON 32→29). Agent non remplacé (best/ conservé), verdict chiffré honnête. Agents DAgger et robustesse bruitée à H=29 non relancés.
+
+## 2026-11-04 23:14 · worker · T58 Pistes aléatoires (--no-static)
+- Fichiers : docs/WALL_BASELINE.md (section T58), metrics.json (3 entrées via eval/heuristic_lap). Aucun code modifié.
+- Commandes : `eval.py --model <zip> --laps 3 --episodes 20 --seed 0` (sans --static) ; `heuristic_lap.py --laps 3 --episodes 20 --seed 0`.
+- Résultats : best/ T53b 18/20 finis, 26,27 s, 36,9 chocs/course, clean 0 ; best_t38 14/20, 24,08 s, 116,5 chocs ; heuristique 18/20, 15,61 s, 0 choc, clean 0,9.
+- Verdict : bonus non atteint ; piste = DAgger sur pistes aléatoires. Limites : graine 0 seule.
+
+## 2026-11-04 23:15 · reviewer · T58 validée
+- Relancé eval.py best/ --no-static laps 3 seed 0 20 ép. : 18/20, 26,27 s, 36,85 chocs, clean 0 ; heuristic_lap : 18/20, 15,61 s, 0 choc, clean 0,9 (conformes). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, doc et verdict honnêtes. best_t38 non relancé.
