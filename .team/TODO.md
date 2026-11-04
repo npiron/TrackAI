@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T65** · DAgger ciblé sur les zones de choc (poids/suréchantillonnage) · P1
+- [x] **T65** · DAgger ciblé sur les zones de choc (poids/suréchantillonnage) · P1
   - but : ajouter à `imitate.py` une option (ex. `--hit-weight K`) qui duplique K fois les échantillons des ~30 pas précédant un choc pendant les tours DAgger, puis reprendre depuis t60 (3×256, 15,90 s, 1 choc) avec professeur H=29, `--wall-penalty -50`, eps 0 puis 0,05, ≤ 10 min.
   - fini quand : eval.py 20 ép. laps 3 seed 0 --static dans metrics.json ; si 20/20, 0 choc et < 20,46 s → remplace best/ (ancien copié dans `data/models/best_t53b/`, best.json mis à jour) ; sinon verdict chiffré
   - dépend de : T64 (pour savoir où cibler)
-  - essais : 0
+  - essais : 1
 
 - [ ] **T66** · Imitation depuis zéro en 3×256 avec les professeurs 0 choc H=30 (16,6 s) et H=34 (17,44 s) · P1
   - but : T61 n'a testé qu'un départ depuis best/ T53b (2-3 chocs). T60 montre que 3×256 depuis zéro tient 15,9 s : refaire pareil avec `--teacher-horizon 30` puis 34, `--net-arch 256 256 256`, `--wall-penalty -50`, eps 0 puis 0,05, ≤ 10 min chacun. Gain visé : 0 choc entre 17 et 20,4 s.

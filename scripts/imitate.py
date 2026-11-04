@@ -17,10 +17,12 @@ import numpy as np
 EPS_LEVELS = (0.0, 0.1, 0.2, 0.3)
 
 
-def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None, env_kw=None):
+def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None, env_kw=None,
+            hit_weight=1, hit_window=30):
     """Renvoie (obs[N,14], actions[N]) ; l'étiquette est toujours l'action de l'heuristique.
 
     policy : fonction obs -> action ; si fournie, c'est elle qui conduit (DAgger), l'heuristique corrige.
+    hit_weight K > 1 : les `hit_window` pas précédant chaque choc mur sont présents K fois (poids K).
     """
     from src.rl.wrappers import GymTimeAttack
     from scripts.heuristic_lap import heuristic_action
@@ -32,6 +34,7 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
         rng = np.random.RandomState(seed + k)
         eps = eps_levels[k % len(eps_levels)]
         obs, _ = env.reset()
+        start, hits = len(O), []
         for _ in range(max_steps):
             a = heuristic_action(obs, env.ta)
             O.append(obs.copy())
@@ -40,9 +43,17 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
                 a = int(policy(obs))
             if rng.rand() < eps:
                 a = int(rng.randint(env.action_space.n))
+            before = env.ta.wall_hits
             obs, _, term, trunc, _ = env.step(a)
+            if env.ta.wall_hits > before:
+                hits.append(len(O))
             if term or trunc:
                 break
+        if hit_weight > 1 and hits:
+            sel = sorted({i for h in hits for i in range(max(start, h - hit_window), h)})
+            for _r in range(hit_weight - 1):
+                O.extend(O[i] for i in sel)
+                A.extend(A[i] for i in sel)
     return np.array(O, dtype=np.float32), np.array(A, dtype=np.int64)
 
 
@@ -97,6 +108,8 @@ def main(argv=None):
                    help="couches cachées du MLP (sans --init), ex. 256 256 256")
     p.add_argument("--teacher-horizon", type=int, default=None,
                    help="SAFE_HORIZON du professeur heuristique (défaut : valeur de heuristic_lap)")
+    p.add_argument("--hit-weight", type=int, default=1,
+                   help="DAgger : poids K des ~30 pas précédant un choc mur (échantillons dupliqués), défaut 1 = off")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
     if a.teacher_horizon is not None:
@@ -115,7 +128,8 @@ def main(argv=None):
         model = PPO.load(a.init, env=venv, device="cpu")
         print("modèle initial chargé :", a.init)
         O, A = collect(a.episodes, a.laps, not a.static, a.seed, eps_levels=tuple(a.dagger_eps),
-                       policy=make_policy(model, venv), env_kw=kw)
+                       policy=make_policy(model, venv), env_kw=kw,
+                       hit_weight=a.hit_weight)
         print(f"{len(O)} échantillons (états visités par le modèle initial), "
               f"répartition actions: {np.bincount(A, minlength=9).tolist()}")
         On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
@@ -142,7 +156,8 @@ def main(argv=None):
         pol = make_policy(model, venv)
         # niveaux --dagger-eps en alternance (défaut 0 et 0.05) : la politique apprise explore ses propres erreurs
         O2, A2 = collect(a.dagger_episodes, a.laps, not a.static, a.seed + 1000 * (r + 1),
-                         eps_levels=tuple(a.dagger_eps), policy=pol, env_kw=kw)
+                         eps_levels=tuple(a.dagger_eps), policy=pol, env_kw=kw,
+                         hit_weight=a.hit_weight)
         O, A = np.concatenate([O, O2]), np.concatenate([A, A2])
         On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
         loss, acc = behavior_clone(model, On, A, a.epochs, lr=a.lr, seed=a.seed + r + 1)

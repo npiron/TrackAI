@@ -792,3 +792,13 @@
 
 ## 2026-11-04 23:49 · reviewer · T64 validée
 - Relancé diagnose_hits sur t57 et t60 (laps 3) : 1 choc chacun, tour 3, spline 704/701, pas 593/606, vitesse 11,86/10,43, écarts 103/797 et 77/795 : conforme au doc. pytest hors e2e : 48 passed, 1 skipped. Physique/env intacts. Note : le script déclenche un « NEW PB / replay saved » de l environnement (effet de bord bénin).
+
+## 2026-11-04 23:54 · worker · T65 DAgger ciblé (critère atteint, best/ remplacé)
+- Fichiers : `scripts/imitate.py` (+`--hit-weight K`, défaut 1 = off : les 30 pas avant chaque choc mur des tours DAgger sont dupliqués → poids K), `data/models/best/` (nouveau), `data/models/best_t53b/` (copie de l'ancien), `.team/metrics.json`.
+- Commande (4 min 04) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --wall-penalty -50 --init data/checkpoints/ppo_t60.zip --hit-weight 10 --episodes 12 --dagger 16 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 8 --lr 2e-4 --seed 1800 --out data/checkpoints/ppo_t65` (155k éch., précision 0,943).
+- Eval `eval.py --static --laps 3 --episodes 20 --seed 0` : ppo_t65 et best/ copié : **20/20, 15,84 s, 0 choc, clean 1,0** (vs T53b 20,46 s ; t60 15,90 s/1 choc). best.json mis à jour.
+- pytest hors e2e : 49 passed, 1 skipped.
+- Limites : un seul run, une graine ; robustesse eps>0 et pistes aléatoires non mesurées (T53b : 68/100 à eps 0,05) ; piste statique déterministe.
+
+## 2026-11-04 23:54 · reviewer · T65 validée
+- Relancé eval data/models/best/best.zip static laps 3 20 ép. seed 0 : 20/20, 15,84 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff = option --hit-weight (défaut 1 inchangé). best_t53b sauvegardé. Limite : robustesse eps>0 non mesurée. Mon eval a ajouté une entrée metrics.json.
