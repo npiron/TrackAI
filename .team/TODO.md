@@ -42,7 +42,7 @@
   - dépend de : rien
   - essais : 2
 
-- [?] **T53** · DAgger long sans choc depuis T38 (≤ 10 min, reprises possibles) · P1
+- [x] **T53** · DAgger long sans choc depuis T38 (≤ 10 min, reprises possibles) · P1
   - but : avec T51+T52, lancer DAgger (eps 0/0,05, `--wall-penalty -50`) ; évaluer 20 ép. laps 3 seed 0 (clean_rate) + robust_eval 100 ép. eps 0/0,05. Reprendre le checkpoint d'une itération à l'autre si nécessaire.
   - fini quand : entrée metrics.json ; si 20/20 finis ET clean_rate 20/20 → remplace best/ (avec best.json) ; sinon chocs par secteur dans le journal
   - dépend de : T51, T52
