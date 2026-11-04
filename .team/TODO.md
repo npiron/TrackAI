@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T56** · DAgger de robustesse sur best/ T53b (bruit eps 0,05/0,1) sans perdre 0 choc · P1
+- [x] **T56** · DAgger de robustesse sur best/ T53b (bruit eps 0,05/0,1) sans perdre 0 choc · P1
   - but : repartir de `data/models/best/best.zip` (`imitate.py --init`, `--lr 2e-4`, `--wall-penalty -50`, `--dagger-eps 0.05 0.1`, seed différente de 500, ≤ 10 min, checkpoint repris si besoin) ; viser eps 0,05 : ≥ 90/100 finis et clean_rate nettement > 0,08 tout en gardant 20/20 et 0 choc à eps 0.
   - fini quand : eval 20 ép. laps 3 seed 0 + robust_eval 100 ép. eps 0/0,05 (seed 1000) dans metrics.json ; best/ remplacé SEULEMENT si 20/20, 0 choc à eps 0 ET temps ≤ 20,46 s et robustesse meilleure ; sinon verdict au journal
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T57** · Réduire le temps sous contrainte 0 choc (T53b = 20,46 s ; professeur sûr 17,40 s ; T38 15,80 s) · P1
   - but : DAgger depuis best/ T53b avec un professeur plus rapide à 0 choc (ex. `SAFE_HORIZON`/vitesse de virage de `heuristic_lap` réglés pour ≤ 17 s avec 0 choc sur 20 ép. ; vérifier d'abord le professeur seul), puis ré-imitation (≤ 10 min).

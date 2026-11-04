@@ -680,3 +680,13 @@
 ## 2026-11-04 22:49 · planner · Replanification
 - T51-T55 validées et rangées. Critère fiabilité (20/20, 0 choc, seed 0) rempli par best/ T53b (metrics.json, reviewer). GOAL_REACHED non créé : le critère vitesse (baisse à chaque palier / ≤ humain) reste ouvert et `human_best.json` manque ; reproductibilité sur d'autres graines non mesurée.
 - Nouvelles tâches : T56 robustesse bruitée, T57 temps sous 0 choc, T58 bonus pistes aléatoires, T59 autres graines. T43 reste P3. Inbox vide (hors traite/), pas de REPLAN.
+
+## 2026-11-04 22:58 · worker · T56 DAgger de robustesse depuis best/ T53b (ÉCHEC, best/ non remplacé)
+- Aucun code modifié ; checkpoints `data/checkpoints/ppo_t56*`. Deux essais, tous depuis best/ (`imitate.py --static --laps 3 --init data/models/best/best.zip --wall-penalty -50 --episodes 10`) :
+  - (a) `--dagger 20 --dagger-episodes 8 --dagger-eps 0.05 0.1 --epochs 10 --lr 2e-4 --seed 600 --out data/checkpoints/ppo_t56` (4 min 43, 158k éch.) → eval 20 ép. laps 3 seed 0 : 0/20 finis, 3 chocs/course.
+  - (b) `--dagger 14 --dagger-eps 0 0.05 --epochs 6 --lr 1e-4 --seed 700 --out data/checkpoints/ppo_t56b` (120k éch.) → eval : 20/20, 20,3 s, mean_wall_hits 2,0, clean_rate 0 ; robust_eval 100 ép. seed 1000 eps 0,05 : 82/100 finis, 20,59 s, mean_wall_hits 2,06, clean 0,06 (eps 0 non relu dans ce run, déjà non clean à l'eval).
+- Verdict : la robustesse (68→82 % finis à eps 0,05) s'obtient au prix du 0 choc à eps 0 (2 chocs/course) ; l'agrégation de données bruitées dégrade la précision du MLP (0,84-0,86). best/ T53b conservé (critère : 20/20 ET 0 choc ET ≤ 20,46 s non atteint). Entrées dans metrics.json (evals).
+- Limites : 2 essais, une graine d'imitation chacun ; piste : plus de données à eps 0 seulement, ou réseau plus gros / obs enrichie.
+
+## 2026-11-04 22:59 · reviewer · T56 validée
+- Relancé eval.py ppo_t56b.zip laps 3 seed 0 20 ép. : 20/20, 20,3 s, 2 chocs, clean 0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, best/ non remplacé (justifié : 2 chocs). Verdict négatif honnête (robustesse 82 %, pas 90 %). robust_eval non relancé.
