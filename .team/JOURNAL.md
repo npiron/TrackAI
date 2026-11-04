@@ -514,3 +514,10 @@
 - Recherche (9 min) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/search_heuristic.py --sectors 6 --restarts 2 --max-seconds 540 --budget 100000 --noise-eps 0.05 --noise-episodes 8 --out docs/SEARCH_T37.md` → restart 0 : 17,62 s moyen bruité (8 ép. tous finis), restart 1 : 23,12 s. Référence avant : professeur T33 = 50 % de finish à eps 0,05 (20 ép.).
 - Mesure (100 ép., seed 1000, `robust_eval.py --model heuristic --static --laps 3`) : eps 0 → 100/100, 15,80 s ; eps 0,05 → 99/100 (18,48 s) ; eps 0,1 → 100/100 (19,68 s). `heuristic_lap.py` 20 ép. seed 0 : 20/20, 15,80 s. audit_lap : 8 cp dans l'ordre, 0 hors piste, 0 mur. pytest hors e2e : voir sortie (relancé).
 - Limites : 15,80 s contre 15,68 s du T33 (+0,12 s) ; graines de recherche 5000-5007 différentes de la validation (1000+) donc pas de fuite directe ; piste fixe. Suite possible : ré-imiter ce professeur (DAgger bruité) pour dépasser best/ 15,90 s.
+
+## 2026-11-04 01:16 · worker · T35 Clôture documentaire
+- Fichier : `docs/BEST_STATUS.md` (nouveau). Commandes eval/robust_eval/audit du doc relancées : 20/20 15,90 s ; eps 0/0,05/0,1 → 100/100, 100/100 (18,63 s), 99/100 (19,20 s) ; audit propre (0 hors piste, 0 mur, cp dans l ordre). Entrées ajoutées dans metrics.json par ces lancements (doublons à retirer par le reviewer).
+- Limite : la commande imitate du doc part du professeur courant (T37), pas T30, donc ne reproduit pas bit à bit best/ ; précisé dans le doc, non relancée.
+
+## 2026-11-04 01:18 · reviewer · T35 validée
+- Relancé les commandes du doc : eval 20 ép. → 20/20, 15,90 s ; robust_eval eps 0,05 → 100/100, 18,63 s ; audit : 8 cp dans l'ordre, 0 hors piste, 0 mur. Identique au doc. pytest hors e2e : 41 passed, 1 skipped. Doc honnête sur la limite de reproduction (professeur T37 ≠ T30). Mes mesures parasites retirées de metrics.json.

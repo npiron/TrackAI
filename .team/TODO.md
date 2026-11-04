@@ -43,11 +43,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T35** · Clôture documentaire de l'état du meilleur modèle · P2
+- [x] **T35** · Clôture documentaire de l'état du meilleur modèle · P2
   - but : `docs/BEST_STATUS.md` : modèle, commande de reproduction (imitate + eval), mesures (20 ép., 100 ép. bruités, audit), limites (spline, piste fixe, PPO dégrade), et rappel de l'action humaine `human_lap.py`.
   - fini quand : le testeur reproduit la mesure 15,90 s (ou le meilleur courant) avec les commandes du doc
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 > Action humaine (non assignable) : jouer `python scripts/human_lap.py --laps 3` pour créer `data/human_best.json` ; sans lui le critère vitesse n'est pas évaluable (le banc affiche `human_best_total: null`).
 > Anciens modèles de `data/models/production` invalides.
