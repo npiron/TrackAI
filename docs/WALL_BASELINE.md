@@ -64,3 +64,18 @@ Robustesse bruitée (`robust_eval.py --model heuristic --static --laps 3 --episo
 | **H=29** | **65/100** | 17,86 s | 0,77 | 0,25 |
 
 Note : `metrics.json` contient 4 entrées (au lieu de 2) pour `best/` seeds 1 et 2 (doublons identiques, relances du reviewer).
+
+## T64 — où et pourquoi t57 / t60 touchent 1 mur
+
+Script : `scripts/diagnose_hits.py` (rejoue l'agent sur piste statique, 3 tours, déterministe ; à chaque pas calcule aussi l'action du professeur `heuristic_action`, H=29, au même état ; ne modifie ni physique ni env).
+Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/diagnose_hits.py --model data/checkpoints/ppo_t57.zip --laps 3` (idem `ppo_t60.zip`). La sortie JSON est la dernière ligne (précédée d'une ligne « NEW PB » de l'env).
+
+| agent | durée | pas | chocs | tour | pas du choc | indice spline (/2400) | position | vitesse avant | action agent / prof. au choc | pas où l'agent diffère ≥ 1re fois (30 derniers pas) | écarts d'action totaux |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| t57 | 15,94 s | 797 | **1** | 3 | 593 | 704 (29,3 %) | (565,3 ; 818,1) | 11,86 | 1 / 1 | pas 571, idx 514 : agent 1 (tout droit) vs prof. 6 (droite+accélère) ; 13 écarts sur 30 pas | 103/797 (12,9 %) |
+| t60 | 15,90 s | 795 | **1** | 3 | 606 | 701 (29,2 %) | (568,8 ; 818,1) | 10,43 | 5 / 5 | pas 582, idx 511 : agent 1 vs prof. 6 ; 7 écarts sur 30 pas | 77/795 (9,7 %) |
+
+Conclusions :
+- **Même virage** pour les deux agents (spline ≈ 701-704, ~29 % de la piste, position quasi identique à 3 px près), **au 3ᵉ tour seulement** (0 choc aux tours 1 et 2). Un seul point à corriger.
+- Au moment du choc, l'action de l'agent est **identique** à celle du professeur (1/1 et 5/5) : le choc n'est pas une dernière action erronée. Le professeur serait aussi en danger à cet état ; l'écart vient de **~190 points de spline plus tôt** (idx 511-514), où l'agent va tout droit (action 1) alors que le professeur tourne à droite en accélérant (6), puis 8-12 pas de décalage (3-5 pas d'action différents) amènent trop vite/trop large dans le virage.
+- Les agents diffèrent du professeur sur 10-13 % des pas, mais un seul de ces écarts (entrée de virage ~idx 511-514) est fatal ; zone cible pour T65 : pas ~ [choc − 30 ; choc], soit spline ~480-710 au tour 3. Limite : le choc n'apparaît qu'au tour 3 (états/vitesses d'entrée différents), donc un suréchantillonnage doit couvrir la zone aux 3 tours.

@@ -783,3 +783,12 @@
 ## 2026-11-04 23:47 · planner · Replanification
 - T60-T63 rangées (échecs documentés, best/ T53b inchangé : 20/20, 0 choc, 20,46 s). Critère fiabilité rempli, vitesse ouverte, temps humain absent : pas de GOAL_REACHED.
 - Constat : agents rapides (15,9-16 s) gardent 1 choc ; précision BC non en cause. Nouvelles tâches : T64 diagnostic des chocs, T65 DAgger ciblé, T66 départ de zéro avec professeurs H=30/34, T67 entraînement mixte (bonus). Si T65-T66 échouent, clore la phase vitesse. Inbox vide, pas de REPLAN.
+
+## 2026-11-04 23:48 · worker · T64 Diagnostic des chocs t57/t60
+- Fichiers : `scripts/diagnose_hits.py` (nouveau), `docs/WALL_BASELINE.md` (section T64). Physique/env intacts.
+- Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/diagnose_hits.py --model data/checkpoints/ppo_t57.zip --laps 3` (idem t60).
+- Résultats : t57 1 choc, tour 3, pas 593, spline 704/2400, vitesse 11,86 ; t60 1 choc, tour 3, pas 606, spline 701, vitesse 10,43. Même virage (~29 % de la piste). Action de l'agent = professeur au choc ; divergence 190 points de spline plus tôt (idx ~511-514 : agent tout droit, prof. droite+accél.). Écarts d'action 12,9 % (t57), 9,7 % (t60).
+- Limites : une seule course déterministe par agent ; pytest non relancé (script ajouté seulement).
+
+## 2026-11-04 23:49 · reviewer · T64 validée
+- Relancé diagnose_hits sur t57 et t60 (laps 3) : 1 choc chacun, tour 3, spline 704/701, pas 593/606, vitesse 11,86/10,43, écarts 103/797 et 77/795 : conforme au doc. pytest hors e2e : 48 passed, 1 skipped. Physique/env intacts. Note : le script déclenche un « NEW PB / replay saved » de l environnement (effet de bord bénin).
