@@ -40,19 +40,44 @@ def curve_speed_limit(ta, i, window=220, step=15):
     return float(min(1.0, SPEED_PER_RADIUS * radius.min() / MAX_SPEED_PX))
 
 
+_LIMIT_CACHE = {}
+
+
+def _limit_table(ta):
+    """curve_speed_limit pour chaque indice de spline (ne dépend que de la piste ; mis en cache)."""
+    import numpy as np
+    key = (id(ta.track), id(ta.track.spline_points), len(ta.track.spline_points), SPEED_PER_RADIUS, tuple(SECTOR_MULT))
+    t = _LIMIT_CACHE.get(key)
+    if t is None:
+        t = np.array([curve_speed_limit(ta, i) for i in range(len(ta.track.spline_points))])
+        _LIMIT_CACHE.clear()
+        _LIMIT_CACHE[key] = t
+    return t
+
+
+def _near_index(ta, hint, w=40):
+    """Indice de spline le plus proche, cherché dans ±w autour de `hint` (rollouts : la voiture avance peu par image)."""
+    import numpy as np
+    sp = ta.track.spline_points
+    idx = (hint + np.arange(-w, w + 1)) % len(sp)
+    d = np.sum((sp[idx] - ta.car.pos) ** 2, axis=1)
+    return int(idx[int(np.argmin(d))])
+
+
 def closest_index(ta):
     import numpy as np
     return int(np.argmin(np.sum((ta.track.spline_points - ta.car.pos) ** 2, axis=1)))
 
 
-def lookahead_error(ta, speed_n):
+def lookahead_error(ta, speed_n, i=None):
     """Erreur de cap (rad, >0 : à droite) vers un point de la ligne centrale en avance sur la voiture.
 
     Viser le centre de la route (et pas le checkpoint, parfois en coupant un virage) évite les murs.
     """
     import numpy as np
     sp = ta.track.spline_points
-    i = closest_index(ta)
+    if i is None:
+        i = closest_index(ta)
     ahead = int(LOOK_MIN + LOOK_GAIN * speed_n)
     n = len(sp)
     tx, ty = sp[(i + ahead) % n]
@@ -108,6 +133,7 @@ def _rollout(st, first, ta, horizon):
     from types import SimpleNamespace
     from src.core.constants import MAX_SPEED
     act = first
+    ci = closest_index(ta)
     fake = SimpleNamespace(car=SimpleNamespace(pos=np.zeros(2), heading=0.0), track=ta.track)
     obs = np.zeros(14)
     for k in range(horizon):
@@ -116,7 +142,8 @@ def _rollout(st, first, ta, horizon):
             return k
         fake.car.pos[0], fake.car.pos[1], fake.car.heading = st[0], st[1], st[4]
         obs[0], obs[3] = st[5] / MAX_SPEED, st[7]
-        act = base_action(obs, fake)
+        ci = _near_index(fake, ci)
+        act = base_action(obs, fake, ci)
     return horizon
 
 
@@ -125,12 +152,13 @@ def _safe_action(ta, base):
     st = [float(c.pos[0]), float(c.pos[1]), float(c.vel[0]), float(c.vel[1]), float(c.heading),
           float(c.speed), float(c.steering), float(c.angular_velocity)]
     H = SAFE_HORIZON
-    if _rollout(list(st), base, ta, H) >= H:
+    base_k = _rollout(list(st), base, ta, H)
+    if base_k >= H:
         return base
     bs = _ACTS[base]
     cands = sorted((a for a in _ACTS if a != base),
                    key=lambda a: 2 * abs(_ACTS[a][0] - bs[0]) + abs(_ACTS[a][1] - bs[1]) + abs(_ACTS[a][2] - bs[2]))
-    best, best_k = base, _rollout(list(st), base, ta, H)
+    best, best_k = base, base_k
     for a in cands:
         k = _rollout(list(st), a, ta, H)
         if k >= H:
@@ -147,12 +175,14 @@ def heuristic_action(obs, ta=None):
     return a
 
 
-def base_action(obs, ta=None):
+def base_action(obs, ta=None, ci=None):
     """Action discrète à partir de l'observation brute (et, si fourni, de la piste via `ta`)."""
     speed_n, tgt_x, tgt_y = float(obs[0]), float(obs[6]), float(obs[7])
     lidar_front = float(obs[11])
     if ta is not None:
-        err = lookahead_error(ta, speed_n)
+        if ci is None:
+            ci = closest_index(ta)
+        err = lookahead_error(ta, speed_n, ci)
     else:
         err = math.atan2(tgt_y, tgt_x)  # >0 : cible à droite (cap à augmenter)
     # anticipation : la vitesse angulaire met ~20 images à s'éteindre (inertie de la direction)
@@ -161,7 +191,7 @@ def base_action(obs, ta=None):
     # vitesse visée : décroît avec l'erreur d'angle et la proximité d'un mur devant
     v_target = MAX_V_N - (MAX_V_N - CORNER_V_N) * min(1.0, a / 0.8)
     if ta is not None:
-        v_target = curve_speed_limit(ta, closest_index(ta))
+        v_target = float(_limit_table(ta)[ci])
     else:
         v_target = min(v_target, max(CORNER_V_N, lidar_front * 1.2))
     steer = 0 if a < STEER_DEADZONE else (1 if err > 0 else -1)

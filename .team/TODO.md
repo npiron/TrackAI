@@ -30,17 +30,17 @@
   - dépend de : T46, T47
   - essais : 1
 
-- [ ] **T51** · Accélérer le professeur T49 (sécurité seulement si risque) · P1
+- [x] **T51** · Accélérer le professeur T49 (sécurité seulement si risque) · P1
   - but : `heuristic_action` ne lance les rollouts de sécurité que si l'action de base est jugée risquée (un seul rollout de base d'abord, alternatives seulement s'il y a choc) ; viser ≤ 1 s/épisode de 3 tours. Sortie identique ou meilleure : eps 0 inchangé (0 choc, ≤ 17,4 s).
   - fini quand : `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` : 20/20, mean_wall_hits 0, temps de calcul avant/après dans le journal, au moins 3× plus rapide ; pytest hors e2e vert
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T52** · `imitate.py --init` : repartir de best/ T38 (ou d'un checkpoint) pour DAgger · P1
   - but : option `--init <model.zip>` qui charge poids + VecNormalize de départ au lieu de repartir de zéro ; la collecte DAgger étiquette avec le professeur sans choc les états visités par T38 (qui ne rate que les secteurs 3,4,5,7,11). `--wall-penalty` existe déjà.
   - fini quand : commande courte (1 tour DAgger, 3 épisodes) qui tourne et recharge le modèle ; le journal montre la précision initiale sur les données du professeur
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T53** · DAgger long sans choc depuis T38 (≤ 10 min, reprises possibles) · P1
   - but : avec T51+T52, lancer DAgger (eps 0/0,05, `--wall-penalty -50`) ; évaluer 20 ép. laps 3 seed 0 (clean_rate) + robust_eval 100 ép. eps 0/0,05. Reprendre le checkpoint d'une itération à l'autre si nécessaire.

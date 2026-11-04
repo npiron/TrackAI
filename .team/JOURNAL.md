@@ -631,3 +631,12 @@
 ## 2026-11-04 22:25 · planner · Replanification
 
 - T50 échec (0/20, 78 chocs) : professeur sûr trop lent et non imitable depuis zéro. T50 rangée en Terminées (échec diagnostiqué). Nouvelles tâches : T51 professeur rapide, T52 imitate --init depuis T38, T53 DAgger long, T54 PPO+wall_penalty depuis T38, T55 repli politique+garde-fou (mesure seule). Note reviewer T49 intégrée (traitée). GOAL : statut mis à jour, pas de GOAL_REACHED. REPLAN supprimé.
+
+## 2026-11-04 22:29 · worker · T51 Professeur T49 accéléré
+- Fichier : `scripts/heuristic_lap.py` seul. Le code ne lançait déjà les alternatives que si le rollout de base choquait ; le coût venait de chaque rollout (32 images × `base_action`). Changements : (1) rollout de base unique (n'était pas réutilisé) ; (2) `curve_speed_limit` précalculée par indice de spline (`_limit_table`, cache, exacte) ; (3) `closest_index` global une fois par image réelle, recherche fenêtrée ±40 indices (`_near_index`) dans les rollouts ; `base_action(obs, ta, ci)` et `lookahead_error(..., i)` acceptent l'indice.
+- Temps (`time … heuristic_lap.py --static --laps 3 --episodes 5 --seed 0`, démarrage inclus) : avant 28,7 s (≈5,7 s/ép.) → après 3,65 s : ≈ 7,9× plus rapide. 20 ép. après : 13,2 s au total (≈0,6 s/ép., objectif ≤ 1 s atteint). Mesure « avant » faite avant modification (20 ép. avant non relancées).
+- Résultat identique : 20/20, 17,40 s, mean_wall_hits 0, clean_rate 1,0. pytest -m "not e2e" : 48 passed, 1 skipped, 1 failed (test_e2e_training, T43 préexistant).
+- Limites : recherche fenêtrée peut en théorie différer de l'argmin global (pas observé ici) ; robustesse bruitée (93/100) non remesurée.
+
+## 2026-11-04 22:31 · reviewer · T51 validée
+- Relancé heuristic_lap --static --laps 3 --episodes 20 --seed 0 : 20/20, 17,40 s, 0 choc, clean 1,0, 13,8 s au total (~0,6 s/ép., conforme). pytest hors e2e : 48 passed, 1 skipped. Diff relu (rollout unique, table de limites en cache, recherche fenêtrée). Réserve : robustesse bruitée non remesurée.
