@@ -2195,5 +2195,39 @@
     "mean_wall_hits": 3.0,
     "max_wall_hits": 3,
     "clean_rate": 0.0
+  },
+  {
+    "date": "2026-11-04 23:42",
+    "model": "heuristic",
+    "episodes": 100,
+    "seed": 1000,
+    "static": true,
+    "laps": 3,
+    "action_noise_eps": 0.05,
+    "finish_rate": 0.65,
+    "n_ok": 65,
+    "mean_total_time": 17.8606,
+    "std_total_time": 2.3276,
+    "worst_total_time": 25.46,
+    "mean_wall_hits": 0.77,
+    "max_wall_hits": 5,
+    "clean_rate": 0.25
+  },
+  {
+    "date": "2026-11-04 23:43",
+    "model": "heuristic",
+    "episodes": 100,
+    "seed": 1000,
+    "static": true,
+    "laps": 3,
+    "action_noise_eps": 0.05,
+    "finish_rate": 0.65,
+    "n_ok": 65,
+    "mean_total_time": 17.8606,
+    "std_total_time": 2.3276,
+    "worst_total_time": 25.46,
+    "mean_wall_hits": 0.77,
+    "max_wall_hits": 5,
+    "clean_rate": 0.25
   }
 ]

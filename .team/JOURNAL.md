@@ -761,3 +761,11 @@
 
 ## 2026-11-04 23:41 · reviewer · T61 validée
 - Reprise vérifiée : eval t61/t61b avec .zip, 20 ép. seed 0 : t61 20,22 s 2 chocs ; t61b 19,36 s 3 chocs (conforme). eval.py corrigé (pkl sans .zip + erreur bruyante), pytest hors e2e : 48 passed, 1 skipped. best/ non remplacé, verdict négatif honnête. Ma précédente note inbox (renvoi) supprimée car traitée.
+
+## 2026-11-04 23:42 · worker · T62 Robustesse H=29 + docs
+- Fichiers : docs/SPEED_STATUS.md, docs/WALL_BASELINE.md (sections T62), metrics.json (entrée ajoutée par robust_eval). Aucun code modifié.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/robust_eval.py --model heuristic --static --laps 3 --episodes 100 --seed 1000 --eps 0.05` (47 s) → **65/100 finis**, 17,86 s, 0,77 choc/course (max 5), clean 0,25 (H=32 : 93/100).
+- Doublons metrics.json signalés dans les docs (4 entrées seeds 1/2 de best/). Limites : eps 0,05 seul, une graine (1000).
+
+## 2026-11-04 23:43 · reviewer · T62 validée
+- Relancé robust_eval heuristic H=29 static laps 3 100 ép. seed 1000 eps 0,05 : 65/100, 17,86 s, 0,77 choc, clean 0,25 (conforme). Docs relues, cohérentes avec metrics.json ; aucun code modifié. Mon run a ajouté une entrée doublon dans metrics.json.

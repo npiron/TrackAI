@@ -18,11 +18,11 @@
   - dépend de : T60 (ne pas lancer avant son verdict, pour réutiliser `--net-arch`)
   - essais : 2
 
-- [ ] **T62** · Robustesse du professeur H=29 sous bruit + docs à jour · P2
+- [x] **T62** · Robustesse du professeur H=29 sous bruit + docs à jour · P2
   - but : `robust_eval` 100 ép. seed 1000, eps 0,05 sur `heuristic` H=29 (déjà mesuré seulement à H=32 : 93/100) ; mettre à jour `docs/SPEED_STATUS.md` et `docs/WALL_BASELINE.md` (SAFE_HORIZON 29, T56-T59, 4 entrées dupliquées seeds 1/2 dans metrics.json à signaler).
   - fini quand : entrée metrics.json + docs relues par le reviewer
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T63** · Bonus : DAgger sur pistes aléatoires (`--no-static`) depuis best/ · P2
   - but : T58 a donné 18/20 finis, 36,9 chocs/course (heuristique : 0 choc, 18/20). Lancer `imitate.py` sans `--static` (professeur H=29 ou 32), laps 3, ≤ 10 min, en gardant le comportement sur la piste fixe.

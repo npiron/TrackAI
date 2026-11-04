@@ -51,3 +51,16 @@ Borne : T38 + garde-fou donne 0 choc 20/20 en 16,42 s, soit 4 s de mieux que T53
 | heuristique (professeur 0 choc) | 18/20 (90 %) | 15,61 s | 0,0 | 0 | 0,9 |
 
 Verdict : le bonus (agent généraliste, 0 choc, pistes inconnues) n'est PAS atteint. L'agent T53b finit 90 % des pistes aléatoires mais touche ~37 murs/course (clean 0) : l'imitation sur la piste fixe ne transfère pas la prudence. Le professeur lui-même ne finit que 90 % (clean 0,9 = chocs nuls sur les finis). Faisabilité : plausible mais demande un DAgger sur pistes aléatoires (`imitate.py` sans `--static`, professeur rapide ~0,6 s/ép.), non tenté ici ; une seule graine (0).
+
+## T62 · Mise à jour SAFE_HORIZON = 29 (T56-T61)
+
+L'heuristique/professeur utilise désormais `SAFE_HORIZON = 29` (T57). Les sections T49/T51/T55 ci-dessus décrivent H=32 (17,40 s, 0 choc) ; à H=29 : 14,62 s, 0 choc, 20/20 (eps 0).
+
+Robustesse bruitée (`robust_eval.py --model heuristic --static --laps 3 --episodes 100 --seed 1000 --eps 0.05`) :
+
+| Horizon | finis | temps moyen | chocs/course | clean |
+|---|---|---|---|---|
+| H=32 | 93/100 | — | 1,49 | — |
+| **H=29** | **65/100** | 17,86 s | 0,77 | 0,25 |
+
+Note : `metrics.json` contient 4 entrées (au lieu de 2) pour `best/` seeds 1 et 2 (doublons identiques, relances du reviewer).
