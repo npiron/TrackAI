@@ -603,3 +603,11 @@
 - Commandes : `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` ; `wall_locate.py --model data/models/best/best.zip --static` ; idem `--model heuristic` (SDL_VIDEODRIVER=dummy).
 - Résultat : best/ et heuristique identiques : 20/20, 15,80 s, mean_wall_hits 11, max 11, clean_rate 0,0. Chocs par secteur (12) cumul 20 ép. : [0,0,0,20,60,60,0,40,0,0,0,40] (secteurs 3,4,5,7,11).
 - Limites : pas de choc, pas de contact ; effets de bord : replays/personal_best réécrits par l'env. Pas de pytest relancé (aucun code existant modifié).
+
+## 2026-11-04 21:28 · worker · T48 Options wall_fatal / wall_penalty
+- Fichiers : `src/rl/wrappers.py` (`GymTimeAttack(wall_fatal=False, wall_penalty=0.0)` ; pénalité × nouveaux chocs ajoutée à la récompense et au composant `wall` de `reward_components` ; fatal → terminated, `end_cause="wall_fatal"`, -100), `scripts/imitate.py` (`--wall-fatal`, `--wall-penalty`, propagés à collect et à l'env), `rl_train_ppo.py` (mêmes options), `tests/test_laps.py` (+3 tests : défaut identique, pénalité -50 × chocs, fatal au 1er choc).
+- pytest hors e2e (`-m "not e2e"`) : 48 passed, 1 skipped, 1 failed = test_e2e_training (préexistant, T43, échoue aussi sans mes changements). Hash T40 passe.
+- Limites : la pénalité n'est pas appliquée sur les sorties forcées timeout/wall_stuck (récompense fixe) ; avec `--wall-fatal` dans imitate, les épisodes de collecte s'arrêtent au 1er choc (voulu). Nom du paramètre `wall_penalty` distinct de la clé de config existante `wall_penalty` (chute de vitesse), inchangée.
+
+## 2026-11-04 21:29 · reviewer · T48 validée
+- Diff relu (wrappers, imitate, rl_train_ppo, 3 tests). pytest hors e2e : 48 passed, 1 skipped. Défaut identique (test + hash T40), pénalité et fatal testés. Note : pénalité non appliquée sur sorties forcées timeout/wall_stuck (acceptable).

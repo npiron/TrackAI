@@ -17,14 +17,14 @@ import numpy as np
 EPS_LEVELS = (0.0, 0.1, 0.2, 0.3)
 
 
-def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None):
+def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None, env_kw=None):
     """Renvoie (obs[N,14], actions[N]) ; l'étiquette est toujours l'action de l'heuristique.
 
     policy : fonction obs -> action ; si fournie, c'est elle qui conduit (DAgger), l'heuristique corrige.
     """
     from src.rl.wrappers import GymTimeAttack
     from scripts.heuristic_lap import heuristic_action
-    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps)
+    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps, **(env_kw or {}))
     O, A = [], []
     for k in range(episodes):
         random.seed(seed + k)
@@ -88,15 +88,18 @@ def main(argv=None):
     p.add_argument("--dagger-eps", type=float, nargs="+", default=[0.0, 0.05],
                    help="niveaux de bruit d'action pendant DAgger (alternés par épisode)")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--wall-fatal", action="store_true", help="un choc mur termine l'épisode (-100)")
+    p.add_argument("--wall-penalty", type=float, default=0.0, help="récompense ajoutée par choc (ex. -50)")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
     from src.rl.wrappers import GymTimeAttack
-    O, A = collect(a.episodes, a.laps, not a.static, a.seed)
+    kw = dict(wall_fatal=a.wall_fatal, wall_penalty=a.wall_penalty)
+    O, A = collect(a.episodes, a.laps, not a.static, a.seed, env_kw=kw)
     print(f"{len(O)} échantillons, répartition actions: {np.bincount(A, minlength=9).tolist()}")
     venv = VecNormalize(DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
-                                                           laps=a.laps)]),
+                                                           laps=a.laps, **kw)]),
                         norm_obs=True, norm_reward=True, clip_obs=10.0)
     venv.obs_rms.mean, venv.obs_rms.var, venv.obs_rms.count = O.mean(0).astype(np.float64), O.var(0).astype(np.float64) + 1e-8, len(O)
     On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
@@ -108,7 +111,7 @@ def main(argv=None):
         pol = make_policy(model, venv)
         # niveaux --dagger-eps en alternance (défaut 0 et 0.05) : la politique apprise explore ses propres erreurs
         O2, A2 = collect(a.dagger_episodes, a.laps, not a.static, a.seed + 1000 * (r + 1),
-                         eps_levels=tuple(a.dagger_eps), policy=pol)
+                         eps_levels=tuple(a.dagger_eps), policy=pol, env_kw=kw)
         O, A = np.concatenate([O, O2]), np.concatenate([A, A2])
         On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
         loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed + r + 1)

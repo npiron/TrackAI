@@ -28,8 +28,11 @@ class GymTimeAttack(gym.Env):
     """
     metadata = {"render_modes": ["human"]}
 
-    def __init__(self, render_mode=None, procedural=True, laps=1):
+    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0):
         super().__init__()
+        # Options d'entraînement (défaut : désactivées). wall_penalty : récompense ajoutée par choc (négative = pénalité).
+        self.wall_fatal = bool(wall_fatal)
+        self.wall_hit_penalty = float(wall_penalty)
         self.laps = max(1, int(laps))
         # Initialize with procedural config
         # If procedural=True, track=None (auto-gen). If False, we need a static track.
@@ -176,7 +179,9 @@ class GymTimeAttack(gym.Env):
             steer = 1.0
             brake = 1.0
             
+        hits_before = self.ta.wall_hits
         obs, reward, done, info = self.ta.step((steer, accel, brake))
+        new_hits = self.ta.wall_hits - hits_before
 
         # Extract Raw State for Reward Calculation (Observation agnostic)
         car = self.ta.car
@@ -203,6 +208,16 @@ class GymTimeAttack(gym.Env):
             info["end_cause"] = "wall_stuck"
             return obs, -100.0, True, False, info  # Stuck penalty
         
+        if self.wall_fatal and new_hits > 0:
+            info = {
+                "checkpoints_reached": sum(self.ta.cp_visited),
+                "is_success": False,
+                "lap_time": 0.0
+            }
+            self._add_lap_info(info)
+            info["end_cause"] = "wall_fatal"
+            return obs, -100.0, True, False, info
+
         # Record position for replay
         self._current_trajectory.append((float(car.pos[0]), float(car.pos[1])))
         
@@ -392,7 +407,7 @@ class GymTimeAttack(gym.Env):
             pb_improvement_bonus  # NOUVEAU !
         )
         
-        total_reward = float(reward + shaped_reward)
+        total_reward = float(reward + shaped_reward + self.wall_hit_penalty * new_hits)
         # Décomposition de la récompense (diagnostic) ; la somme vaut total_reward
         info["reward_components"] = {
             "progress": float(progress_reward),
@@ -401,7 +416,7 @@ class GymTimeAttack(gym.Env):
             "speed": float(speed_reward),
             "urgency": float(urgency_penalty),
             "track": float(track_penalty),
-            "wall": float(wall_penalty),
+            "wall": float(wall_penalty + self.wall_hit_penalty * new_hits),
             "ghost": float(ghost_following_reward),
             "time_bonus": float(time_bonus + pb_improvement_bonus),
             "env": float(reward),

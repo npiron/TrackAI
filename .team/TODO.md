@@ -18,11 +18,11 @@
   - dépend de : T46
   - essais : 1
 
-- [ ] **T48** · Option `wall_fatal` et `wall_penalty` dans `GymTimeAttack` (défaut : désactivées) · P1
+- [x] **T48** · Option `wall_fatal` et `wall_penalty` dans `GymTimeAttack` (défaut : désactivées) · P1
   - but : paramètres `wall_fatal=False`, `wall_penalty=0.0` (pénalité par choc, ajoutée à la récompense) ; si `wall_fatal`, le choc met `terminated=True`, `end_cause="wall_fatal"`, récompense -100 ; exposés en options de `imitate.py` et du script d'entraînement PPO. Défaut = comportement identique (hash T40 inchangé), physique intacte.
   - fini quand : tests : défaut identique au hash ; wall_penalty=-50 baisse la récompense d'un épisode avec choc ; wall_fatal termine l'épisode au 1er choc ; pytest hors e2e vert
   - dépend de : T46
-  - essais : 0
+  - essais : 1
 
 - [ ] **T49** · Palier 1 : professeur sans choc (heuristique avec marge aux murs) · P1
   - but : trouver des constantes de `heuristic_lap` (marge latérale/ligne plus intérieure, vitesse de virage) donnant 0 choc sur 20 ép. laps 3 seed 0 ET sur 100 ép. bruitées eps 0,05 (seed 1000) au maximum de vitesse possible ; utiliser `search_heuristic.py` avec contrainte `wall_hits == 0` (pénalité forte par choc dans le score).

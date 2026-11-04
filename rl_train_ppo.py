@@ -39,6 +39,8 @@ def main():
     parser.add_argument("--static", action="store_true", help="Disable procedural generation (use fixed track)")
     parser.add_argument("--curriculum", action="store_true", help="Enable curriculum learning (progressive difficulty)")
     parser.add_argument("--laps", type=int, default=1, help="Nombre de tours par épisode")
+    parser.add_argument("--wall-fatal", action="store_true", help="Un choc mur termine l'épisode (-100)")
+    parser.add_argument("--wall-penalty", type=float, default=0.0, help="Récompense ajoutée par choc mur (ex. -50)")
     parser.add_argument("--rewards", type=str, default=None, help="Fichier JSON de récompenses (remplace rewards_config.json, hérité par les sous-processus)")
     args = parser.parse_args()
     if args.rewards:
@@ -94,7 +96,8 @@ def main():
         print("🎨 Launching Visual training mode (single core)...")
         
         def make_env():
-            env = GymTimeAttack(render_mode="human", procedural=procedural_mode, laps=args.laps)
+            env = GymTimeAttack(render_mode="human", procedural=procedural_mode, laps=args.laps,
+                               wall_fatal=args.wall_fatal, wall_penalty=args.wall_penalty)
             os.makedirs("data/monitoring", exist_ok=True)
             return Monitor(env, f"data/monitoring/monitor_visual_{args.run_id}.csv", info_keywords=("checkpoints_reached", "is_success", "lap_time"))
         
@@ -106,7 +109,8 @@ def main():
         print(f"🚀 Launching Headless training on {n_cpu} parallel environments...")
         
         def make_env():
-            env = GymTimeAttack(render_mode=None, procedural=procedural_mode, laps=args.laps)
+            env = GymTimeAttack(render_mode=None, procedural=procedural_mode, laps=args.laps,
+                               wall_fatal=args.wall_fatal, wall_penalty=args.wall_penalty)
             os.makedirs("data/monitoring", exist_ok=True)
             return Monitor(env, f"data/monitoring/monitor_headless_{args.run_id}_{os.getpid()}.csv", info_keywords=("checkpoints_reached", "is_success", "lap_time"))
 

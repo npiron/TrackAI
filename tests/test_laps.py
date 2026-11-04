@@ -125,3 +125,40 @@ def test_wrapper_info_has_wall_counters():
         if term or trunc:
             break
     assert info["wall_hits"] > 0 and info["wall_contacts"] >= 1
+
+
+def _gym_run(steps=600, **kw):
+    from src.rl.wrappers import GymTimeAttack
+    env = GymTimeAttack(render_mode=None, procedural=False, **kw)
+    env.reset()
+    rewards, infos, term = [], [], False
+    for _ in range(steps):
+        _, r, term, trunc, info = env.step(1)  # plein gaz : finit dans un mur
+        rewards.append(r)
+        infos.append(info)
+        if term or trunc:
+            break
+    return rewards, infos, term
+
+
+def test_wall_options_default_is_identical():
+    r0, i0, _ = _gym_run()
+    r1, i1, _ = _gym_run(wall_fatal=False, wall_penalty=0.0)
+    assert r0 == r1
+    assert i0[-1]["wall_hits"] == i1[-1]["wall_hits"] > 0
+
+
+def test_wall_penalty_lowers_reward():
+    r0, i0, _ = _gym_run()
+    r1, i1, _ = _gym_run(wall_penalty=-50.0)
+    # la dernière étape (fin forcée wall_stuck) ne porte pas la pénalité : on compare avant
+    n = i0[-2]["wall_hits"]
+    assert n > 0 and len(r0) == len(r1)
+    assert abs((sum(r1[:-1]) - sum(r0[:-1])) - (-50.0 * n)) < 1e-6
+
+
+def test_wall_fatal_ends_at_first_hit():
+    rewards, infos, term = _gym_run(wall_fatal=True)
+    assert term and infos[-1]["end_cause"] == "wall_fatal"
+    assert infos[-1]["wall_hits"] == 1 and rewards[-1] == -100.0
+    assert all(i["wall_hits"] == 0 for i in infos[:-1])
