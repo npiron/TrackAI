@@ -61,7 +61,11 @@ def wall_stats(hits, succ):
 def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
     from src.rl.wrappers import GymTimeAttack
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
-    model, vn = (None, None) if model_path in ("random", "heuristic") else _load_model(model_path)
+    shield = model_path.startswith("shield:")  # T55 : politique + garde-fou (NON conforme « agent seul »)
+    real_path = model_path[len("shield:"):] if shield else model_path
+    model, vn = (None, None) if model_path in ("random", "heuristic") else _load_model(real_path)
+    if shield:
+        from scripts.heuristic_lap import _safe_action
     if model_path == "heuristic":
         from scripts.heuristic_lap import heuristic_action
     rng = np.random.RandomState(seed)
@@ -83,6 +87,8 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
                     o = np.clip((obs - vn.obs_rms.mean) / np.sqrt(vn.obs_rms.var + vn.epsilon),
                                 -vn.clip_obs, vn.clip_obs)
                 action = int(model.predict(o, deterministic=True)[0])
+                if shield:
+                    action = _safe_action(env.ta, action)
             obs, r, term, trunc, info = env.step(action)
             ret += r
             steps += 1

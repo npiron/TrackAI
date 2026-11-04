@@ -54,11 +54,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T55** · Candidat de repli « politique + garde-fou » mesuré à part · P3
+- [x] **T55** · Candidat de repli « politique + garde-fou » mesuré à part · P3
   - but : mesurer best/ T38 dont l'action est filtrée par la couche de sécurité T49 (eps 0, 20 ép.) : chocs, temps. Étiqueté NON conforme à « agent seul » ; sert de borne et de décision pour l'humain.
   - fini quand : entrée metrics.json (model « best+shield ») et paragraphe dans docs/WALL_BASELINE.md
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P3
   - but : cause de l'échec ; corriger le test ou le code sans toucher à la physique.

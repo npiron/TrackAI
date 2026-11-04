@@ -667,3 +667,12 @@
 
 ## 2026-11-04 22:47 · reviewer · T54 validée
 - Relancé eval.py ppo_t54a_final.zip laps 3 seed 0 20 ép. : 20/20, 17,28 s, mean_wall_hits 12, clean 0,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, seuls .team/ changés. Verdict « voie non viable à -20 » justifié (12 chocs vs 11). Un seul essai/graine, palier fatal non tenté (conforme à la condition).
+
+## 2026-11-04 22:50 · worker · T55 Repli politique + garde-fou
+- Fichiers : `scripts/eval.py` (modèle `shield:<zip>` : action du modèle filtrée par `_safe_action`), `docs/WALL_BASELINE.md` (section T55), metrics.json (2 entrées).
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model shield:data/models/best_t38/best.zip --static --laps 3 --episodes 20 --seed 0` → 20/20, **16,42 s, 0 choc, clean_rate 1,0** (T38 seul : 15,80 s, 11 chocs). Mesuré aussi `shield:data/models/best/best.zip` (T53b) : 0/20 finis (bloqué ~306 pas), 0 choc.
+- pytest -m "not e2e" : 48 passed, 1 skipped, 1 failed (test_e2e_training, T43 préexistant).
+- Limites : non conforme « agent seul » ; eps 0 seulement ; robustesse bruitée non mesurée.
+
+## 2026-11-04 22:49 · reviewer · T55 validée
+- Relancé eval.py shield:best_t38 laps 3 seed 0 20 ép. : 20/20, 16,42 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff eval.py minime (préfixe shield:), doc WALL_BASELINE cohérente. Note : le nom du modèle dans metrics.json est « shield:... » et non « best+shield » (équivalent, accepté).
