@@ -588,3 +588,12 @@
 ## 2026-11-04 21:23 · planner · Replanification
 
 - Objectif modifié : 0 choc mur (20/20, 3 tours) puis temps. Critère GOAL réécrit (compteur `wall_hits`), statut en cours : chocs de best/ inconnus. Nouvelles tâches T46-T50 (compteur, baseline, options wall_penalty/wall_fatal, professeur sans choc, ré-imitation). Abandonnées : T42 (doc), T44, T45 (hors objectif) ; T43 gardée P3. Inbox vide. Pas de GOAL_REACHED. REPLAN supprimé.
+
+## 2026-11-04 21:25 · worker · T46 Compteurs de chocs murs
+- Fichiers : `src/game/env.py` (`wall_hits`, `wall_contacts`, `_wall_prev`, remis à 0 au reset ; compte dans la branche `not inside_track(new_pos)`, physique inchangée), `src/rl/wrappers.py` (`info["wall_hits"]`, `info["wall_contacts"]` via `_add_lap_info`, donc à chaque pas et en fin/timeout/wall_stuck), `scripts/eval.py` (`wall_stats` : `mean_wall_hits`, `max_wall_hits`, `clean_rate`), `scripts/robust_eval.py` (mêmes champs dans metrics.json + colonnes du tableau), `tests/test_laps.py` (+2 tests : choc compté dans env et dans info).
+- pytest hors e2e : 45 passed, 1 skipped, 1 failed = `test_e2e_training` (préexistant, T43). Le test de hash T40 passe → trajectoire inchangée.
+- `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/best.zip --static --laps 3 --episodes 20 --seed 0` : 20/20, 15,80 s, **mean_wall_hits 11,0, max 11, clean_rate 0,0** (best/ touche donc des murs à chaque course).
+- Limites : `clean_rate` = fini ET 0 choc ; le clamp des bords d'écran (4b) n'est pas compté. Entrée de cette éval ajoutée dans metrics.json.
+
+## 2026-11-04 21:25 · reviewer · T46 validée
+- Diff relu (env, wrapper, eval, robust_eval, 2 tests). pytest hors e2e : 45 passed, 1 skipped. eval best/ laps 3 seed 0 20 ép. : 20/20, 15,80 s, mean_wall_hits 11,0, max 11, clean_rate 0,0 (identique au journal). Physique inchangée (compteurs seuls ; test de hash T40 passe).

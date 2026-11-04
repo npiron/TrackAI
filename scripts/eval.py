@@ -49,6 +49,15 @@ def multi_lap_stats(succ, laps_done, totals):
     }
 
 
+def wall_stats(hits, succ):
+    """Chocs par épisode ; clean_rate = part des épisodes finis avec 0 choc."""
+    return {
+        "mean_wall_hits": round(float(np.mean(hits)), 4),
+        "max_wall_hits": int(np.max(hits)),
+        "clean_rate": round(float(np.mean([s and h == 0 for s, h in zip(succ, hits)])), 4),
+    }
+
+
 def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
     from src.rl.wrappers import GymTimeAttack
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
@@ -57,7 +66,7 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
         from scripts.heuristic_lap import heuristic_action
     rng = np.random.RandomState(seed)
     rets, cps, succ, laps, lens = [], [], [], [], []
-    laps_done, totals = [], []
+    laps_done, totals, hits = [], [], []
     for k in range(episodes):
         random.seed(seed + k)
         np.random.seed(seed + k)
@@ -82,6 +91,7 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
         cps.append(info.get("checkpoints_reached", 0))
         succ.append(bool(info.get("is_success", False)))
         laps_done.append(info.get("laps_done", 0))
+        hits.append(int(info.get("wall_hits", 0)))
         if succ[-1]:
             totals.append(info.get("total_time", 0.0))
             laps.append(info["lap_time"])
@@ -93,6 +103,7 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
         "mean_lap_time": round(float(np.mean(laps)), 4) if laps else None,
         "mean_episode_steps": round(float(np.mean(lens)), 4),
         **multi_lap_stats(succ, laps_done, totals),
+        **wall_stats(hits, succ),
     }
 
 

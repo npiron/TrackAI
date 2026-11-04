@@ -12,7 +12,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
-from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics
+from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics, wall_stats
 
 
 def run(model_path, episodes, seed, eps, laps_n, procedural=False):
@@ -21,7 +21,7 @@ def run(model_path, episodes, seed, eps, laps_n, procedural=False):
     model, vn = (None, None) if model_path == "heuristic" else _load_model(model_path)
     if model_path == "heuristic":
         from scripts.heuristic_lap import heuristic_action
-    succ, totals, fails = [], [], []
+    succ, totals, fails, hits = [], [], [], []
     for k in range(episodes):
         random.seed(seed + k)
         np.random.seed(seed + k)
@@ -45,6 +45,7 @@ def run(model_path, episodes, seed, eps, laps_n, procedural=False):
             steps += 1
             done = term or trunc
         ok = bool(info.get("is_success", False))
+        hits.append(int(info.get("wall_hits", 0)))
         succ.append(ok)
         if ok:
             totals.append(info.get("total_time", 0.0))
@@ -57,6 +58,7 @@ def run(model_path, episodes, seed, eps, laps_n, procedural=False):
             "mean_total_time": round(float(np.mean(totals)), 4) if totals else None,
             "std_total_time": round(float(np.std(totals)), 4) if totals else None,
             "worst_total_time": round(float(np.max(totals)), 4) if totals else None,
+            **wall_stats(hits, succ),
             "fails": fails}
 
 
@@ -74,7 +76,7 @@ def main(argv=None):
     lines = [f"# Robustesse de `{a.model}` (T28)", "",
              f"Commande : `python scripts/robust_eval.py --model {a.model} {'--static ' if a.static else ''}--laps {a.laps} "
              f"--episodes {a.episodes} --seed {a.seed} --eps {' '.join(map(str, a.eps))}`", "",
-             "| eps | finish | temps moyen (s) | écart-type | pire (s) |", "|---|---|---|---|---|"]
+             "| eps | finish | temps moyen (s) | écart-type | pire (s) | chocs moy | chocs max | clean |", "|---|---|---|---|---|---|---|---|"]
     details = []
     for e in a.eps:
         r = run(a.model, a.episodes, a.seed, e, a.laps, not a.static)
@@ -82,7 +84,7 @@ def main(argv=None):
                  "static": a.static, "laps": a.laps, "action_noise_eps": e, **{k: v for k, v in r.items() if k != "fails"}}
         append_metrics(a.metrics, entry)
         print(json.dumps(entry, ensure_ascii=False))
-        lines.append(f"| {e} | {r['n_ok']}/{r['episodes']} | {r['mean_total_time']} | {r['std_total_time']} | {r['worst_total_time']} |")
+        lines.append(f"| {e} | {r['n_ok']}/{r['episodes']} | {r['mean_total_time']} | {r['std_total_time']} | {r['worst_total_time']} | {r['mean_wall_hits']} | {r['max_wall_hits']} | {r['clean_rate']} |")
         if r["fails"]:
             details.append((e, r["fails"]))
     for e, f in details:

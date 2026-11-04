@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T46** · Compter les chocs murs dans l'env, le wrapper et `eval.py` · P1
+- [x] **T46** · Compter les chocs murs dans l'env, le wrapper et `eval.py` · P1
   - but : `TimeAttackEnv` compte `wall_hits` (pas où `inside_track(new_pos)` est faux) et `wall_contacts` (nouveaux contacts, un pas sans choc avant) sans changer la physique ; `GymTimeAttack` les met dans `info` (`wall_hits`, `wall_contacts`) à chaque pas/fin ; `eval.py` et `robust_eval.py` affichent et écrivent dans `metrics.json` `mean_wall_hits`, `max_wall_hits`, `clean_rate` (épisodes finis à 0 choc).
   - fini quand : test unitaire (voiture envoyée dans un mur → compteur > 0 ; trajectoire du hash T40 inchangée) ; pytest hors e2e vert ; `eval.py` sur best/ laps 3 seed 0 20 ép. affiche les nouveaux champs
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T47** · Mesurer les chocs de `best/` T38 et du professeur heuristique (état de départ) · P1
   - but : baseline : combien de chocs par course pour best/ (eps 0) et pour `heuristic_lap` ; où (secteurs/checkpoints) ; entrée `metrics.json` + `docs/WALL_BASELINE.md`.

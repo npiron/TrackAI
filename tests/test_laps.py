@@ -101,3 +101,27 @@ def test_laps3_needs_ordered_checkpoints():
     env.car.pos = vec(fx, fy)  # arrivée sans checkpoints : ne compte pas
     _, _, done, _ = env.step((0.0, 0.0, 0.0))
     assert not done and env.lap_count == 0
+
+
+def test_wall_hits_counted_without_changing_physics():
+    env = TimeAttackEnv(build_track(), procedural=False)
+    env.reset()
+    assert env.wall_hits == 0 and env.wall_contacts == 0
+    # plein gaz, sans braquer : la voiture finit dans un mur
+    for _ in range(600):
+        env.step((0.0, 1.0, 0.0))
+    assert env.wall_hits > 0
+    assert 1 <= env.wall_contacts <= env.wall_hits
+    env.reset()
+    assert env.wall_hits == 0 and env.wall_contacts == 0
+
+
+def test_wrapper_info_has_wall_counters():
+    from src.rl.wrappers import GymTimeAttack
+    env = GymTimeAttack(render_mode=None, procedural=False)
+    env.reset()
+    for _ in range(600):
+        _, _, term, trunc, info = env.step(1)
+        if term or trunc:
+            break
+    assert info["wall_hits"] > 0 and info["wall_contacts"] >= 1

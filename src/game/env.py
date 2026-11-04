@@ -67,6 +67,9 @@ class TimeAttackEnv:
         self.ghost = []
         self.off_track_counter = 0  # Reset timeout counter
         self.prev_steer = 0.0       # Track previous action
+        self.wall_hits = 0          # pas avec choc mur (new_pos hors piste)
+        self.wall_contacts = 0      # nouveaux contacts (pas précédent sans choc)
+        self._wall_prev = False
         
         return self._obs()
 
@@ -138,12 +141,17 @@ class TimeAttackEnv:
         
         # 4a. Check if new position would be off-road (HARD WALLS)
         # 4a. Check if new position would be off-road (HARD WALLS with SLIDING)
+        wall_now = False
         if self.track.inside_track(new_pos):
             # Safe to move
             self.car.pos = new_pos
             self.off_track_counter = 0
         else:
             # WALL HIT! Try to slide.
+            self.wall_hits += 1
+            if not self._wall_prev:
+                self.wall_contacts += 1
+            wall_now = True
             # 1. Try moving along X only
             pos_x_only = self.car.pos + vec(self.car.vel[0], 0)
             if self.track.inside_track(pos_x_only):
@@ -167,6 +175,8 @@ class TimeAttackEnv:
             # Resync speed with the velocity left after the collision
             # (speed := |vel|, which the wall has just reduced)
             self.car.speed = float(np.linalg.norm(self.car.vel))
+
+        self._wall_prev = wall_now
 
         # 4b. Check screen boundaries (backup safety)
         if self.track.hits_wall(self.car.pos):

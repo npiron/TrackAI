@@ -423,6 +423,8 @@ class GymTimeAttack(gym.Env):
         info["laps_done"] = self.ta.lap_count
         info["lap_times"] = list(self.ta.lap_times)
         info["total_time"] = float(sum(self.ta.lap_times))
+        info["wall_hits"] = int(self.ta.wall_hits)
+        info["wall_contacts"] = int(self.ta.wall_contacts)
 
     def render(self):
         if self.screen is None:
