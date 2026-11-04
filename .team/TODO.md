@@ -37,7 +37,7 @@
   - dépend de : T34 (clos)
   - essais : 2
 
-- [?] **T37** · Recherche du professeur robuste au bruit · P2
+- [x] **T37** · Recherche du professeur robuste au bruit · P2
   - but : dans `search_heuristic.py`, option de score = moyenne du temps sous bruit d'action eps 0,05 (≥ 5 épisodes, finish obligatoire) pour trouver un professeur rapide ET tolérant (virage ~(181,510) à ralentir) ; budget ≤ 10 min.
   - fini quand : heuristique avec temps eps 0 ≤ 15,9 s, 20/20, audit propre, et finish_rate ≥ 95 % à eps 0,05 (100 ép.) dans `metrics.json` ; sinon table des essais
   - dépend de : rien
