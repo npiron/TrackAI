@@ -541,3 +541,9 @@
 ## 2026-11-04 01:25 · reviewer · T38 validée
 
 - Relancé robust_eval sur best/ (100 ép., seed 1000) : eps 0,1 → 100/100, 19,65 s, identique au journal (eps 0/0,05 déjà confirmés par les entrées metrics du worker). pytest hors e2e : 41 passed, 1 skipped. Aucun code modifié ; best/ (non suivi par git) remplacé avec mesure. Mes mesures parasites retirées de metrics.json. Note : test_e2e_training échoue (non investigué par le worker).
+
+## 2026-11-04 01:35 · worker · T39 Recherche repartant de T37 (plafond, T37 conservé)
+- Fichiers : `scripts/search_heuristic.py` (le départ n'est plus soumis à `--t0-max`, seuls les candidats le sont — sinon T37 à 15,80 s était rejeté d'emblée), `docs/SEARCH_T39.md`. Constantes de `heuristic_lap.py` inchangées.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/search_heuristic.py --sectors 6 --restarts 2 --max-seconds 540 --budget 100000 --noise-eps 0.05 --noise-episodes 8 --t0-max 15.7 --start '<params T37>' --out docs/SEARCH_T39.md` (9 min 4 s).
+- Résultat : 1425 + 1409 candidats, aucun ne tient t0 ≤ 15,7 s ET bruité < 17,62 s. Pas d'amélioration → critère (< 15,80 s) non atteint ; table fournie. 1 essai, 6 secteurs au lieu de 8 (SECTOR_MULT de T37 a 6 valeurs).
+- Limites : score bruité sur 8 ép. seulement, hill-climbing local ; le contrainte t0 ≤ 15,7 est stricte et le score bruité est bruité. Pas de test pytest relancé (changement limité au script de recherche).

@@ -60,7 +60,12 @@ def noisy_eval(h, ev, params):
 def climb(h, ev, rng, start, budget, max_seconds, sectors):
     """Hill-climbing (paramètres globaux + multiplicateurs de secteurs). Renvoie (best, temps, nb essais, journal)."""
     best = {k: (list(v) if isinstance(v, list) else v) for k, v in start.items()}
+    global NOISE
+    full = NOISE
+    if NOISE:  # le départ n'est pas soumis à la contrainte t0 (T39), les candidats oui
+        NOISE = NOISE[:4] + (1e9,)
     ok, bt = score(h, ev, best)
+    NOISE = full
     if not ok:
         return best, None, 0, []
     log = [(0, bt)]
