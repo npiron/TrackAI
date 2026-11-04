@@ -564,3 +564,11 @@
 
 ## 2026-11-04 01:37 · reviewer · T41 validée
 - Doc relu : chiffres retrouvés (13,96/14,77 dans BOUND_T32, 17,94 SPEED_T25, 17,74 AUDIT_T29, 15,68 SEARCH_T33, 17,48 journal T27, 15,80 metrics). pytest hors e2e : 43 passed, 1 skipped. Docs seul, pas de code. Note : docs/BEST_STATUS.md périmé (best/ = T38) signalé par le worker.
+
+## 2026-11-04 01:37 · worker · Aucune tâche
+
+- T31-T41 toutes [x], aucune [ ] ni [-]. REPLAN créé. Rappel : docs/BEST_STATUS.md périmé (best/ = T38, 15,80 s) ; data/human_best.json absent (action humaine).
+
+## 2026-11-04 01:38 · planner · Replanification
+
+- T38-T41 validées. Phase vitesse close (T39 : plafond, T41 : marge ≈1,8 s). best/ = T38, 15,80 s, 100/100 bruité. Nouvelles tâches T42 (doc périmée), T43 (test e2e en échec), T44 (replays écrasés par éval), T45 (robustesse départ perturbé). Inbox vide. GOAL : statut mis à jour, pas de GOAL_REACHED (temps humain absent, action de Nicolas : `scripts/human_lap.py --laps 3`). REPLAN supprimé.

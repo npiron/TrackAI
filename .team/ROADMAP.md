@@ -30,7 +30,12 @@ T31-T33 faits : best/ 15,90 s robuste (100/100, 100/99 % bruités) ; professeur 
 
 T31-T37 faits. Professeur T37 15,80 s robuste (99 % à eps 0,05) ; best/ reste BC T31 15,90 s. La marge restante est faible (borne 13,96 s). Suite : T38 ré-imitation du professeur T37, T39 recherche plus poussée, T40 non-régression 1 tour, T41 bilan vitesse. Temps humain toujours absent : pas de GOAL_REACHED.
 
+## Point 01:40
+
+T38-T41 faits : best/ = T38, 15,80 s, 100/100 à eps 0/0,05/0,1. T39 : plafond de la recherche locale. Phase vitesse close sauf temps humain (borne 13,96 s, marge ≈ 1,8 s). Suite : hygiène (T42 doc, T43 test e2e, T44 banc/replays) et robustesse au départ (T45). Pas de GOAL_REACHED.
+
 ## Décisions
+- 2026-11-04 01:40 : phase vitesse close (T39 plafond). Le critère vitesse attend `data/human_best.json` ; intermédiaire proposé : temps ≤ 15,80 s déjà tenu. Effort sur fiabilité/hygiène.
 - 2026-11-04 : le critère vitesse reste non évaluable sans `data/human_best.json` ; on continue à gagner du temps tant que robustesse ≥ T31, mais on plafonne l'effort (rendements décroissants) : si T38 et T39 échouent, clore la phase vitesse.
 
 ## Ancien objectif (clos, 2026-11-03 22:30) : physique/gameplay : vérifier gameplay/physique, simulation réaliste
