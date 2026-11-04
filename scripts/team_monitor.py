@@ -3,6 +3,7 @@
 
 Usage : python3 scripts/team_monitor.py
 Boutons (clic ou touche) : g éditer l'objectif · s démarrer · +/- itérations · x arrêt propre · p replanifier · K tuer (2 fois)
+Équipe : a choisir l'agent · m changer son modèle · e changer son effort (ou clic sur les pastilles)
 Navigation : ↑/↓ défiler · tab changer de panneau · l log plein écran · q quitter
 """
 import curses
@@ -18,6 +19,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TEAM = ROOT / ".team"
+AGENTS = ["planner", "worker", "reviewer"]
+MODELS = ["haiku", "sonnet", "opus", "fable"]
+EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+DEFAULT_CFG = {"planner": {"model": "sonnet", "effort": "high"},
+               "worker": {"model": "sonnet", "effort": "medium"},
+               "reviewer": {"model": "sonnet", "effort": "medium"}}
 REFRESH = 2.0
 STATUS = {"x": "validée", "?": "à relire", "~": "en cours", "-": "à reprendre", "!": "bloquée", " ": "à faire"}
 TASK_RE = re.compile(r"^- \[(.)\] \*\*(T\d+)\*\* · (.+?)(?: · (P\d))?\s*$")
@@ -138,6 +145,24 @@ def edit_goal(scr):
     return "Objectif inchangé."
 
 
+def load_cfg():
+    try:
+        cfg = json.loads(read(TEAM / "config.json") or "{}")
+    except Exception:
+        cfg = {}
+    return {a: {**DEFAULT_CFG[a], **cfg.get(a, {})} for a in AGENTS}
+
+
+def cycle_cfg(agent, key):
+    cfg = load_cfg()
+    options = MODELS if key == "model" else EFFORTS
+    cur = cfg[agent][key]
+    cfg[agent][key] = options[(options.index(cur) + 1) % len(options)] if cur in options else options[0]
+    (TEAM / "config.json").write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+    nom = "modèle" if key == "model" else "effort"
+    return f"{agent} : {nom} → {cfg[agent][key]} (appliqué à son prochain appel)."
+
+
 # ---------- contrôle ----------
 
 def loop_pids():
@@ -195,6 +220,7 @@ def state():
         "metrics": metrics,
         "inbox": [p.name for p in sorted((TEAM / "inbox").glob("*.md"))],
         "goal": goal(),
+        "cfg": load_cfg(),
         "branch": sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip(),
         "commits": sh("git", "log", "--oneline", "-15").strip().splitlines(),
         "dirty": len(sh("git", "status", "--short").strip().splitlines()),
@@ -356,11 +382,33 @@ def footer(scr, btns, msg):
     for key, label, enabled, col in btns:
         attr = (C[col] | curses.A_REVERSE | curses.A_BOLD) if enabled else C["mute"]
         put(scr, h - 1, x, label, attr)
-        zones.append((x, x + len(label), key, enabled))
+        zones.append((h - 1, x, x + len(label), ("key", ord(key)), enabled))
         x += len(label) + 1
     put(scr, h - 1, x + 1, "tab panneau · ↑↓ défiler · l log", C["mute"])
     if msg:
-        put(scr, h - 2, 1, msg, C["warn"] | curses.A_BOLD)
+        put(scr, h - 3, 1, msg, C["warn"] | curses.A_BOLD)
+    return zones
+
+
+def team_row(scr, d, sel):
+    """Ligne au-dessus des boutons : modèle et effort de chaque agent, pastilles cliquables."""
+    h, w = scr.getmaxyx()
+    y, x, zones = h - 2, 1, []
+    put(scr, y, x, "Équipe", C["mute"])
+    x += 8
+    for agent in AGENTS:
+        c = d["cfg"][agent]
+        name = f"{'▸' if agent == sel else ' '}{agent} "
+        put(scr, y, x, name, C[AGENT_COLOR[agent]] | curses.A_BOLD)
+        zones.append((y, x, x + len(name), ("select", agent), True))
+        x += len(name)
+        for key in ("model", "effort"):
+            chip = f" {c[key]} ▾ "
+            put(scr, y, x, chip, (C[AGENT_COLOR[agent]] | curses.A_REVERSE) if agent == sel else C[AGENT_COLOR[agent]])
+            zones.append((y, x, x + len(chip), ("cycle", agent, key), True))
+            x += len(chip) + 1
+        x += 2
+    put(scr, y, x, "a agent · m modèle · e effort", C["mute"])
     return zones
 
 
@@ -371,7 +419,7 @@ def main(scr):
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
     panels = ["todo", "journal", "side", "log"]
     active, scroll, full_log = 1, {p: 0 for p in panels}, False
-    n_iter, armed, msg, msg_t, zones = 5, False, "", 0, []
+    n_iter, armed, msg, msg_t, zones, sel = 5, False, "", 0, [], "worker"
     d, last = state(), time.time()
     while True:
         if time.time() - last >= REFRESH:
@@ -381,12 +429,12 @@ def main(scr):
         header(scr, d)
         if msg and time.time() - msg_t > 6:
             msg = ""
-        zones = footer(scr, buttons(d, n_iter, armed), msg)
+        zones = footer(scr, buttons(d, n_iter, armed), msg) + team_row(scr, d, sel)
         if H < 22 or W < 80:
             put(scr, 2, 1, "Terminal trop petit (80x22 minimum)")
             scr.refresh()
         else:
-            body_h = H - 3
+            body_h = H - 4
             if full_log:
                 wins = {"log": (body_h, W, 1, 0)}
             else:
@@ -438,12 +486,28 @@ def main(scr):
             except curses.error:
                 continue
             k = -1
-            if my == H - 1 and bstate & (curses.BUTTON1_CLICKED | curses.BUTTON1_PRESSED | curses.BUTTON1_RELEASED):
-                for x0, x1, key, enabled in zones:
-                    if x0 <= mx < x1 and enabled:
-                        k = ord(key)
+            click = None
+            if bstate & (curses.BUTTON1_CLICKED | curses.BUTTON1_PRESSED | curses.BUTTON1_RELEASED):
+                for zy, x0, x1, action, enabled in zones:
+                    if zy == my and x0 <= mx < x1 and enabled:
+                        click = action
+            if click and click[0] == "key":
+                k = click[1]
+            elif click and click[0] == "select":
+                sel = click[1]
+            elif click and click[0] == "cycle":
+                sel = click[1]
+                msg, msg_t = cycle_cfg(click[1], click[2]), time.time()
+                d, last = state(), 0
+                continue
         act = None
-        if k == ord("s") and not d["loop"]["running"]:
+        if k == ord("a"):
+            sel = AGENTS[(AGENTS.index(sel) + 1) % len(AGENTS)]
+        elif k == ord("m"):
+            act = cycle_cfg(sel, "model")
+        elif k == ord("e"):
+            act = cycle_cfg(sel, "effort")
+        elif k == ord("s") and not d["loop"]["running"]:
             act = start_loop(n_iter)
         elif k in (ord("+"), ord("=")):
             n_iter = min(50, n_iter + 1)

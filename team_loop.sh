@@ -20,11 +20,16 @@ journal() { printf '\n## %s · boucle · %s\n\n- %s\n' "$(ts)" "$1" "$2" >> "$TE
 
 run_agent() {  # $1=agent  $2=consigne
   local agent="$1" out="$LOGS/$(date +%Y%m%d-%H%M%S)-$1.log"
-  log "→ $agent (log : $out)"
+  local model effort
+  model="$(cfg "$agent" model sonnet)"
+  effort="$(cfg "$agent" effort medium)"
+  log "→ $agent · $model · $effort (log : $out)"
   # Utiliser le login claude.ai (abonnement), pas une clé API du shell
   local consigne="$2 Heure actuelle : $(ts). Pour dater une entrée du journal, utilise toujours la sortie de \`date '+%Y-%m-%d %H:%M'\`, jamais une heure estimée."
   env -u ANTHROPIC_API_KEY claude -p "$consigne" \
     --agent "$agent" \
+    --model "$model" \
+    --effort "$effort" \
     --permission-mode acceptEdits \
     --allowedTools "${ALLOWED[@]}" \
     --disallowedTools "${DENIED[@]}" \
@@ -36,6 +41,13 @@ run_agent() {  # $1=agent  $2=consigne
     journal "Arrêt sur erreur" "\`$agent\` a échoué (code $rc), voir \`$out\`."
     exit $rc
   fi
+}
+
+# Modèle et effort par agent, relus dans .team/config.json avant chaque appel (modifiables depuis le moniteur)
+cfg() {  # $1=agent $2=clé $3=défaut
+  local v
+  v="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get(sys.argv[2], {}).get(sys.argv[3], ""))' "$TEAM/config.json" "$1" "$2" 2>/dev/null)"
+  echo "${v:-$3}"
 }
 
 count_done() { grep -c '^- \[x\]' "$TEAM/TODO.md" 2>/dev/null || true; }

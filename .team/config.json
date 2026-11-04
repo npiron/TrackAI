@@ -1,0 +1,5 @@
+{
+  "planner": { "model": "sonnet", "effort": "high" },
+  "worker": { "model": "sonnet", "effort": "medium" },
+  "reviewer": { "model": "sonnet", "effort": "medium" }
+}
