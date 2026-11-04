@@ -18,11 +18,11 @@
   - dépend de : T64 (pour savoir où cibler)
   - essais : 1
 
-- [ ] **T66** · Imitation depuis zéro en 3×256 avec les professeurs 0 choc H=30 (16,6 s) et H=34 (17,44 s) · P1
+- [x] **T66** · Imitation depuis zéro en 3×256 avec les professeurs 0 choc H=30 (16,6 s) et H=34 (17,44 s) · P1
   - but : T61 n'a testé qu'un départ depuis best/ T53b (2-3 chocs). T60 montre que 3×256 depuis zéro tient 15,9 s : refaire pareil avec `--teacher-horizon 30` puis 34, `--net-arch 256 256 256`, `--wall-penalty -50`, eps 0 puis 0,05, ≤ 10 min chacun. Gain visé : 0 choc entre 17 et 20,4 s.
   - fini quand : eval 20 ép. laps 3 seed 0 --static dans metrics.json pour chaque run ; remplacement de best/ comme en T65 si critère rempli ; sinon verdict chiffré
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T67** · Bonus : entraînement mixte piste fixe + pistes aléatoires (corriger la régression statique de T63) · P2
   - but : T63 : no-static 18,87 s/8,65 chocs mais static 6 chocs. Ajouter `--mix-static` à `imitate.py` (épisodes DAgger alternant piste fixe et procédurale, sans changer le défaut), reprendre depuis best/ T53b, professeur H=29, ≤ 10 min.

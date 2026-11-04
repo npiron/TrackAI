@@ -802,3 +802,13 @@
 
 ## 2026-11-04 23:54 · reviewer · T65 validée
 - Relancé eval data/models/best/best.zip static laps 3 20 ép. seed 0 : 20/20, 15,84 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff = option --hit-weight (défaut 1 inchangé). best_t53b sauvegardé. Limite : robustesse eps>0 non mesurée. Mon eval a ajouté une entrée metrics.json.
+
+## 2026-11-05 00:11 · worker · T66 Imitation depuis zéro 3×256, professeurs H=30/34 (échec, best/ non remplacé)
+- Aucun code modifié. Base : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --wall-penalty -50 --net-arch 256 256 256 --episodes 12 --dagger-episodes 8 --dagger-eps 0 0.05 --lr 5e-4 --out data/checkpoints/ppo_t66X`, éval `eval.py --model <zip> --static --laps 3 --episodes 20 --seed 0`.
+- t66a : `--teacher-horizon 30 --dagger 12 --epochs 10 --seed 1900` → 20/20, 18,62 s, 2 chocs.
+- t66b : `--teacher-horizon 34 --dagger 12 --epochs 10 --seed 2000` → 20/20, 19,22 s, 5 chocs.
+- t66c (extra, non demandé) : H=30 + `--hit-weight 10 --dagger 16 --epochs 8 --seed 2100` (258k éch., précision 0,967) → 20/20, 18,60 s, 1 choc.
+- Verdict : aucun à 0 choc ; best/ (T65 : 15,84 s, 0 choc) déjà meilleur, non remplacé. Les professeurs lents (H≥30) ne donnent pas d'agent plus propre que H=29 + hit-weight. Limites : une graine par run.
+
+## 2026-11-05 00:13 · reviewer · T66 validée
+- Relancé eval t66c (static, 20 ép., seed 0) : 20/20, 18,6 s, 1 choc (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, best/ T65 non remplacé (justifié), entrées metrics.json présentes. Verdict négatif chiffré honnête.
