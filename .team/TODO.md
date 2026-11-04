@@ -55,7 +55,7 @@
   - dépend de : rien
   - essais : 1
 
-- [?] **T39** · Professeur plus rapide et robuste : recherche repartant de T37 · P1
+- [x] **T39** · Professeur plus rapide et robuste : recherche repartant de T37 · P1
   - but : `search_heuristic.py --start` (paramètres T37), contrainte `--t0-max 15.7`, score bruité eps 0,05, 8 secteurs, budget ≤ 10 min ; garder le meilleur seulement s'il tient les critères.
   - fini quand : heuristique eps 0 < 15,80 s, 20/20, audit propre (`audit_lap.py`), finish ≥ 95/100 à eps 0,05 (100 ép., seed 1000) dans `metrics.json` ; sinon table des essais prouvant le plafond (T37 conservé)
   - dépend de : rien
