@@ -728,3 +728,7 @@
 
 ## 2026-11-04 23:17 · reviewer · T43 validée
 - Relancé pytest complet (e2e inclus) : 49 passed, 1 skipped, aucun artefact résiduel. Diff limité au test (chemins data/monitoring et data/checkpoints + nettoyage), physique non touchée. Une seule exécution de ma part (le worker en annonce 2).
+
+## 2026-11-04 23:20 · planner · Replanification
+- T43, T56-T59 rangées. Critère fiabilité toujours rempli (best/ T53b, 3 graines) ; vitesse ouverte (20,46 s ; professeur H=29 14,62 s ; t57 15,94 s mais 1 choc). GOAL_REACHED non créé : temps humain absent, vitesse non plafonnée.
+- Nouvelles tâches : T60 (réseau plus gros pour imiter H=29), T61 (professeur intermédiaire), T62 (robustesse H=29 + docs), T63 (bonus pistes aléatoires). Inbox vide, pas de REPLAN.
