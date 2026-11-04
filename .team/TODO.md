@@ -42,11 +42,11 @@
   - dépend de : rien
   - essais : 2
 
-- [ ] **T53** · DAgger long sans choc depuis T38 (≤ 10 min, reprises possibles) · P1
+- [?] **T53** · DAgger long sans choc depuis T38 (≤ 10 min, reprises possibles) · P1
   - but : avec T51+T52, lancer DAgger (eps 0/0,05, `--wall-penalty -50`) ; évaluer 20 ép. laps 3 seed 0 (clean_rate) + robust_eval 100 ép. eps 0/0,05. Reprendre le checkpoint d'une itération à l'autre si nécessaire.
   - fini quand : entrée metrics.json ; si 20/20 finis ET clean_rate 20/20 → remplace best/ (avec best.json) ; sinon chocs par secteur dans le journal
   - dépend de : T51, T52
-  - essais : 0
+  - essais : 1
 
 - [ ] **T54** · PPO fine-tuning depuis best/ T38 avec `wall_penalty` (voie alternative) · P2
   - but : `rl_train_ppo.py --load <best> --static --laps 3 --wall-penalty -20 --lr 3e-5` (≤ 10 min, ~200k pas) ; palier mort au contact (`--wall-fatal`) seulement si le palier pénalité baisse mean_wall_hits sans perdre 20/20.

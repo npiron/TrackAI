@@ -648,3 +648,13 @@
 
 ## 2026-11-04 22:31 · reviewer · T52 validée
 - Relancé la commande courte (--init best.zip, 3 ép., 1 DAgger) : modèle rechargé, 2489 éch., précision initiale 0,728, BC 0,705, DAgger 0,768, .zip + vecnormalize sauvés (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff relu : chemin sans --init inchangé. Réserve : le BC à lr 1e-3 dégrade au départ (noté par le worker).
+
+## 2026-11-04 22:38 · worker · T53 DAgger sans choc depuis T38
+- Fichiers : `scripts/imitate.py` (+`--lr` pour le BC), `data/models/best/` remplacé par T53b (ancien best/ copié dans `data/models/best_t38/`), best.json, metrics.json (evals).
+- Commandes (SDL_VIDEODRIVER=dummy) : (1) `imitate.py --static --laps 3 --init data/models/best/best.zip --episodes 10 --dagger 8 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 10 --lr 3e-4 --wall-penalty -50 --out data/checkpoints/ppo_t53` (1 min 52) → eval 20 ép. : 20/20, 17,02 s, 1 choc/course. (2) `imitate.py ... --init data/checkpoints/ppo_t53.zip --episodes 12 --dagger 16 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 10 --lr 2e-4 --wall-penalty -50 --seed 500 --out data/checkpoints/ppo_t53b` (3 min 57).
+- T53b, eval.py laps 3 seed 0 20 ép. : **20/20 finis, 20,46 s, mean_wall_hits 0, clean_rate 1,0**. robust_eval 100 ép. seed 1000 : eps 0 → 100/100, 0 choc, clean 1,0, 20,46 s ; eps 0,05 → 68/100 finis, 20,68 s, mean_wall_hits 6,89, clean 0,08.
+- Critère « 20/20 finis ET clean 20/20 » atteint → best/ remplacé. Coût : 20,46 s au lieu de 15,80 s.
+- Limites : fragile au bruit d'action (eps 0,05) ; l'ancien best/ (rapide, 11 chocs) est gardé dans best_t38. Pas de pytest relancé (seul ajout : option --lr). Piste : DAgger plus long avec eps 0,05 pour la robustesse, puis réduction du temps.
+
+## 2026-11-04 22:38 · reviewer · T53 validée
+- Relancé eval.py best.zip laps 3 seed 0 20 ép. : 20/20, 20,46 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff imitate.py (--lr) relu, minime. robust_eval non relancé. Réserve : fragile au bruit eps 0,05 (68/100) et plus lent (20,46 vs 15,80 s), annoncé honnêtement.
