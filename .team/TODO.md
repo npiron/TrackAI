@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T57** · Réduire le temps sous contrainte 0 choc (T53b = 20,46 s ; professeur sûr 17,40 s ; T38 15,80 s) · P1
+- [x] **T57** · Réduire le temps sous contrainte 0 choc (T53b = 20,46 s ; professeur sûr 17,40 s ; T38 15,80 s) · P1
   - but : DAgger depuis best/ T53b avec un professeur plus rapide à 0 choc (ex. `SAFE_HORIZON`/vitesse de virage de `heuristic_lap` réglés pour ≤ 17 s avec 0 choc sur 20 ép. ; vérifier d'abord le professeur seul), puis ré-imitation (≤ 10 min).
   - fini quand : professeur seul mesuré (temps, 0 choc, 20 ép. seed 0) puis agent évalué 20 ép. laps 3 seed 0 : si 20/20, 0 choc et temps < 20,46 s → remplace best/ (best.json) ; sinon verdict chiffré
   - dépend de : T56 (si T56 remplace best/, repartir de lui)
-  - essais : 0
+  - essais : 1
 
 - [ ] **T58** · Bonus : mesurer best/ sur pistes aléatoires jamais vues (`--no-static`) · P2
   - but : `eval.py --no-static --laps 3 --episodes 20 --seed 0` sur best/ (et best_t38) : finis, chocs, clean_rate ; diagnostic court (l'heuristique lit la spline : attendu faible).

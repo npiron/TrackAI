@@ -96,7 +96,7 @@ def lookahead_error(ta, speed_n, i=None):
     return math.atan2(math.sin(ang), math.cos(ang))
 
 
-SAFE_HORIZON = 32       # T49 : > 0 = prédiction de N images ; écarte une action qui mène à un choc mur (0 = off)
+SAFE_HORIZON = 29       # T49 (32 → 29 en T57 : 14,62 s, 0 choc ; non monotone, 28 et 25 échouent) : > 0 = prédiction de N images ; écarte une action qui mène à un choc mur (0 = off)
 _ACTS = {0: (0, 0, 0), 1: (0, 1, 0), 2: (0, 0, 1), 3: (-1, 0, 0), 4: (1, 0, 0),
          5: (-1, 1, 0), 6: (1, 1, 0), 7: (-1, 0, 1), 8: (1, 0, 1)}
 

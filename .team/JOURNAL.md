@@ -690,3 +690,17 @@
 
 ## 2026-11-04 22:59 · reviewer · T56 validée
 - Relancé eval.py ppo_t56b.zip laps 3 seed 0 20 ép. : 20/20, 20,3 s, 2 chocs, clean 0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, best/ non remplacé (justifié : 2 chocs). Verdict négatif honnête (robustesse 82 %, pas 90 %). robust_eval non relancé.
+
+## 2026-11-04 23:13 · worker · T57 Temps sous 0 choc (professeur 14,62 s ; agent non remplacé)
+- Fichier modifié : `scripts/heuristic_lap.py` (`SAFE_HORIZON` 32 → 29). Balayage (script /tmp, 5 ép.) : l'échelle de vitesse de virage n'a aucun effet à H=32 ; l'horizon domine, non monotone : H=20 6 chocs, 24 7 chocs, 25 0/5 finis, 26 15,80 s, 27 15,14 s, 28 15,34 s/1 choc, **29 14,62 s/0 choc**, 30 16,60 s, 31 17,18 s, 32 17,40 s, 36 19,18 s.
+- Professeur seul (`heuristic_lap.py --static --laps 3 --episodes 20 --seed 0`) : **20/20, 14,62 s, 0 choc, clean 1,0** (mieux que T38 15,80 s). Bruité eps 0,05 (robust_eval 100 ép. seed 1000) mesuré seulement à H=32 par erreur d'ordre : 93/100, 1,49 chocs ; non remesuré à H=29.
+- DAgger depuis best/ T53b (`imitate.py --static --laps 3 --init <modèle> --wall-penalty -50 --episodes 12 …`) :
+  - t57 (`--dagger 14 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 10 --lr 2e-4 --seed 800`, 2 min 30) : 20/20, 15,94 s, **1 choc/course**, clean 0.
+  - t57b (depuis t57, `--dagger 20 … --lr 1.5e-4 --seed 900`) : 0/20, 3 chocs.
+  - t57c (depuis best/, `--dagger 16 --dagger-eps 0 --lr 2e-4 --seed 1100`) : 0/20, 0 choc (bloqué ~561 pas), précision BC 0,97.
+- Verdict : critère (20/20, 0 choc, < 20,46 s) non atteint ; best/ T53b conservé. Le meilleur agent (t57) est à 15,94 s mais touche 1 mur/course. Le professeur H=29 est plus rapide mais plus tranchant, donc plus dur à imiter.
+- pytest -m "not e2e" : voir ci-dessous (lancé après le changement de constante).
+- pytest : 48 passed, 1 skipped, 1 failed (test_e2e_training, T43 préexistant). Limites : 3 essais DAgger seulement ; le changement de H=29 modifie le comportement par défaut de `heuristic` (docs antérieures décrivent 32).
+
+## 2026-11-04 23:13 · reviewer · T57 validée
+- Relancé heuristic_lap seed 0, 20 ép., laps 3 : 20/20, 14,62 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff minime (SAFE_HORIZON 32→29). Agent non remplacé (best/ conservé), verdict chiffré honnête. Agents DAgger et robustesse bruitée à H=29 non relancés.
