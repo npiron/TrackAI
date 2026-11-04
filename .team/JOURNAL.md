@@ -658,3 +658,12 @@
 
 ## 2026-11-04 22:38 · reviewer · T53 validée
 - Relancé eval.py best.zip laps 3 seed 0 20 ép. : 20/20, 20,46 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff imitate.py (--lr) relu, minime. robust_eval non relancé. Réserve : fragile au bruit eps 0,05 (68/100) et plus lent (20,46 vs 15,80 s), annoncé honnêtement.
+
+## 2026-11-04 22:46 · worker · T54 PPO fine-tuning + wall_penalty depuis T38
+- Aucun code modifié. Commande (≈ 5 min, 200 000 pas, 16 envs) : `SDL_VIDEODRIVER=dummy .venv/bin/python rl_train_ppo.py --load data/models/best_t38/best.zip --static --laps 3 --wall-penalty -20 --lr 3e-5 --steps 200000 --run-id t54a` → `data/checkpoints/ppo_t54a_final.zip`.
+- Éval `eval.py --model data/checkpoints/ppo_t54a_final.zip --static --laps 3 --episodes 20 --seed 0` : 20/20 finis, 17,28 s, **mean_wall_hits 12,0, max 12, clean_rate 0,0** (T38 : 11 chocs, 15,80 s). Entrée ajoutée dans metrics.json par eval.
+- Verdict : voie PPO + pénalité -20 non viable à ce réglage : pas de baisse de chocs (12 vs 11) et plus lent. Palier `--wall-fatal` non lancé (condition de la tâche : la pénalité doit d'abord baisser les chocs). Pistes si reprise : pénalité plus forte (-50/-100), plus de pas, ou fatal directement ; DAgger (T53) reste la voie qui a marché.
+- Limites : un seul essai, une seule graine ; best/ non touché.
+
+## 2026-11-04 22:47 · reviewer · T54 validée
+- Relancé eval.py ppo_t54a_final.zip laps 3 seed 0 20 ép. : 20/20, 17,28 s, mean_wall_hits 12, clean 0,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, seuls .team/ changés. Verdict « voie non viable à -20 » justifié (12 chocs vs 11). Un seul essai/graine, palier fatal non tenté (conforme à la condition).

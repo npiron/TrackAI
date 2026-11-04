@@ -48,11 +48,11 @@
   - dépend de : T51, T52
   - essais : 1
 
-- [ ] **T54** · PPO fine-tuning depuis best/ T38 avec `wall_penalty` (voie alternative) · P2
+- [x] **T54** · PPO fine-tuning depuis best/ T38 avec `wall_penalty` (voie alternative) · P2
   - but : `rl_train_ppo.py --load <best> --static --laps 3 --wall-penalty -20 --lr 3e-5` (≤ 10 min, ~200k pas) ; palier mort au contact (`--wall-fatal`) seulement si le palier pénalité baisse mean_wall_hits sans perdre 20/20.
   - fini quand : eval 20 ép. laps 3 seed 0 : finis, mean_wall_hits et clean_rate dans metrics.json vs 11 chocs de T38 ; verdict dans le journal (voie viable ou non)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T55** · Candidat de repli « politique + garde-fou » mesuré à part · P3
   - but : mesurer best/ T38 dont l'action est filtrée par la couche de sécurité T49 (eps 0, 20 ép.) : chocs, temps. Étiqueté NON conforme à « agent seul » ; sert de borne et de décision pour l'humain.
