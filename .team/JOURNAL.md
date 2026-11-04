@@ -640,3 +640,11 @@
 
 ## 2026-11-04 22:31 · reviewer · T51 validée
 - Relancé heuristic_lap --static --laps 3 --episodes 20 --seed 0 : 20/20, 17,40 s, 0 choc, clean 1,0, 13,8 s au total (~0,6 s/ép., conforme). pytest hors e2e : 48 passed, 1 skipped. Diff relu (rollout unique, table de limites en cache, recherche fenêtrée). Réserve : robustesse bruitée non remesurée.
+
+## 2026-11-04 22:30 · worker · T52 imitate.py --init
+- Fichier : `scripts/imitate.py` seul. `--init <model.zip>` charge le PPO + `<nom>_vecnormalize.pkl` (stats figées, non réécrites) ; la 1re collecte est conduite par ce modèle (bruit `--dagger-eps`), étiquetée par le professeur T49/T51 ; affiche la précision initiale puis fait un BC (`--epochs 0` pour le sauter) ; les tours `--dagger` suivent. Sans `--init` : comportement inchangé.
+- Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --init data/models/best/best.zip --episodes 3 --dagger 1 --dagger-episodes 3 --epochs 5 --wall-penalty -50 --out /tmp/t52_test` → modèle chargé, 2489 éch., **précision initiale de T38 sur le professeur : 0,728** ; BC 0,705 (5 époques) ; DAgger 1 : +3425 éch., précision 0,768 ; sauvé (.zip + _vecnormalize.pkl).
+- Limites : pas de pytest relancé (script seul) ; l'env réécrit replays/personal_best (effet connu) ; le BC à lr 1e-3 baisse un peu la précision au début (lr à baisser pour T53 si besoin).
+
+## 2026-11-04 22:31 · reviewer · T52 validée
+- Relancé la commande courte (--init best.zip, 3 ép., 1 DAgger) : modèle rechargé, 2489 éch., précision initiale 0,728, BC 0,705, DAgger 0,768, .zip + vecnormalize sauvés (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff relu : chemin sans --init inchangé. Réserve : le BC à lr 1e-3 dégrade au départ (noté par le worker).

@@ -90,23 +90,46 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--wall-fatal", action="store_true", help="un choc mur termine l'épisode (-100)")
     p.add_argument("--wall-penalty", type=float, default=0.0, help="récompense ajoutée par choc (ex. -50)")
+    p.add_argument("--init", default=None, help="modèle .zip de départ (poids + <nom>_vecnormalize.pkl) ; "
+                   "la 1re collecte est alors conduite par ce modèle, étiquetée par le professeur")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
     from src.rl.wrappers import GymTimeAttack
     kw = dict(wall_fatal=a.wall_fatal, wall_penalty=a.wall_penalty)
-    O, A = collect(a.episodes, a.laps, not a.static, a.seed, env_kw=kw)
-    print(f"{len(O)} échantillons, répartition actions: {np.bincount(A, minlength=9).tolist()}")
-    venv = VecNormalize(DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
-                                                           laps=a.laps, **kw)]),
-                        norm_obs=True, norm_reward=True, clip_obs=10.0)
-    venv.obs_rms.mean, venv.obs_rms.var, venv.obs_rms.count = O.mean(0).astype(np.float64), O.var(0).astype(np.float64) + 1e-8, len(O)
-    On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
-    model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed,
-                policy_kwargs=dict(net_arch=[dict(pi=[256, 256], vf=[256, 256])]))
-    loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed)
-    print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
+    if a.init:
+        venv = VecNormalize.load(a.init.replace(".zip", "") + "_vecnormalize.pkl",
+                                 DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
+                                                                    laps=a.laps, **kw)]))
+        venv.training = False
+        venv.norm_reward = False
+        model = PPO.load(a.init, env=venv, device="cpu")
+        print("modèle initial chargé :", a.init)
+        O, A = collect(a.episodes, a.laps, not a.static, a.seed, eps_levels=tuple(a.dagger_eps),
+                       policy=make_policy(model, venv), env_kw=kw)
+        print(f"{len(O)} échantillons (états visités par le modèle initial), "
+              f"répartition actions: {np.bincount(A, minlength=9).tolist()}")
+        On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
+        import torch
+        with torch.no_grad():
+            lg = model.policy.get_distribution(torch.as_tensor(On)).distribution.logits
+        print(f"précision initiale sur les données du professeur : {float((lg.argmax(1).numpy() == A).mean()):.3f}")
+        if a.epochs > 0:
+            loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed)
+            print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
+    else:
+        O, A = collect(a.episodes, a.laps, not a.static, a.seed, env_kw=kw)
+        print(f"{len(O)} échantillons, répartition actions: {np.bincount(A, minlength=9).tolist()}")
+        venv = VecNormalize(DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
+                                                               laps=a.laps, **kw)]),
+                            norm_obs=True, norm_reward=True, clip_obs=10.0)
+        venv.obs_rms.mean, venv.obs_rms.var, venv.obs_rms.count = O.mean(0).astype(np.float64), O.var(0).astype(np.float64) + 1e-8, len(O)
+        On = np.clip((O - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10).astype(np.float32)
+        model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed,
+                    policy_kwargs=dict(net_arch=[dict(pi=[256, 256], vf=[256, 256])]))
+        loss, acc = behavior_clone(model, On, A, a.epochs, seed=a.seed)
+        print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
     for r in range(a.dagger):
         pol = make_policy(model, venv)
         # niveaux --dagger-eps en alternance (défaut 0 et 0.05) : la politique apprise explore ses propres erreurs
