@@ -830,3 +830,12 @@
 ## 2026-11-05 00:15 · planner · Replanification
 - T64-T67 rangées. best/ = T65 (15,84 s, 20/20, 0 choc, reviewer OK). Critère de fiabilité rempli, vitesse à 15,84 s (borne 13,96 s), temps humain absent : pas de GOAL_REACHED. Statut GOAL.md mis à jour.
 - Nouvelles tâches : T68 robustesse de T65 (inconnue), T69 DAgger ciblé bruité depuis T65, T70 bonus mix+hit-weight, T71 bilan docs. Inbox vide ; REPLAN supprimé.
+
+## 2026-11-05 00:18 · worker · T68 Robustesse de best/ T65
+- Fichiers : docs/WALL_BASELINE.md (section T68), metrics.json (2 entrées robust_eval). Aucun code modifié.
+- Commandes : `robust_eval.py --model data/models/best/best.zip --static --laps 3 --episodes 100 --seed 1000 --eps 0` et `--eps 0.05`.
+- eps 0 : 100/100, 15,84 s, 0 choc, clean 1,0. eps 0,05 : **24/100** finis, 20,02 s, 1,02 choc/course (max 31), clean 0,03 (T53b 68/100, H=29 65/100, T38 97 %).
+- Verdict : T65 rapide mais fragile au bruit ; justifie T69. Limites : une graine.
+
+## 2026-11-05 00:17 · reviewer · T68 validée
+- Relancé robust_eval best/ T65 static laps 3, eps 0,05, 100 ép., seed 1000 : 24/100, 20,02 s, 1,02 choc, clean 0,03 (conforme). Doc : tableau cohérent, aucun code modifié. pytest hors e2e : 48 passed, 1 skipped. Mon eval a ajouté une entrée metrics.json. Confirme que T69 est justifiée.

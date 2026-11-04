@@ -6,11 +6,11 @@
 
 ## En cours / à faire
 
-- [ ] **T68** · Robustesse de best/ T65 (15,84 s, 0 choc) au bruit d'action · P1
+- [x] **T68** · Robustesse de best/ T65 (15,84 s, 0 choc) au bruit d'action · P1
   - but : mesurer sans rien changer : `scripts/robust_eval.py --model data/models/best/best.zip --static --laps 3 --episodes 100 --seed 1000` pour eps 0 et 0,05 (T53b : 68/100 à 0,05 ; T38 : 97 %). Compter finis, chocs/course, clean_rate ; section T68 dans `docs/WALL_BASELINE.md`.
   - fini quand : 2 entrées robust_eval dans metrics.json + tableau chiffré dans la doc, comparé à T53b et au professeur H=29 (65/100)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T69** · DAgger ciblé itéré depuis best/ T65 pour supprimer les chocs sous bruit · P1
   - but : repartir de `data/models/best/best.zip` (`--init`), `--hit-weight 10`, `--dagger-eps 0 0.05 0.1`, `--wall-penalty -50`, professeur H=29, ≤ 10 min, 2 graines (2300, 2400). Cible : garder 20/20, 0 choc, ≤ 15,84 s à eps 0 et améliorer le taux clean à eps 0,05 (mesure T68).

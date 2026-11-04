@@ -79,3 +79,16 @@ Conclusions :
 - **Même virage** pour les deux agents (spline ≈ 701-704, ~29 % de la piste, position quasi identique à 3 px près), **au 3ᵉ tour seulement** (0 choc aux tours 1 et 2). Un seul point à corriger.
 - Au moment du choc, l'action de l'agent est **identique** à celle du professeur (1/1 et 5/5) : le choc n'est pas une dernière action erronée. Le professeur serait aussi en danger à cet état ; l'écart vient de **~190 points de spline plus tôt** (idx 511-514), où l'agent va tout droit (action 1) alors que le professeur tourne à droite en accélérant (6), puis 8-12 pas de décalage (3-5 pas d'action différents) amènent trop vite/trop large dans le virage.
 - Les agents diffèrent du professeur sur 10-13 % des pas, mais un seul de ces écarts (entrée de virage ~idx 511-514) est fatal ; zone cible pour T65 : pas ~ [choc − 30 ; choc], soit spline ~480-710 au tour 3. Limite : le choc n'apparaît qu'au tour 3 (états/vitesses d'entrée différents), donc un suréchantillonnage doit couvrir la zone aux 3 tours.
+
+## T68 · Robustesse de best/ T65 au bruit d'action (static, laps 3, 100 ép., seed 1000)
+Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/robust_eval.py --model data/models/best/best.zip --static --laps 3 --episodes 100 --seed 1000 --eps E` (E = 0 et 0,05).
+
+| Agent | eps | finis | temps moyen | chocs/course | max | clean |
+|---|---|---|---|---|---|---|
+| best/ T65 | 0 | 100/100 | 15,84 s | 0,0 | 0 | 1,00 |
+| best/ T65 | 0,05 | **24/100** | 20,02 s | 1,02 | 31 | 0,03 |
+| T53b (T53b, réf.) | 0,05 | 68/100 | – | – | – | – |
+| Professeur H=29 | 0,05 | 65/100 | 17,86 s | 0,77 | 5 | 0,25 |
+| T38 (réf.) | 0,05 | 97 % | – | – | – | – |
+
+Verdict : T65 est parfait sans bruit mais nettement moins robuste que T53b et H=29 (24 % finis, clean 0,03) : le gain de vitesse s'est payé en robustesse. Une graine (1000), eps 0 déterministe (std 0).
