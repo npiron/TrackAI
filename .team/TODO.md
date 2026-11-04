@@ -24,11 +24,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T59** · Reproductibilité du critère : eval de best/ sur 3 graines (0, 1, 2) à eps 0 · P2
+- [x] **T59** · Reproductibilité du critère : eval de best/ sur 3 graines (0, 1, 2) à eps 0 · P2
   - but : vérifier que 20/20 et 0 choc ne tiennent pas qu'à la graine 0 (eval.py laps 3, 20 ép., seeds 1 et 2) ; si échec, secteurs de choc.
   - fini quand : 2 entrées metrics.json, verdict au journal
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P3
   - but : cause de l'échec ; corriger le test ou le code sans toucher à la physique.

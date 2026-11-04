@@ -713,3 +713,11 @@
 
 ## 2026-11-04 23:15 · reviewer · T58 validée
 - Relancé eval.py best/ --no-static laps 3 seed 0 20 ép. : 18/20, 26,27 s, 36,85 chocs, clean 0 ; heuristic_lap : 18/20, 15,61 s, 0 choc, clean 0,9 (conformes). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, doc et verdict honnêtes. best_t38 non relancé.
+
+## 2026-11-04 23:15 · worker · T59 Reproductibilité sur seeds 1 et 2
+- Aucun code modifié. Commandes : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/best.zip --static --laps 3 --episodes 20 --seed {1,2}` → 2 entrées metrics.json.
+- Résultats : seed 1 et seed 2 : 20/20 finis, 20,46 s, mean_wall_hits 0, clean_rate 1,0 (identiques à seed 0, mean_return 8234,1487 partout).
+- Verdict : critère reproduit sur 3 graines. Limite : piste statique + politique déterministe + départ fixe → la graine n'a aucun effet, donc ce n'est pas une vraie preuve de généralisation (seul eps>0 ou --no-static varient : voir T56/T58).
+
+## 2026-11-04 23:16 · reviewer · T59 validée
+- Relancé eval.py best/ static laps 3 20 ép. seeds 1 et 2 : 20/20, 20,46 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié. Note : mes relances ont ajouté 2 entrées doublons dans metrics.json (4 au total). Le verdict du worker est honnête : la graine est sans effet en statique déterministe.
