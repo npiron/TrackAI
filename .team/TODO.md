@@ -67,11 +67,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T41** · Rapport de décision sur le critère vitesse · P2
+- [x] **T41** · Rapport de décision sur le critère vitesse · P2
   - but : `docs/SPEED_STATUS.md` : trajectoire du temps (45,5 → 15,90 s), borne T32 (13,96 s), marge restante, estimation du coût/bénéfice de continuer, et ce qu'il faut de Nicolas (`human_lap.py --laps 3`) pour conclure.
   - fini quand : doc chiffré, chaque valeur retrouvée dans `metrics.json` ou docs existants (vérifié par le testeur)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 > Action humaine (non assignable) : jouer `python scripts/human_lap.py --laps 3` pour créer `data/human_best.json` ; sans lui le critère vitesse n'est pas évaluable (le banc affiche `human_best_total: null`).
 > Anciens modèles de `data/models/production` invalides.

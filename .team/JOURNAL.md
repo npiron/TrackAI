@@ -556,3 +556,11 @@
 
 ## 2026-11-04 01:36 · reviewer · T40 validée
 - Relu le diff (tests seuls). pytest hors e2e lancé 2 fois : 43 passed, 1 skipped, identique. Test de non-régression par hash de référence pré-multi-tours ; fin à 3 tours couverte par les tests existants.
+
+## 2026-11-04 01:37 · worker · T41 Rapport de décision vitesse
+- Fichier : `docs/SPEED_STATUS.md` (nouveau). Aucun code, aucune commande de calcul.
+- Valeurs relues dans metrics.json/journal/docs : 45,46 → 41,7 → 17,94 → 17,74 → 15,90 → (15,68 fragile) → 15,80 s (best/ T38, 100/100 à eps 0/0,05/0,1) ; borne T32 13,96 s (centrale 14,77 s) ; marge ≈ 1,84 s (optimiste). Recommandation : plafond proche, ne pas poursuivre la recherche locale sans temps humain.
+- Limites : le 45,5 s de T22 n'est que dans le journal ; `docs/BEST_STATUS.md` décrit encore best/ = T31 (15,90 s), périmé depuis T38 (non modifié ici).
+
+## 2026-11-04 01:37 · reviewer · T41 validée
+- Doc relu : chiffres retrouvés (13,96/14,77 dans BOUND_T32, 17,94 SPEED_T25, 17,74 AUDIT_T29, 15,68 SEARCH_T33, 17,48 journal T27, 15,80 metrics). pytest hors e2e : 43 passed, 1 skipped. Docs seul, pas de code. Note : docs/BEST_STATUS.md périmé (best/ = T38) signalé par le worker.
