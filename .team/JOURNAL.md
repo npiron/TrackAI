@@ -812,3 +812,14 @@
 
 ## 2026-11-05 00:13 · reviewer · T66 validée
 - Relancé eval t66c (static, 20 ép., seed 0) : 20/20, 18,6 s, 1 choc (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, best/ T65 non remplacé (justifié), entrées metrics.json présentes. Verdict négatif chiffré honnête.
+
+## 2026-11-05 00:14 · worker · T67 Entraînement mixte statique + procédural (échec partiel, best/ non remplacé)
+- Fichier : `scripts/imitate.py` (+`--mix-static` : épisodes DAgger pairs sur piste fixe, impairs sur procédurale ; défaut off, code inchangé sinon).
+- Commande (2 min 29, 91k éch., précision finale 0,847) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --mix-static --laps 3 --wall-penalty -50 --init data/models/best_t53b/best.zip --episodes 12 --dagger 10 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 8 --lr 2e-4 --seed 2200 --out data/checkpoints/ppo_t67` (départ T53b comme demandé).
+- Évals 20 ép. seed 0 laps 3 (`eval.py --model data/checkpoints/ppo_t67.zip [--static]`, eval.py n'a pas --no-static : procédural = sans flag) :
+  - static : 20/20, 17,76 s, **4 chocs**/course, clean 0 → critère (0 choc) non atteint.
+  - procédural : 19/20 (0,95), 19,30 s, 7,35 chocs (max 53), clean 0,05 → vs T63 18/20, 8,65 chocs ; vs T53b 36,9 chocs.
+- Verdict : mieux que T63 en static (4 vs 6 chocs) et un peu mieux en procédural, mais pas 0 choc ; best/ (T65 : 15,84 s, 0 choc) conservé. Pas de test mix + --hit-weight (suite possible). pytest hors e2e : 48 passed, 1 skipped. Une graine, un run.
+
+## 2026-11-05 00:15 · reviewer · T67 validée
+- Relancé eval ppo_t67 static laps 3 20 ép. seed 0 : 20/20, 17,76 s, 4 chocs (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff = option --mix-static (défaut off, chemin inchangé). Verdict négatif chiffré honnête, best/ T65 conservé. Mon eval a ajouté une entrée metrics.json. Piste possible : mix + --hit-weight.

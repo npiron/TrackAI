@@ -24,11 +24,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T67** · Bonus : entraînement mixte piste fixe + pistes aléatoires (corriger la régression statique de T63) · P2
+- [x] **T67** · Bonus : entraînement mixte piste fixe + pistes aléatoires (corriger la régression statique de T63) · P2
   - but : T63 : no-static 18,87 s/8,65 chocs mais static 6 chocs. Ajouter `--mix-static` à `imitate.py` (épisodes DAgger alternant piste fixe et procédurale, sans changer le défaut), reprendre depuis best/ T53b, professeur H=29, ≤ 10 min.
   - fini quand : eval --static ET --no-static 20 ép. seed 0 dans metrics.json ; verdict chiffré (static doit rester 20/20, 0 choc pour remplacer best/)
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 > Phase vitesse : plafond proche (borne 13,96 s, best/ 15,80 s, voir `docs/SPEED_STATUS.md`). Pas de nouvelle recherche locale tant que `data/human_best.json` manque.
 
