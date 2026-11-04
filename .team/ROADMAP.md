@@ -80,5 +80,9 @@ Un agent RL qui boucle proprement les circuits du clone Trackmania, avec des pro
 
 Nouveau critère : 20/20 courses de 3 tours à 0 choc mur (compteur `wall_hits` d'`eval.py`), puis temps minimal. Constat : l'env glisse le long des murs sans pénalité ; best/ T38 (15,80 s) a été validé sans compter les chocs. Plan par paliers : T46 compteur → T47 baseline chocs → T48 options `wall_penalty`/`wall_fatal` → T49 professeur sans choc (marge) → T50 ré-imitation DAgger (palier pénalité puis mort au contact en évaluation/entraînement). Ensuite : réduction du temps sous contrainte 0 choc, bonus pistes aléatoires. T42, T45 abandonnées (hors objectif) ; T44 fusionnée dans le reste si besoin ; T43 en P3.
 
+### Point 22:30
+T46-T49 faits : best/ T38 = 11 chocs/course ; professeur à couche de sécurité = 0 choc, 17,40 s (T49). T50 (imitation depuis zéro) a échoué : professeur coûteux (5 s/ép), non imitable avec 14 obs. Nouveau plan : professeur rapide (T51), DAgger repartant de T38 (T52-T53), PPO + wall_penalty en parallèle (T54), repli « politique+garde-fou » mesuré (T55).
+
 ### Décisions
+- 2026-11-04 22:30 : pas de garde-fou dans le critère (agent seul) ; T55 le mesure seulement comme repli à soumettre à l'humain.
 - 2026-11-04 : un « choc » = pas où `inside_track(new_pos)` est faux (déplacement bloqué/glissé). Physique inchangée. best/ actuel reste en place tant qu'aucun candidat n'a 0 choc.

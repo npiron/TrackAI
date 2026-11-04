@@ -30,10 +30,34 @@
   - dépend de : T46, T47
   - essais : 1
 
-- [ ] **T50** · Palier 2 : ré-imitation DAgger du professeur sans choc → candidat best/ · P1
-  - but : `imitate.py` (DAgger bruité, ≤ 10 min) sur le professeur T49, avec `wall_penalty` élevé en éval ; évaluer 20 ép. laps 3 seed 0 + robust_eval 100 ép. eps 0/0,05.
-  - fini quand : candidat avec 20/20 finis, clean_rate 20/20 (0 choc), entrée metrics.json ; si OK, remplace best/ (avec mesure et best.json) car le critère exige 0 choc ; sinon diagnostic dans le journal
-  - dépend de : T48, T49
+- [ ] **T51** · Accélérer le professeur T49 (sécurité seulement si risque) · P1
+  - but : `heuristic_action` ne lance les rollouts de sécurité que si l'action de base est jugée risquée (un seul rollout de base d'abord, alternatives seulement s'il y a choc) ; viser ≤ 1 s/épisode de 3 tours. Sortie identique ou meilleure : eps 0 inchangé (0 choc, ≤ 17,4 s).
+  - fini quand : `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` : 20/20, mean_wall_hits 0, temps de calcul avant/après dans le journal, au moins 3× plus rapide ; pytest hors e2e vert
+  - dépend de : rien
+  - essais : 0
+
+- [ ] **T52** · `imitate.py --init` : repartir de best/ T38 (ou d'un checkpoint) pour DAgger · P1
+  - but : option `--init <model.zip>` qui charge poids + VecNormalize de départ au lieu de repartir de zéro ; la collecte DAgger étiquette avec le professeur sans choc les états visités par T38 (qui ne rate que les secteurs 3,4,5,7,11). `--wall-penalty` existe déjà.
+  - fini quand : commande courte (1 tour DAgger, 3 épisodes) qui tourne et recharge le modèle ; le journal montre la précision initiale sur les données du professeur
+  - dépend de : rien
+  - essais : 0
+
+- [ ] **T53** · DAgger long sans choc depuis T38 (≤ 10 min, reprises possibles) · P1
+  - but : avec T51+T52, lancer DAgger (eps 0/0,05, `--wall-penalty -50`) ; évaluer 20 ép. laps 3 seed 0 (clean_rate) + robust_eval 100 ép. eps 0/0,05. Reprendre le checkpoint d'une itération à l'autre si nécessaire.
+  - fini quand : entrée metrics.json ; si 20/20 finis ET clean_rate 20/20 → remplace best/ (avec best.json) ; sinon chocs par secteur dans le journal
+  - dépend de : T51, T52
+  - essais : 0
+
+- [ ] **T54** · PPO fine-tuning depuis best/ T38 avec `wall_penalty` (voie alternative) · P2
+  - but : `rl_train_ppo.py --load <best> --static --laps 3 --wall-penalty -20 --lr 3e-5` (≤ 10 min, ~200k pas) ; palier mort au contact (`--wall-fatal`) seulement si le palier pénalité baisse mean_wall_hits sans perdre 20/20.
+  - fini quand : eval 20 ép. laps 3 seed 0 : finis, mean_wall_hits et clean_rate dans metrics.json vs 11 chocs de T38 ; verdict dans le journal (voie viable ou non)
+  - dépend de : rien
+  - essais : 0
+
+- [ ] **T55** · Candidat de repli « politique + garde-fou » mesuré à part · P3
+  - but : mesurer best/ T38 dont l'action est filtrée par la couche de sécurité T49 (eps 0, 20 ép.) : chocs, temps. Étiqueté NON conforme à « agent seul » ; sert de borne et de décision pour l'humain.
+  - fini quand : entrée metrics.json (model « best+shield ») et paragraphe dans docs/WALL_BASELINE.md
+  - dépend de : rien
   - essais : 0
 
 - [ ] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P3
@@ -49,4 +73,4 @@
 
 ## Terminées
 
-T1, T2, T3, T7-T15, T16-T20 (T19/T20 : finish_rate 0), T21 (diagnostic), T22 (heuristique 20/20, 45,5 s), T23 (PPO corrigé, cp 2, échec), T24 (BC : 20/20, 41,7 s, best/), T25 (heuristique 20/20, 17,94 s), T26 (BC+DAgger 20/20, 17,74 s), T27 (PPO affinage : 17,48 s, dégrade vs BC), T28 (robustesse : 100/100 eps 0, 97 % eps 0,05, 91 % eps 0,1), T29 (audit valide), T30 (heuristique 15,90 s, BC 15,90 s, best/)., T31 (DAgger bruité, 100/99 %), T32 (borne 13,96 s), T33 (professeur 15,68 s fragile), T34 (non remplacé), T35 (doc), T36, T37 (professeur robuste 15,80 s), T38 (BC 15,80 s robuste, best/), T39 (plafond, T37 gardé), T40 (non-régression laps), T41 (SPEED_STATUS).
+T1, T2, T3, T7-T15, T16-T20 (T19/T20 : finish_rate 0), T21 (diagnostic), T22 (heuristique 20/20, 45,5 s), T23 (PPO corrigé, cp 2, échec), T24 (BC : 20/20, 41,7 s, best/), T25 (heuristique 20/20, 17,94 s), T26 (BC+DAgger 20/20, 17,74 s), T27 (PPO affinage : 17,48 s, dégrade vs BC), T28 (robustesse : 100/100 eps 0, 97 % eps 0,05, 91 % eps 0,1), T29 (audit valide), T30 (heuristique 15,90 s, BC 15,90 s, best/)., T31 (DAgger bruité, 100/99 %), T32 (borne 13,96 s), T33 (professeur 15,68 s fragile), T34 (non remplacé), T35 (doc), T36, T37 (professeur robuste 15,80 s), T38 (BC 15,80 s robuste, best/), T39 (plafond, T37 gardé), T40 (non-régression laps), T41 (SPEED_STATUS), T46 (compteurs ; best/ T38 = 11 chocs/course), T47 (baseline), T48 (wall_fatal/penalty), T49 (professeur 0 choc 17,40 s ; bruité 93/100), T50 (ÉCHEC : DAgger 65k éch., 0/20, 78 chocs ; professeur lent et dépendant de l'état physique, voir T51-T53).

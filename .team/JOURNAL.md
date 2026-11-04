@@ -620,3 +620,14 @@
 
 ## 2026-11-04 22:15 · reviewer · T49 validée
 - Relancé heuristic_lap --static --laps 3 --episodes 20 --seed 0 : 20/20, 17,40 s, mean_wall_hits 0, clean_rate 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff relu (SAFE_HORIZON, sim de la physique, search_heuristic). Bruité non atteint mais diagnostiqué honnêtement dans docs/SEARCH_T49.md ; noté pour T50 dans inbox.
+
+## 2026-11-04 22:24 · worker · T50 Ré-imitation DAgger du professeur sans choc (ÉCHEC)
+- Aucun code modifié ; `data/checkpoints/ppo_t50.*` créé ; best/ NON remplacé (T38 conservé).
+- Commande (8 min 55) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --episodes 20 --dagger 3 --dagger-episodes 15 --dagger-eps 0 0.05 --epochs 40 --wall-penalty -50 --out data/checkpoints/ppo_t50` (64 926 éch., précision BC 0,86 → 0,913). Budget réduit : professeur ≈ 5 s/épisode (rollouts de sécurité).
+- Éval `eval.py --model data/checkpoints/ppo_t50.zip --static --laps 3 --episodes 20 --seed 0` : 0/20 finis, 1 tour fait, mean_wall_hits 78, clean_rate 0. robust_eval non lancé.
+- Diagnostic : l'action du professeur T49 dépend de l'état physique simulé (env.ta, horizon 32), pas seulement de l'obs 14-dim → pas imitable fidèlement par un MLP (précision 0,91) ; une erreur en virage = choc, et sans couche de sécurité le suiveur enchaîne les chocs. Peu de données (65k) car professeur coûteux.
+- Pistes : (a) professeur plus rapide/horizon réduit pour plus de DAgger, (b) features de prédiction de choc dans l'obs ou sécurité appliquée au suiveur, (c) PPO avec wall_penalty/wall_fatal partant de best/ T38, (d) DAgger long en tâche de fond. 1 essai, REPLAN créé.
+
+## 2026-11-04 22:25 · planner · Replanification
+
+- T50 échec (0/20, 78 chocs) : professeur sûr trop lent et non imitable depuis zéro. T50 rangée en Terminées (échec diagnostiqué). Nouvelles tâches : T51 professeur rapide, T52 imitate --init depuis T38, T53 DAgger long, T54 PPO+wall_penalty depuis T38, T55 repli politique+garde-fou (mesure seule). Note reviewer T49 intégrée (traitée). GOAL : statut mis à jour, pas de GOAL_REACHED. REPLAN supprimé.
