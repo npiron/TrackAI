@@ -86,3 +86,7 @@ T46-T49 faits : best/ T38 = 11 chocs/course ; professeur à couche de sécurité
 ### Décisions
 - 2026-11-04 22:30 : pas de garde-fou dans le critère (agent seul) ; T55 le mesure seulement comme repli à soumettre à l'humain.
 - 2026-11-04 : un « choc » = pas où `inside_track(new_pos)` est faux (déplacement bloqué/glissé). Physique inchangée. best/ actuel reste en place tant qu'aucun candidat n'a 0 choc.
+
+### Point 2026-11-04 22:49
+T53b : fiabilité 0 choc atteinte (20/20, 20,46 s, validé). T54 : PPO+pénalité non viable ; T55 : borne shield 16,42 s (non conforme). Phase suivante : robustesse au bruit (T56), réduction du temps sous 0 choc (T57), bonus pistes aléatoires (T58), reproductibilité sur autres graines (T59). Pas de GOAL_REACHED : la vitesse reste à minimiser (et temps humain absent).
+- 2026-11-04 22:49 : décision : best/ T53b n'est remplacé que si 20/20 et 0 choc conservés ET gain mesuré.

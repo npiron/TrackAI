@@ -676,3 +676,7 @@
 
 ## 2026-11-04 22:49 · reviewer · T55 validée
 - Relancé eval.py shield:best_t38 laps 3 seed 0 20 ép. : 20/20, 16,42 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff eval.py minime (préfixe shield:), doc WALL_BASELINE cohérente. Note : le nom du modèle dans metrics.json est « shield:... » et non « best+shield » (équivalent, accepté).
+
+## 2026-11-04 22:49 · planner · Replanification
+- T51-T55 validées et rangées. Critère fiabilité (20/20, 0 choc, seed 0) rempli par best/ T53b (metrics.json, reviewer). GOAL_REACHED non créé : le critère vitesse (baisse à chaque palier / ≤ humain) reste ouvert et `human_best.json` manque ; reproductibilité sur d'autres graines non mesurée.
+- Nouvelles tâches : T56 robustesse bruitée, T57 temps sous 0 choc, T58 bonus pistes aléatoires, T59 autres graines. T43 reste P3. Inbox vide (hors traite/), pas de REPLAN.
