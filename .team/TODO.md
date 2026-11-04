@@ -30,11 +30,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P3
+- [x] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P3
   - but : cause de l'échec ; corriger le test ou le code sans toucher à la physique.
   - fini quand : pytest complet vert 2 fois, ou skip justifié dans le journal
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 > Phase vitesse : plafond proche (borne 13,96 s, best/ 15,80 s, voir `docs/SPEED_STATUS.md`). Pas de nouvelle recherche locale tant que `data/human_best.json` manque.
 

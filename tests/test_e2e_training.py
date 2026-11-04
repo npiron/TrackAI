@@ -6,6 +6,11 @@ import glob
 import time
 import sys
 
+def _artifacts():
+    pats = ("logs/test_e2e_*", "data/monitoring/*test_e2e_*", "data/checkpoints/test_e2e_*")
+    return [f for p in pats for f in glob.glob(p)]
+
+
 class TestE2ETraining:
     
     @pytest.fixture
@@ -13,11 +18,11 @@ class TestE2ETraining:
         """Ensure clean logs directory for testing."""
         os.makedirs("logs", exist_ok=True)
         # Cleanup pre-existing test logs
-        for f in glob.glob("logs/test_e2e_*"):
+        for f in _artifacts():
             os.remove(f)
         yield
         # Cleanup after test
-        for f in glob.glob("logs/test_e2e_*"):
+        for f in _artifacts():
             os.remove(f)
 
     def test_training_runs_short_session(self, setup_logs):
@@ -52,14 +57,14 @@ class TestE2ETraining:
         # In rl_train we do: print to stdout, dashboard redirects to file.
         # But we also have monitor logs: logs/monitor_headless_{run_id}_{pid}.csv
         
-        monitor_logs = glob.glob(f"logs/monitor_*_{run_id}_*.csv")
+        monitor_logs = glob.glob(f"data/monitoring/monitor_*_{run_id}*.csv")
         assert len(monitor_logs) > 0, "No monitor logs created"
         
         # 2. Model file should exist upon completion
         # logic: logs/{run_id}_final.zip
-        final_model = f"logs/{run_id}_final.zip"
+        final_model = f"data/checkpoints/{run_id}_final.zip"
         assert os.path.exists(final_model), f"Final model {final_model} not found"
         
         # 3. VecNormalize
-        vec_norm = f"logs/{run_id}_vecnormalize.pkl"
+        vec_norm = f"data/checkpoints/{run_id}_final_vecnormalize.pkl"
         assert os.path.exists(vec_norm), f"VecNormalize {vec_norm} not found"

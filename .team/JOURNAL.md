@@ -721,3 +721,10 @@
 
 ## 2026-11-04 23:16 · reviewer · T59 validée
 - Relancé eval.py best/ static laps 3 20 ép. seeds 1 et 2 : 20/20, 20,46 s, 0 choc, clean 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié. Note : mes relances ont ajouté 2 entrées doublons dans metrics.json (4 au total). Le verdict du worker est honnête : la graine est sans effet en statique déterministe.
+
+## 2026-11-04 23:17 · worker · T43 test_e2e_training
+- Cause : test obsolète, chemins de sortie de rl_train.py déplacés (monitor → data/monitoring/, modèle/vecnormalize → data/checkpoints/{id}_final.zip et {id}_final_vecnormalize.pkl) ; le code est correct. Fichier modifié : tests/test_e2e_training.py (chemins + nettoyage des artefacts du test). Physique non touchée.
+- pytest complet (`SDL_VIDEODRIVER=dummy .venv/bin/python -m pytest -q`) lancé 2 fois : 49 passed, 1 skipped les deux fois. Aucun artefact test_e2e_ résiduel.
+
+## 2026-11-04 23:17 · reviewer · T43 validée
+- Relancé pytest complet (e2e inclus) : 49 passed, 1 skipped, aucun artefact résiduel. Diff limité au test (chemins data/monitoring et data/checkpoints + nettoyage), physique non touchée. Une seule exécution de ma part (le worker en annonce 2).
