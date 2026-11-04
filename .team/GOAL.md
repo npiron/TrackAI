@@ -1,8 +1,10 @@
 # Objectif
 
-Un agent entraîné qui enchaîne 3 tours complets du circuit fixe (`build_track()`) sans échec, puis qui réduit au maximum le temps total des 3 tours.
+Entraîner un agent qui fait 3 tours du circuit fixe sans jamais toucher un mur, 20 courses sur 20, puis réduire le temps total.
 
-Étapes attendues : d'abord la fiabilité (finir les 3 tours), ensuite la vitesse. Le temps de référence à battre est mon meilleur temps humain sur ce circuit, à mesurer avec le même chrono que le banc.
+Ajouter une option d'entraînement `wall_fatal` (désactivée par défaut, le jeu ne change pas) et compter les chocs par course dans `eval.py`.
+Y aller par paliers : grosse pénalité par choc d'abord, mort au contact ensuite, pour ne pas apprendre à l'agent à rouler au pas.
+Bonus : même résultat sur des circuits aléatoires jamais vus.
 
 ## Contraintes
 
@@ -17,5 +19,5 @@ Un agent entraîné qui enchaîne 3 tours complets du circuit fixe (`build_track
 
 > Rempli par le planificateur, ne pas éditer à la main.
 
-- critère : sur `build_track()` (piste fixe, seed 42, `--static`), avec `laps=3`, via `scripts/eval.py` sur ≥ 20 épisodes, graine 0, politique déterministe : (1) fiabilité = 20/20 épisodes qui terminent les 3 tours sans sortie de piste fatale ni timeout ; (2) vitesse = temps total moyen des 3 tours inférieur ou égal au temps de référence humain (mesuré avec le même chrono, voir T16/T21), à défaut minimal et en baisse à chaque palier. Validé par le reviewer dans `metrics.json`.
-- statut : en cours (fiabilité atteinte : BC t30 + DAgger, laps 3, 20/20, 15,80 s en moyenne (best/ = T38), validé reviewer, audit valide, 100/100 à eps 0/0,05/0,1 ; vitesse : temps humain non mesuré, on réduit le temps palier par palier)
+- critère : sur `build_track()` (piste fixe, seed 42, `--static`), avec `laps=3`, via `scripts/eval.py` sur ≥ 20 épisodes, graine 0, politique déterministe : (1) fiabilité = 20/20 épisodes qui terminent les 3 tours avec **0 choc contre un mur** (compteur `wall_hits` d'`eval.py`, un choc = pas où le déplacement sortirait de la piste) et sans timeout ; (2) vitesse = temps total moyen des 3 tours le plus bas possible, en baisse à chaque palier (ou ≤ temps humain si `data/human_best.json` existe). Validé par le reviewer dans `metrics.json`. Bonus : même résultat sur circuits aléatoires jamais vus (`--no-static`).
+- statut : en cours (ancien critère « terminer 3 tours » atteint par best/ T38, 20/20, 15,80 s, mais les chocs murs n'étaient pas comptés : nombre de chocs de best/ inconnu, mesuré en T46-T47)

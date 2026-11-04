@@ -6,27 +6,39 @@
 
 ## En cours / à faire
 
-- [ ] **T42** · Mettre à jour `docs/BEST_STATUS.md` (best/ = T38) · P1
-  - but : refléter best/ = ppo_t38 (15,80 s, 100/100 à eps 0/0,05/0,1), commande de reproduction réelle (imitate sur professeur T37), constantes du professeur actuelles.
-  - fini quand : le testeur relance les commandes du doc et retrouve 20/20 à 15,80 s et la robustesse annoncée ; plus aucune mention de T31 comme best/ actuel
+- [ ] **T46** · Compter les chocs murs dans l'env, le wrapper et `eval.py` · P1
+  - but : `TimeAttackEnv` compte `wall_hits` (pas où `inside_track(new_pos)` est faux) et `wall_contacts` (nouveaux contacts, un pas sans choc avant) sans changer la physique ; `GymTimeAttack` les met dans `info` (`wall_hits`, `wall_contacts`) à chaque pas/fin ; `eval.py` et `robust_eval.py` affichent et écrivent dans `metrics.json` `mean_wall_hits`, `max_wall_hits`, `clean_rate` (épisodes finis à 0 choc).
+  - fini quand : test unitaire (voiture envoyée dans un mur → compteur > 0 ; trajectoire du hash T40 inchangée) ; pytest hors e2e vert ; `eval.py` sur best/ laps 3 seed 0 20 ép. affiche les nouveaux champs
   - dépend de : rien
   - essais : 0
 
-- [ ] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P1
-  - but : trouver pourquoi il échoue (régression due à multi-tours/physique, ou test périmé) et corriger le test ou le code sans toucher à la physique.
-  - fini quand : pytest complet (e2e inclus) vert 2 fois de suite, ou test marqué skip avec raison écrite et justifiée dans le journal
-  - dépend de : rien
+- [ ] **T47** · Mesurer les chocs de `best/` T38 et du professeur heuristique (état de départ) · P1
+  - but : baseline : combien de chocs par course pour best/ (eps 0) et pour `heuristic_lap` ; où (secteurs/checkpoints) ; entrée `metrics.json` + `docs/WALL_BASELINE.md`.
+  - fini quand : doc avec chocs moyen/max/clean_rate sur 20 ép. (seed 0) pour les deux, et localisation des secteurs de choc ; entrées metrics.json
+  - dépend de : T46
   - essais : 0
 
-- [ ] **T44** · Hygiène du banc : `eval.py`/`robust_eval.py` ne doivent pas écraser `replays/personal_best.json` · P2
-  - but : les évaluations réécrivent des fichiers de replay/record (signalé T38) ; ce record ne doit pas polluer le chrono humain. Option `--no-save` ou désactivation par défaut en éval.
-  - fini quand : après un `eval.py` 20 ép., `git status`/hash de `replays/personal_best.json` inchangé ; pytest hors e2e vert
-  - dépend de : rien
+- [ ] **T48** · Option `wall_fatal` et `wall_penalty` dans `GymTimeAttack` (défaut : désactivées) · P1
+  - but : paramètres `wall_fatal=False`, `wall_penalty=0.0` (pénalité par choc, ajoutée à la récompense) ; si `wall_fatal`, le choc met `terminated=True`, `end_cause="wall_fatal"`, récompense -100 ; exposés en options de `imitate.py` et du script d'entraînement PPO. Défaut = comportement identique (hash T40 inchangé), physique intacte.
+  - fini quand : tests : défaut identique au hash ; wall_penalty=-50 baisse la récompense d'un épisode avec choc ; wall_fatal termine l'épisode au 1er choc ; pytest hors e2e vert
+  - dépend de : T46
   - essais : 0
 
-- [ ] **T45** · Robustesse hors conditions d'entraînement : départ perturbé · P2
-  - but : mesurer `best/` avec légère perturbation du point de départ (position ±, cap ±) si l'env le permet sans changer la physique (option d'éval seulement) : 100 ép., seed 1000 ; sert à savoir si l'agent a mémorisé une trajectoire unique.
-  - fini quand : table finish_rate/temps dans `docs/ROBUST_START.md` + entrée `metrics.json` ; si finish < 95 %, recommandation (DAgger avec départs perturbés) ; sinon constat de robustesse
+- [ ] **T49** · Palier 1 : professeur sans choc (heuristique avec marge aux murs) · P1
+  - but : trouver des constantes de `heuristic_lap` (marge latérale/ligne plus intérieure, vitesse de virage) donnant 0 choc sur 20 ép. laps 3 seed 0 ET sur 100 ép. bruitées eps 0,05 (seed 1000) au maximum de vitesse possible ; utiliser `search_heuristic.py` avec contrainte `wall_hits == 0` (pénalité forte par choc dans le score).
+  - fini quand : `docs/SEARCH_T49.md` avec constantes, 20/20 à 0 choc, temps moyen, clean_rate bruité ; entrée metrics.json (model "heuristic") ; si impossible, diagnostic des secteurs bloquants
+  - dépend de : T46, T47
+  - essais : 0
+
+- [ ] **T50** · Palier 2 : ré-imitation DAgger du professeur sans choc → candidat best/ · P1
+  - but : `imitate.py` (DAgger bruité, ≤ 10 min) sur le professeur T49, avec `wall_penalty` élevé en éval ; évaluer 20 ép. laps 3 seed 0 + robust_eval 100 ép. eps 0/0,05.
+  - fini quand : candidat avec 20/20 finis, clean_rate 20/20 (0 choc), entrée metrics.json ; si OK, remplace best/ (avec mesure et best.json) car le critère exige 0 choc ; sinon diagnostic dans le journal
+  - dépend de : T48, T49
+  - essais : 0
+
+- [ ] **T43** · Diagnostiquer `tests/test_e2e_training.py::test_training_runs_short_session` · P3
+  - but : cause de l'échec ; corriger le test ou le code sans toucher à la physique.
+  - fini quand : pytest complet vert 2 fois, ou skip justifié dans le journal
   - dépend de : rien
   - essais : 0
 

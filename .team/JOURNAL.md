@@ -572,3 +572,19 @@
 ## 2026-11-04 01:38 · planner · Replanification
 
 - T38-T41 validées. Phase vitesse close (T39 : plafond, T41 : marge ≈1,8 s). best/ = T38, 15,80 s, 100/100 bruité. Nouvelles tâches T42 (doc périmée), T43 (test e2e en échec), T44 (replays écrasés par éval), T45 (robustesse départ perturbé). Inbox vide. GOAL : statut mis à jour, pas de GOAL_REACHED (temps humain absent, action de Nicolas : `scripts/human_lap.py --laps 3`). REPLAN supprimé.
+
+## 2026-11-04 01:38 · boucle · Arrêt sur erreur
+
+- `worker` a échoué (code 1), voir `.team/logs/20261104-013818-worker.log`.
+
+## 2026-11-04 21:22 · boucle · Démarrage
+
+- Session de 26 itérations sur `team/main`.
+
+## 2026-11-04 21:22 · boucle · Objectif modifié
+
+- Nouvel objectif : Entraîner un agent qui fait 3 tours du circuit fixe sans jamais toucher un mur, 20 courses sur 20, puis réduire le temps total. Ajouter une option d'entraînement `wall_fatal` (désactivée par défaut, le jeu ne change pas) et compter les chocs par course dans `eval.py`. Y aller par paliers : grosse pé
+
+## 2026-11-04 21:23 · planner · Replanification
+
+- Objectif modifié : 0 choc mur (20/20, 3 tours) puis temps. Critère GOAL réécrit (compteur `wall_hits`), statut en cours : chocs de best/ inconnus. Nouvelles tâches T46-T50 (compteur, baseline, options wall_penalty/wall_fatal, professeur sans choc, ré-imitation). Abandonnées : T42 (doc), T44, T45 (hors objectif) ; T43 gardée P3. Inbox vide. Pas de GOAL_REACHED. REPLAN supprimé.
