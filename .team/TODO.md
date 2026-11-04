@@ -24,11 +24,11 @@
   - dépend de : T46
   - essais : 1
 
-- [ ] **T49** · Palier 1 : professeur sans choc (heuristique avec marge aux murs) · P1
+- [?] **T49** · Palier 1 : professeur sans choc (heuristique avec marge aux murs) · P1
   - but : trouver des constantes de `heuristic_lap` (marge latérale/ligne plus intérieure, vitesse de virage) donnant 0 choc sur 20 ép. laps 3 seed 0 ET sur 100 ép. bruitées eps 0,05 (seed 1000) au maximum de vitesse possible ; utiliser `search_heuristic.py` avec contrainte `wall_hits == 0` (pénalité forte par choc dans le score).
   - fini quand : `docs/SEARCH_T49.md` avec constantes, 20/20 à 0 choc, temps moyen, clean_rate bruité ; entrée metrics.json (model "heuristic") ; si impossible, diagnostic des secteurs bloquants
   - dépend de : T46, T47
-  - essais : 0
+  - essais : 1
 
 - [ ] **T50** · Palier 2 : ré-imitation DAgger du professeur sans choc → candidat best/ · P1
   - but : `imitate.py` (DAgger bruité, ≤ 10 min) sur le professeur T49, avec `wall_penalty` élevé en éval ; évaluer 20 ép. laps 3 seed 0 + robust_eval 100 ép. eps 0/0,05.

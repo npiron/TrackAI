@@ -611,3 +611,12 @@
 
 ## 2026-11-04 21:29 · reviewer · T48 validée
 - Diff relu (wrappers, imitate, rl_train_ppo, 3 tests). pytest hors e2e : 48 passed, 1 skipped. Défaut identique (test + hash T40), pénalité et fatal testés. Note : pénalité non appliquée sur sorties forcées timeout/wall_stuck (acceptable).
+
+## 2026-11-04 22:14 · worker · T49 Professeur sans choc
+- Fichiers : `scripts/heuristic_lap.py` (`INNER_OFFSET`, `CROSS_GAIN` = 0 par défaut ; `SAFE_HORIZON = 32` : prédiction par simulation de la physique + choix d'une action sans choc ; `base_action` = ancienne politique), `scripts/search_heuristic.py` (`--wall-penalty`, `SEARCH_INNER`), `docs/SEARCH_T49.md`, `.team/metrics.json` (entrées eval 20 ép. et robust 100 ép.).
+- Constantes seules (offset, gain latéral, recherche aléatoire 1192 essais, hill-climbing pénalisé) : au mieux 6 chocs. Couche de sécurité N=32 : `heuristic_lap.py --static --laps 3 --episodes 20 --seed 0` → 20/20, 17,40 s, mean_wall_hits 0, clean_rate 1,0. `robust_eval.py --model heuristic --eps 0.05 --episodes 100 --seed 1000` → 93/100 finis, 18,72 s, mean_wall_hits 1,49, clean_rate 0,29.
+- pytest -m "not e2e" : 48 passed, 1 skipped, 1 failed (test_e2e_training, T43 préexistant).
+- Limites : critère eps 0 atteint ; bruité non (chocs par actions aléatoires non filtrées, 7 échecs). Le comportement de "heuristic" change (défaut SAFE_HORIZON=32 ; 0 = ancien : 15,80 s/11 chocs). Horizon non monotone (25 et ≥45 échouent). ≈ 5 s/épisode : DAgger plus lent. Les docs antérieures (15,80 s) décrivent SAFE_HORIZON=0.
+
+## 2026-11-04 22:15 · reviewer · T49 validée
+- Relancé heuristic_lap --static --laps 3 --episodes 20 --seed 0 : 20/20, 17,40 s, mean_wall_hits 0, clean_rate 1,0 (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff relu (SAFE_HORIZON, sim de la physique, search_heuristic). Bruité non atteint mais diagnostiqué honnêtement dans docs/SEARCH_T49.md ; noté pour T50 dans inbox.

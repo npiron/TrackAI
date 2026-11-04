@@ -17,6 +17,9 @@ SPACE = {
     "LOOK_GAIN": (0, 400, 30, True),
     "STEER_DEADZONE": (0.0, 0.15, 0.015, False),
 }
+WALLP = 0.0  # T49 : pénalité (s) par pas de choc mur dans le score (0 = ignoré)
+if os.environ.get("SEARCH_INNER"):
+    SPACE["INNER_OFFSET"] = (-30.0, 30.0, 4.0, False)
 
 
 def evaluate(h, ev, params):
@@ -24,6 +27,8 @@ def evaluate(h, ev, params):
         setattr(h, k, list(v) if k == "SECTOR_MULT" else v)
     r = ev.run_eval("heuristic", 1, 0, procedural=False, laps_n=3)
     ok = r["finish_rate"] == 1.0
+    if ok and WALLP:
+        return ok, r["mean_total_time"] + WALLP * r.get("mean_wall_hits", 0.0)
     return ok, (r["mean_total_time"] if ok else None)
 
 
@@ -53,7 +58,8 @@ def noisy_eval(h, ev, params):
             a = int(rng.randint(env.action_space.n)) if rng.rand() < eps else h.heuristic_action(obs, env.ta)
             obs, r, term, trunc, info = env.step(a)
             done = term or trunc
-        tot.append(info.get("total_time", 0.0) if info.get("is_success", False) else 60.0)
+        tot.append((info.get("total_time", 0.0) if info.get("is_success", False) else 60.0)
+                   + WALLP * info.get("wall_hits", 0))
     return True, float(np.mean(tot))
 
 
@@ -143,8 +149,11 @@ def main(argv=None):
     p.add_argument("--noise-episodes", type=int, default=6)
     p.add_argument("--t0-max", type=float, default=15.9, help="T37 : temps eps 0 max accepté")
     p.add_argument("--start", help="T37 : JSON des paramètres de départ (sinon constantes du module)")
+    p.add_argument("--wall-penalty", type=float, default=0.0, help="T49 : secondes ajoutées au score par pas de choc")
     p.add_argument("--restarts", type=int, default=1, help="redémarrages (graine seed+i, départ perturbé si i>0)")
     a = p.parse_args(argv)
+    global WALLP
+    WALLP = a.wall_penalty
     if a.noise_eps > 0:
         global NOISE
         from src.rl.wrappers import GymTimeAttack
