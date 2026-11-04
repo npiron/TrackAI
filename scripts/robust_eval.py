@@ -18,7 +18,9 @@ from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics
 def run(model_path, episodes, seed, eps, laps_n, procedural=False):
     from src.rl.wrappers import GymTimeAttack
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
-    model, vn = _load_model(model_path)
+    model, vn = (None, None) if model_path == "heuristic" else _load_model(model_path)
+    if model_path == "heuristic":
+        from scripts.heuristic_lap import heuristic_action
     succ, totals, fails = [], [], []
     for k in range(episodes):
         random.seed(seed + k)
@@ -28,11 +30,15 @@ def run(model_path, episodes, seed, eps, laps_n, procedural=False):
         done, info, steps, nrand = False, {}, 0, 0
         while not done:
             o = obs
-            if vn is not None:
+            if model is None:
+                pass
+            elif vn is not None:
                 o = np.clip((obs - vn.obs_rms.mean) / np.sqrt(vn.obs_rms.var + vn.epsilon), -vn.clip_obs, vn.clip_obs)
             if rng.rand() < eps:
                 action = int(rng.randint(env.action_space.n))
                 nrand += 1
+            elif model is None:
+                action = heuristic_action(obs, env.ta)
             else:
                 action = int(model.predict(o, deterministic=True)[0])
             obs, r, term, trunc, info = env.step(action)

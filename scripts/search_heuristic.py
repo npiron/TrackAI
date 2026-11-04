@@ -27,10 +27,40 @@ def evaluate(h, ev, params):
     return ok, (r["mean_total_time"] if ok else None)
 
 
+def score(h, ev, params):
+    """Score à minimiser : temps eps 0 (défaut) ou temps moyen bruité (T37)."""
+    return noisy_eval(h, ev, params) if NOISE else evaluate(h, ev, params)
+
+
+NOISE = None  # (env, eps, nb épisodes, graine, t0 max) si score robuste (T37)
+
+
+def noisy_eval(h, ev, params):
+    import random
+    import numpy as np
+    env, eps, n, seed, t0max = NOISE
+    ok, t0 = evaluate(h, ev, params)
+    if not ok or t0 > t0max:
+        return False, None
+    tot = []
+    for k in range(n):
+        random.seed(seed + k)
+        np.random.seed(seed + k)
+        rng = np.random.RandomState(seed + k)
+        obs, _ = env.reset()
+        done, info = False, {}
+        while not done:
+            a = int(rng.randint(env.action_space.n)) if rng.rand() < eps else h.heuristic_action(obs, env.ta)
+            obs, r, term, trunc, info = env.step(a)
+            done = term or trunc
+        tot.append(info.get("total_time", 0.0) if info.get("is_success", False) else 60.0)
+    return True, float(np.mean(tot))
+
+
 def climb(h, ev, rng, start, budget, max_seconds, sectors):
     """Hill-climbing (paramètres globaux + multiplicateurs de secteurs). Renvoie (best, temps, nb essais, journal)."""
     best = {k: (list(v) if isinstance(v, list) else v) for k, v in start.items()}
-    ok, bt = evaluate(h, ev, best)
+    ok, bt = score(h, ev, best)
     if not ok:
         return best, None, 0, []
     log = [(0, bt)]
@@ -49,7 +79,7 @@ def climb(h, ev, rng, start, budget, max_seconds, sectors):
                 cand[k] = int(round(v)) if isint else round(v, 4)
         if cand == best:
             continue
-        ok, t = evaluate(h, ev, cand)
+        ok, t = score(h, ev, cand)
         if ok and t < bt - 1e-9:
             best, bt = cand, t
             log.append((n, bt))
@@ -59,7 +89,10 @@ def climb(h, ev, rng, start, budget, max_seconds, sectors):
 def multi(a, h, ev, random):
     start = {k: getattr(h, k) for k in SPACE}
     if a.sectors:
-        start["SECTOR_MULT"] = [1.0] * a.sectors
+        start["SECTOR_MULT"] = list(h.SECTOR_MULT) if (NOISE and len(h.SECTOR_MULT) == a.sectors) else [1.0] * a.sectors
+    if a.start:
+        import json
+        start.update(json.loads(a.start))
     per = a.max_seconds / a.restarts
     rows, overall = [], (None, 1e9)
     for i in range(a.restarts):
@@ -72,7 +105,7 @@ def multi(a, h, ev, random):
                 st[k] = int(round(v)) if isint else round(v, 4)
             if a.sectors:
                 st["SECTOR_MULT"] = [round(min(1.5, max(0.7, 1 + rng.gauss(0, 0.1))), 4) for _ in range(a.sectors)]
-            ok, _ = evaluate(h, ev, st)
+            ok, _ = score(h, ev, st)
             if not ok:
                 st = {k: (list(v) if isinstance(v, list) else v) for k, v in start.items()}
         best, bt, n, log = climb(h, ev, rng, st, a.budget, per, a.sectors)
@@ -101,8 +134,16 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", default="docs/SEARCH_T30.md")
     p.add_argument("--sectors", type=int, default=0, help="nb de secteurs de spline (multiplicateurs de vitesse), 0 = off")
+    p.add_argument("--noise-eps", type=float, default=0.0, help="T37 : score = temps moyen sous bruit d'action eps (échec = 60 s)")
+    p.add_argument("--noise-episodes", type=int, default=6)
+    p.add_argument("--t0-max", type=float, default=15.9, help="T37 : temps eps 0 max accepté")
+    p.add_argument("--start", help="T37 : JSON des paramètres de départ (sinon constantes du module)")
     p.add_argument("--restarts", type=int, default=1, help="redémarrages (graine seed+i, départ perturbé si i>0)")
     a = p.parse_args(argv)
+    if a.noise_eps > 0:
+        global NOISE
+        from src.rl.wrappers import GymTimeAttack
+        NOISE = (GymTimeAttack(render_mode=None, procedural=False, laps=3), a.noise_eps, a.noise_episodes, 5000, a.t0_max)
     if a.restarts > 1 or a.sectors:
         return multi(a, h, ev, random)
     rng = random.Random(a.seed)

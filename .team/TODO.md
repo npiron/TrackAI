@@ -37,11 +37,11 @@
   - dépend de : T34 (clos)
   - essais : 2
 
-- [ ] **T37** · Recherche du professeur robuste au bruit · P2
+- [?] **T37** · Recherche du professeur robuste au bruit · P2
   - but : dans `search_heuristic.py`, option de score = moyenne du temps sous bruit d'action eps 0,05 (≥ 5 épisodes, finish obligatoire) pour trouver un professeur rapide ET tolérant (virage ~(181,510) à ralentir) ; budget ≤ 10 min.
   - fini quand : heuristique avec temps eps 0 ≤ 15,9 s, 20/20, audit propre, et finish_rate ≥ 95 % à eps 0,05 (100 ép.) dans `metrics.json` ; sinon table des essais
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T35** · Clôture documentaire de l'état du meilleur modèle · P2
   - but : `docs/BEST_STATUS.md` : modèle, commande de reproduction (imitate + eval), mesures (20 ép., 100 ép. bruités, audit), limites (spline, piste fixe, PPO dégrade), et rappel de l'action humaine `human_lap.py`.

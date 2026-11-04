@@ -508,3 +508,9 @@
 ## 2026-11-04 01:00 · reviewer · T36 validée (échec documenté, best/ inchangé)
 
 - Relancé robust_eval ppo_t36b (100 ép., seed 1000, eps 0,05) : 39/100, identique au journal. pytest hors e2e : 41 passed, 1 skipped. Aucun code modifié, best/ inchangé (robustesse < T31), table des essais fournie, 2 essais conformes. Mes mesures parasites retirées de metrics.json. Suite : T37.
+
+## 2026-11-04 01:12 · worker · T37 Professeur robuste au bruit
+- Fichiers : `scripts/search_heuristic.py` (`--noise-eps`, `--noise-episodes`, `--t0-max`, `--start` ; score = temps moyen sous bruit d'action, échec = 60 s, contrainte temps eps 0 ≤ 15,9 s), `scripts/robust_eval.py` (accepte `--model heuristic`), `scripts/heuristic_lap.py` (LOOK_MIN 139→127, STEER_DEADZONE 0,0345→0,0342), `docs/SEARCH_T37.md`, `docs/ROBUST_T37.md`, `.team/metrics.json`. Ancien professeur T33 sauvegardé : /tmp/heuristic_lap_t33.py.
+- Recherche (9 min) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/search_heuristic.py --sectors 6 --restarts 2 --max-seconds 540 --budget 100000 --noise-eps 0.05 --noise-episodes 8 --out docs/SEARCH_T37.md` → restart 0 : 17,62 s moyen bruité (8 ép. tous finis), restart 1 : 23,12 s. Référence avant : professeur T33 = 50 % de finish à eps 0,05 (20 ép.).
+- Mesure (100 ép., seed 1000, `robust_eval.py --model heuristic --static --laps 3`) : eps 0 → 100/100, 15,80 s ; eps 0,05 → 99/100 (18,48 s) ; eps 0,1 → 100/100 (19,68 s). `heuristic_lap.py` 20 ép. seed 0 : 20/20, 15,80 s. audit_lap : 8 cp dans l'ordre, 0 hors piste, 0 mur. pytest hors e2e : voir sortie (relancé).
+- Limites : 15,80 s contre 15,68 s du T33 (+0,12 s) ; graines de recherche 5000-5007 différentes de la validation (1000+) donc pas de fuite directe ; piste fixe. Suite possible : ré-imiter ce professeur (DAgger bruité) pour dépasser best/ 15,90 s.
