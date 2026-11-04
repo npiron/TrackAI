@@ -547,3 +547,12 @@
 - Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/search_heuristic.py --sectors 6 --restarts 2 --max-seconds 540 --budget 100000 --noise-eps 0.05 --noise-episodes 8 --t0-max 15.7 --start '<params T37>' --out docs/SEARCH_T39.md` (9 min 4 s).
 - Résultat : 1425 + 1409 candidats, aucun ne tient t0 ≤ 15,7 s ET bruité < 17,62 s. Pas d'amélioration → critère (< 15,80 s) non atteint ; table fournie. 1 essai, 6 secteurs au lieu de 8 (SECTOR_MULT de T37 a 6 valeurs).
 - Limites : score bruité sur 8 ép. seulement, hill-climbing local ; le contrainte t0 ≤ 15,7 est stricte et le score bruité est bruité. Pas de test pytest relancé (changement limité au script de recherche).
+
+## 2026-11-04 01:36 · worker · T40 Non-régression 1 tour / multi-tours
+- Fichier : `tests/test_laps.py` (+2 tests : `test_default_and_laps1_match_pre_multilap_reference`, `test_laps3_needs_ordered_checkpoints`).
+- Référence : hash sha256 de 600 pas (obs, récompense, done, actions aléatoires seed 0) mesuré sur le code d'avant multi-tours (`git archive e32dec6~1 src` dans /tmp) = code actuel (laps omis et laps=1) : `efb6b743…2826e`, figé dans le test.
+- pytest tests/test_laps.py ×2 : 5 passed identique ; suite hors e2e : 43 passed, 1 skipped.
+- Limites : trajectoire aléatoire de 600 pas sur piste statique, sans franchissement de ligne (le tour complet reste couvert par les tests existants).
+
+## 2026-11-04 01:36 · reviewer · T40 validée
+- Relu le diff (tests seuls). pytest hors e2e lancé 2 fois : 43 passed, 1 skipped, identique. Test de non-régression par hash de référence pré-multi-tours ; fin à 3 tours couverte par les tests existants.

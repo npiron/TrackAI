@@ -61,11 +61,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T40** · Non-régression 1 tour / multi-tours · P2
+- [x] **T40** · Non-régression 1 tour / multi-tours · P2
   - but : test pytest (ou vérif scriptée) montrant que `laps=1` (défaut) donne les mêmes observations/récompenses/terminaisons qu'avant l'ajout multi-tours (comparaison à une trajectoire de référence ou au comportement `laps` omis) et que `laps=3` termine après 3 franchissements ordonnés.
   - fini quand : test ajouté, pytest hors e2e vert, test lancé 2 fois identique
   - dépend de : rien
-  - essais : 0
+  - essais : 1
 
 - [ ] **T41** · Rapport de décision sur le critère vitesse · P2
   - but : `docs/SPEED_STATUS.md` : trajectoire du temps (45,5 → 15,90 s), borne T32 (13,96 s), marge restante, estimation du coût/bénéfice de continuer, et ce qu'il faut de Nicolas (`human_lap.py --laps 3`) pour conclure.

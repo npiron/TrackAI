@@ -1,4 +1,6 @@
 """Multi-lap mode (laps) of TimeAttackEnv and GymTimeAttack."""
+import hashlib
+
 import numpy as np
 
 from src.game.env import TimeAttackEnv
@@ -64,3 +66,38 @@ def test_gym_wrapper_laps_info():
     assert info["is_success"] is True
     assert len(info["lap_times"]) == 3
     assert abs(info["total_time"] - sum(info["lap_times"])) < 1e-9
+
+
+# Hash de la trajectoire (obs, récompense, done) mesuré sur le code d'avant le mode multi-tours
+# (commit e32dec6~1) ; le code actuel avec laps omis doit le reproduire.
+REF_HASH = "efb6b7436b6f8429fae500076aa20f1b595c80710b28df4a9b4c6ebece52826e"
+
+
+def _traj_hash(**kw):
+    env = TimeAttackEnv(build_track(), procedural=False, **kw)
+    env.reset()
+    rng = np.random.default_rng(0)
+    h = hashlib.sha256()
+    for _ in range(600):
+        act = (float(rng.uniform(-1, 1)), float(rng.uniform(0, 1)), 0.0)
+        o, r, d, _ = env.step(act)
+        h.update(np.asarray(o, dtype=np.float64).tobytes())
+        h.update(repr(float(r)).encode())
+        h.update(bytes([d]))
+        if d:
+            break
+    return h.hexdigest()
+
+
+def test_default_and_laps1_match_pre_multilap_reference():
+    assert _traj_hash() == REF_HASH
+    assert _traj_hash(laps=1) == REF_HASH
+
+
+def test_laps3_needs_ordered_checkpoints():
+    env = TimeAttackEnv(build_track(), procedural=False, laps=3)
+    env.reset()
+    fx, fy = env.track.finish_pos[:2]
+    env.car.pos = vec(fx, fy)  # arrivée sans checkpoints : ne compte pas
+    _, _, done, _ = env.step((0.0, 0.0, 0.0))
+    assert not done and env.lap_count == 0
