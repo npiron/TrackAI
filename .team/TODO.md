@@ -12,11 +12,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T61** · Professeur intermédiaire plus facile à imiter (H=30 à 32 déjà testés ; viser 16-18 s à 0 choc) + imitation · P1
+- [?] **T61** · Professeur intermédiaire plus facile à imiter (H=30 à 32 déjà testés ; viser 16-18 s à 0 choc) + imitation · P1
   - but : si T60 échoue ou en parallèle, choisir un H dont la politique est plus lisse (balayage 5 ép. puis 20 ép.) et imiter depuis best/ T53b ; gain visé entre 17 et 20 s à 0 choc.
   - fini quand : professeur seul mesuré (20 ép., 0 choc) + agent évalué 20 ép. laps 3 seed 0 ; remplace best/ seulement si 20/20, 0 choc et < 20,46 s
   - dépend de : T60 (ne pas lancer avant son verdict, pour réutiliser `--net-arch`)
-  - essais : 0
+  - essais : 2
 
 - [ ] **T62** · Robustesse du professeur H=29 sous bruit + docs à jour · P2
   - but : `robust_eval` 100 ép. seed 1000, eps 0,05 sur `heuristic` H=29 (déjà mesuré seulement à H=32 : 93/100) ; mettre à jour `docs/SPEED_STATUS.md` et `docs/WALL_BASELINE.md` (SAFE_HORIZON 29, T56-T59, 4 entrées dupliquées seeds 1/2 dans metrics.json à signaler).

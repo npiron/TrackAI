@@ -31,11 +31,13 @@ def _load_model(path):
     else:
         raise RuntimeError(f"Impossible de charger {path}: {last}")
     stats = None
-    cand = path.replace(".zip", "_vecnormalize.pkl")
+    cand = (path[:-4] if path.endswith(".zip") else path) + "_vecnormalize.pkl"
     if os.path.exists(cand):
         import pickle
         with open(cand, "rb") as f:
             stats = pickle.load(f)
+    elif isinstance(model, PPO):
+        raise FileNotFoundError(f"VecNormalize introuvable pour le modèle PPO {path} (attendu : {cand})")
     return model, stats
 
 

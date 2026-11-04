@@ -743,3 +743,21 @@
 
 ## 2026-11-04 23:31 · reviewer · T60 validée
 - Relancé eval t60 static laps 3 20 ép. seed 0 : 20/20, 15,90 s, 1 choc (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff code = option --net-arch (défaut inchangé). best/ non remplacé, verdict négatif honnête. t60b/t60c non relancés. Mon éval a ajouté une entrée metrics.json.
+
+## 2026-11-04 23:38 · worker · T61 Professeur intermédiaire (échec, best/ non remplacé)
+- Fichier : `scripts/imitate.py` (+`--teacher-horizon`, défaut None = inchangé). Balayage 1 ép. statique laps 3 (script /tmp/sweep61.py, `PYTHONPATH=.`) : H=30 16,60 s 0 choc (235 changements d'action) ; 33 17,82 s 0 choc ; 34 17,44 s 0 choc (288) ; 35 18,16 s 1 choc ; 36 19,18 s ; 38 17,98 s. (statique déterministe : 1 ép. = 20 ép.)
+- Professeur seul, 20 ép. seed 0 (heuristic_lap avec SAFE_HORIZON forcé) : H=30 20/20, 16,6 s, 0 choc ; H=34 20/20, 17,44 s, 0 choc.
+- DAgger depuis best/ T53b (`imitate.py --static --laps 3 --wall-penalty -50 --teacher-horizon H --init data/models/best/best.zip --episodes 12 --dagger 14 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 10 --lr 2e-4 --seed S`) : t61 (H=30, seed 1500, 2 min 37) → eval 20 ép. : 0/20 finis, 105 chocs ; t61b (H=34, seed 1600, 3 min 30, précision 0,86) → 0/20, 1008 chocs (bloqué/tourne).
+- Verdict : aucun agent ne passe ; best/ T53b conservé. Les professeurs H=30/34 sont à 0 choc (16,6 / 17,44 s) mais l'imitation depuis T53b dégrade au lieu d'améliorer ; pas d'essai depuis zéro/3×256 (suite possible). Pas de pytest relancé (option CLI seule).
+
+## 2026-11-04 23:39 · reviewer · T61 renvoyée
+- pytest hors e2e : 48 passed, 1 skipped. Diff = option --teacher-horizon (défaut inchangé), OK. Mais eval de t61/t61b sans .zip = sans VecNormalize (chiffres du worker faux). Avec .zip : t61 20/20 20,22 s 2 chocs ; t61b 20/20 19,36 s 3 chocs. Verdict négatif (0 choc non atteint) mais causes erronées → inbox.
+
+## 2026-11-04 23:40 · worker · T61 reprise (correction des évals)
+- Fichiers : `scripts/eval.py` (`_load_model` : le .pkl VecNormalize est trouvé avec ou sans `.zip` ; `FileNotFoundError` bruyante si modèle PPO sans .pkl), `.team/metrics.json` (3 entrées sans .zip marquées `"invalid"`, non supprimées).
+- Évals relancées avec .zip (`eval.py --model data/checkpoints/ppo_t61{,b}.zip --static --laps 3 --episodes 20 --seed 0`) : t61 (prof. H=30) 20/20, 20,22 s, 2 chocs ; t61b (H=34) 20/20, 19,36 s, 3 chocs, clean 0.
+- Verdict corrigé : pas d'effondrement ; les agents finissent à 19-20 s mais avec 2-3 chocs → critère 0 choc non atteint, best/ T53b conservé. Professeurs seuls inchangés (H=30 16,6 s, H=34 17,44 s, 0 choc).
+- Limites : pas d'essai depuis zéro/3×256 avec ces H.
+
+## 2026-11-04 23:41 · reviewer · T61 validée
+- Reprise vérifiée : eval t61/t61b avec .zip, 20 ép. seed 0 : t61 20,22 s 2 chocs ; t61b 19,36 s 3 chocs (conforme). eval.py corrigé (pkl sans .zip + erreur bruyante), pytest hors e2e : 48 passed, 1 skipped. best/ non remplacé, verdict négatif honnête. Ma précédente note inbox (renvoi) supprimée car traitée.

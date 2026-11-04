@@ -95,8 +95,13 @@ def main(argv=None):
     p.add_argument("--lr", type=float, default=1e-3, help="taux d'apprentissage du BC")
     p.add_argument("--net-arch", type=int, nargs="+", default=[256, 256],
                    help="couches cachées du MLP (sans --init), ex. 256 256 256")
+    p.add_argument("--teacher-horizon", type=int, default=None,
+                   help="SAFE_HORIZON du professeur heuristique (défaut : valeur de heuristic_lap)")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
+    if a.teacher_horizon is not None:
+        import scripts.heuristic_lap as _h
+        _h.SAFE_HORIZON = a.teacher_horizon
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
     from src.rl.wrappers import GymTimeAttack
