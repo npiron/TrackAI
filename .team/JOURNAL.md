@@ -823,3 +823,10 @@
 
 ## 2026-11-05 00:15 · reviewer · T67 validée
 - Relancé eval ppo_t67 static laps 3 20 ép. seed 0 : 20/20, 17,76 s, 4 chocs (conforme). pytest hors e2e : 48 passed, 1 skipped. Diff = option --mix-static (défaut off, chemin inchangé). Verdict négatif chiffré honnête, best/ T65 conservé. Mon eval a ajouté une entrée metrics.json. Piste possible : mix + --hit-weight.
+
+## 2026-11-05 00:15 · worker · Aucune tâche disponible
+- Toutes les tâches T64-T67 sont [x]. REPLAN créé. Piste suggérée : mix-static + --hit-weight, robustesse eps>0 de best/ T65.
+
+## 2026-11-05 00:15 · planner · Replanification
+- T64-T67 rangées. best/ = T65 (15,84 s, 20/20, 0 choc, reviewer OK). Critère de fiabilité rempli, vitesse à 15,84 s (borne 13,96 s), temps humain absent : pas de GOAL_REACHED. Statut GOAL.md mis à jour.
+- Nouvelles tâches : T68 robustesse de T65 (inconnue), T69 DAgger ciblé bruité depuis T65, T70 bonus mix+hit-weight, T71 bilan docs. Inbox vide ; REPLAN supprimé.

@@ -98,3 +98,7 @@ T46-T49 faits : best/ T38 = 11 chocs/course ; professeur à couche de sécurité
 ### Point 2026-11-04 22:49
 T53b : fiabilité 0 choc atteinte (20/20, 20,46 s, validé). T54 : PPO+pénalité non viable ; T55 : borne shield 16,42 s (non conforme). Phase suivante : robustesse au bruit (T56), réduction du temps sous 0 choc (T57), bonus pistes aléatoires (T58), reproductibilité sur autres graines (T59). Pas de GOAL_REACHED : la vitesse reste à minimiser (et temps humain absent).
 - 2026-11-04 22:49 : décision : best/ T53b n'est remplacé que si 20/20 et 0 choc conservés ET gain mesuré.
+
+### Point 2026-11-05 00:15
+T64-T67 faits : diagnostic (chocs t57/t60 au même virage), `--hit-weight` (T65) donne best/ 15,84 s, 20/20, 0 choc (contre 20,46 s). T66 (3×256 depuis zéro) et T67 (mix) : 1-5 et 4 chocs, échecs. Marge de vitesse faible (borne 13,96 s). Suite : mesurer la robustesse de T65 (T68), DAgger ciblé bruité depuis T65 (T69), bonus mix+hit-weight (T70), bilan (T71). Si T69/T70 n'apportent rien, clore la phase vitesse ; reste l'action humaine (`data/human_best.json`). Pas de GOAL_REACHED.
+- 2026-11-05 00:15 : décision : best/ T65 ne sera remplacé que s'il garde 20/20, 0 choc et ne perd ni en temps ni en robustesse mesurée (T68).
