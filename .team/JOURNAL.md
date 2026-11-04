@@ -769,3 +769,13 @@
 
 ## 2026-11-04 23:43 · reviewer · T62 validée
 - Relancé robust_eval heuristic H=29 static laps 3 100 ép. seed 1000 eps 0,05 : 65/100, 17,86 s, 0,77 choc, clean 0,25 (conforme). Docs relues, cohérentes avec metrics.json ; aucun code modifié. Mon run a ajouté une entrée doublon dans metrics.json.
+
+## 2026-11-04 23:46 · worker · T63 DAgger sur pistes aléatoires (bonus partiel, best/ non remplacé)
+- Aucun code modifié. Commande (2 min 25, 97k éch., précision finale 0,78) : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --laps 3 --wall-penalty -50 --init data/models/best/best.zip --episodes 12 --dagger 10 --dagger-episodes 8 --dagger-eps 0 0.05 --epochs 8 --lr 2e-4 --seed 1700 --out data/checkpoints/ppo_t63` (sans --static, professeur H=29 par défaut).
+- Évals (`eval.py --model data/checkpoints/ppo_t63.zip --laps 3 --episodes 20 --seed 0`, avec et sans `--static`) :
+  - `--no-static` : 18/20 finis (0,9), 18,87 s, 8,65 chocs/course (max 72), clean 0 → vs best/ T53b : 18/20, 26,27 s, 36,9 chocs (chocs/4,3, temps −7,4 s).
+  - `--static` : 20/20, 20,52 s, **6 chocs/course**, clean 0 → critère statique (0 choc, ≤ 20,46 s) perdu ; best/ T53b conservé.
+- Verdict : gain net sur pistes aléatoires, mais régression en statique ; un agent unique ne tient pas les deux. Limites : un seul run, une graine ; entrées metrics.json ajoutées par eval.py.
+
+## 2026-11-04 23:47 · reviewer · T63 validée
+- Relancé eval t63 20 ép. seed 0 : no-static 18/20, 18,87 s, 8,65 chocs ; static 20/20, 20,52 s, 6 chocs (conforme). pytest hors e2e : 48 passed, 1 skipped. Aucun code modifié, best/ non remplacé (critère statique perdu), verdict honnête. Mes évals ont ajouté des entrées metrics.json.

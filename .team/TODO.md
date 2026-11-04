@@ -24,11 +24,11 @@
   - dépend de : rien
   - essais : 1
 
-- [ ] **T63** · Bonus : DAgger sur pistes aléatoires (`--no-static`) depuis best/ · P2
+- [x] **T63** · Bonus : DAgger sur pistes aléatoires (`--no-static`) depuis best/ · P2
   - but : T58 a donné 18/20 finis, 36,9 chocs/course (heuristique : 0 choc, 18/20). Lancer `imitate.py` sans `--static` (professeur H=29 ou 32), laps 3, ≤ 10 min, en gardant le comportement sur la piste fixe.
   - fini quand : eval `--no-static` 20 ép. seed 0 ET eval `--static` 20 ép. dans metrics.json ; verdict chiffré (chocs/course vs 36,9). best/ remplacé seulement si le critère statique 20/20, 0 choc, ≤ 20,46 s est conservé
   - dépend de : T60 (architecture)
-  - essais : 0
+  - essais : 1
 
 > Phase vitesse : plafond proche (borne 13,96 s, best/ 15,80 s, voir `docs/SPEED_STATUS.md`). Pas de nouvelle recherche locale tant que `data/human_best.json` manque.
 
