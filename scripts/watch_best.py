@@ -1,6 +1,6 @@
 """Regarder le meilleur modèle jouer, en temps réel.
 
-Usage : .venv/bin/python scripts/watch_best.py [--model data/models/best/best.zip] [--laps 3] [--episodes 3] [--speed 1.0]
+Usage : .venv/bin/python scripts/watch_best.py [--model data/models/best/best.zip] [--laps 3] [--episodes 3] [--speed 1.0] [--random]
 Échap ou fermer la fenêtre pour quitter.
 """
 import argparse
@@ -23,10 +23,11 @@ def main():
     p.add_argument("--laps", type=int, default=3)
     p.add_argument("--episodes", type=int, default=3)
     p.add_argument("--speed", type=float, default=1.0, help="2.0 = deux fois plus vite que le temps réel")
+    p.add_argument("--random", action="store_true", help="circuits aléatoires (un nouveau à chaque course)")
     a = p.parse_args()
 
     model, vn = _load_model(a.model)
-    env = GymTimeAttack(render_mode="human", procedural=False, laps=a.laps)
+    env = GymTimeAttack(render_mode="human", procedural=a.random, laps=a.laps)
     clock = pygame.time.Clock()
 
     for ep in range(1, a.episodes + 1):
