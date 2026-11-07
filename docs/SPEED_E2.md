@@ -59,3 +59,23 @@ Le critère S-6 (0 choc et 20/20 en procédural) était plus strict que la contr
 | procédural : chocs moyens | 20,2 | 2,8 |
 
 Réévalué depuis `best/best.zip` : mêmes chiffres (voir `.goal/metrics.json`).
+
+## S-8 : deux candidats DAgger mixtes depuis s5_a
+
+Départ `best/` (s5_a), professeur H=29, `--mix-static --laps 3 --wall-penalty -50 --hit-weight 10 --teacher-horizon 29 --episodes 12 --dagger 10 --dagger-episodes 8 --epochs 8 --lr 2e-4` (arguments de S-5, `--init data/models/best/best.zip`). Les runs ont tourné en séquence :
+
+- `ppo_s8_a` : `--dagger-eps 0 0.05 --seed 2800` (2 min 25)
+- `ppo_s8_b` : `--dagger-eps 0 0.03 --seed 2900 --lr 1e-4` (2 min 26)
+
+Évaluation : `eval.py --episodes 20 --seed 0 --laps 3` avec `--static` puis `--no-static` (4 entrées dans `.goal/metrics.json`).
+
+| modèle | statique : finis | chocs (moy / max) | temps total moyen | procédural : finis | chocs (moy / max) | temps total moyen (finis) |
+|---|---|---|---|---|---|---|
+| `best/` (s5_a) | 20/20 | 0 / 0 | 15,46 s | 19/20 | 2,8 / 10 | 19,77 s |
+| `ppo_s8_a` | 20/20 | 2 / 2 | 16,50 s | 20/20 | 7,6 / 75 | 19,52 s |
+| `ppo_s8_b` | 20/20 | 4 / 4 | 18,82 s | 18/20 | 4,0 / 28 | 19,75 s |
+
+Lecture :
+- Aucun candidat ne passe sous 15,30 s : s8_a perd 1,04 s en statique et touche 2 fois le mur ; s8_b est à 18,82 s avec 4 chocs.
+- Procédural : s8_a termine 20/20 mais avec plus de chocs que s5_a (7,6 contre 2,8, max 75) ; s8_b 18/20, 4,0 chocs. Aucun ne domine s5_a.
+- Un seul tirage par configuration (graine et bruit DAgger varient ensemble). Une itération DAgger de plus depuis s5_a dégrade la statique : `best/` (s5_a) reste inchangé.

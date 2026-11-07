@@ -1982,7 +1982,7 @@
     "mean_wall_hits": 105.0,
     "max_wall_hits": 105,
     "clean_rate": 0.0,
-    "invalid": "eval sans .zip : VecNormalize non chargé (T61)"
+    "invalid": "eval sans .zip : VecNormalize non charg\u00e9 (T61)"
   },
   {
     "date": "2026-11-04 23:38",
@@ -2004,7 +2004,7 @@
     "mean_wall_hits": 1008.0,
     "max_wall_hits": 1008,
     "clean_rate": 0.0,
-    "invalid": "eval sans .zip : VecNormalize non chargé (T61)"
+    "invalid": "eval sans .zip : VecNormalize non charg\u00e9 (T61)"
   },
   {
     "date": "2026-11-04 23:38",
@@ -2110,7 +2110,7 @@
     "mean_wall_hits": 105.0,
     "max_wall_hits": 105,
     "clean_rate": 0.0,
-    "invalid": "eval sans .zip : VecNormalize non chargé (T61)"
+    "invalid": "eval sans .zip : VecNormalize non charg\u00e9 (T61)"
   },
   {
     "date": "2026-11-04 23:40",
@@ -2805,5 +2805,89 @@
     "mean_wall_hits": 2.8,
     "max_wall_hits": 10,
     "clean_rate": 0.15
+  },
+  {
+    "date": "2026-11-07 21:21",
+    "model": "data/checkpoints/ppo_s8_a.zip",
+    "episodes": 20,
+    "seed": 0,
+    "static": true,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 7989.8032,
+    "mean_checkpoints": 8.0,
+    "success_rate": 1.0,
+    "mean_lap_time": 16.5,
+    "mean_episode_steps": 825.0,
+    "finish_rate": 1.0,
+    "mean_total_time": 16.5,
+    "best_total_time": 16.5,
+    "mean_laps_done": 3.0,
+    "mean_wall_hits": 2.0,
+    "max_wall_hits": 2,
+    "clean_rate": 0.0
+  },
+  {
+    "date": "2026-11-07 21:21",
+    "model": "data/checkpoints/ppo_s8_a.zip",
+    "episodes": 20,
+    "seed": 0,
+    "static": false,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 7975.3013,
+    "mean_checkpoints": 8.0,
+    "success_rate": 1.0,
+    "mean_lap_time": 19.515,
+    "mean_episode_steps": 975.75,
+    "finish_rate": 1.0,
+    "mean_total_time": 19.515,
+    "best_total_time": 16.88,
+    "mean_laps_done": 3.0,
+    "mean_wall_hits": 7.6,
+    "max_wall_hits": 75,
+    "clean_rate": 0.0
+  },
+  {
+    "date": "2026-11-07 21:21",
+    "model": "data/checkpoints/ppo_s8_b.zip",
+    "episodes": 20,
+    "seed": 0,
+    "static": true,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 7998.2227,
+    "mean_checkpoints": 8.0,
+    "success_rate": 1.0,
+    "mean_lap_time": 18.82,
+    "mean_episode_steps": 941.0,
+    "finish_rate": 1.0,
+    "mean_total_time": 18.82,
+    "best_total_time": 18.82,
+    "mean_laps_done": 3.0,
+    "mean_wall_hits": 4.0,
+    "max_wall_hits": 4,
+    "clean_rate": 0.0
+  },
+  {
+    "date": "2026-11-07 21:21",
+    "model": "data/checkpoints/ppo_s8_b.zip",
+    "episodes": 20,
+    "seed": 0,
+    "static": false,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 7488.4476,
+    "mean_checkpoints": 7.5,
+    "success_rate": 0.9,
+    "mean_lap_time": 19.7544,
+    "mean_episode_steps": 953.35,
+    "finish_rate": 0.9,
+    "mean_total_time": 19.7544,
+    "best_total_time": 15.96,
+    "mean_laps_done": 2.8,
+    "mean_wall_hits": 4.0,
+    "max_wall_hits": 28,
+    "clean_rate": 0.05
   }
 ]

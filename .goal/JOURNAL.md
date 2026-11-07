@@ -94,3 +94,13 @@
 - eval statique relancée : 20/20, 0 choc, 15,46 s. `--no-static` : 19/20, 2,8 chocs, 19,77 s. Même résultat que les notes du dev.
 - tests rapides : 50 passed, 1 skipped. `git status .team` : propre.
 - docs/SPEED_E2.md : section « Promotion s5_a » présente. Mes deux évals avaient ajouté des doublons dans metrics.json, je les ai retirés.
+
+## 2026-11-07 21:22 · dev · S-8 Deux candidats DAgger mixtes depuis s5_a
+- s8_a et s8_b entraînés en séquence (~2 min 25 chacun), évalués en statique et procédural (4 entrées metrics.json).
+- Aucun ne bat s5_a : s8_a 16,50 s et 2 chocs en statique, s8_b 18,82 s et 4 chocs ; procédural 7,6 et 4,0 chocs contre 2,8.
+- Section « S-8 » ajoutée à docs/SPEED_E2.md ; un seul tirage par configuration.
+
+## 2026-11-07 21:22 · reviewer · S-8 approved
+- Relancé eval des 2 candidats (statique + procédural, 20 ép., seed 0) : résultats identiques à ceux du dev (s8_a 16,50 s / 2 chocs ; s8_b 18,82 s / 4 chocs). Les 4 entrées dupliquées de ma réévaluation ont été retirées de metrics.json.
+- Tests rapides : 50 passed, 1 skipped. `.team` intact. Zips présents.
+- Story d'exploration : résultat négatif documenté dans docs/SPEED_E2.md ; best/ inchangé. Note : metrics.json a des échappements unicode réécrits (bruit de diff sans conséquence).
