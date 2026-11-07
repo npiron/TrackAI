@@ -30,3 +30,18 @@ Lecture :
 - `s5_a` tient 20/20 et 0 choc en statique, plus vite que best/ (15,46 s contre 15,84 s), et réduit nettement les chocs en procédural (2,8 contre 20,2 ; 19/20 finis contre 15/20). Candidat promouvable selon les critères de la story (à confirmer par S-6, notamment robustesse eps 0,05).
 - `s5_b` (bruit DAgger 0,1) est non promouvable : 4 chocs en statique et 17,80 s.
 - Les deux runs ont tourné en parallèle (durées gonflées), un seul tirage par configuration : l'écart a/b mêle bruit DAgger et graine.
+
+## Verdict E2
+
+Critère de promotion (S-6) : statique 20/20, 0 choc, ≤ 15,84 s (aucune régression) ET `--no-static` 20/20 finis avec 0 choc moyen. Chiffres repris de `.goal/metrics.json` (20 épisodes, seed 0, 3 tours).
+
+| modèle | statique : finis | chocs (moy / max) | temps total | procédural : finis | chocs (moy / max) | temps total moyen (finis) | promu |
+|---|---|---|---|---|---|---|---|
+| `best/` T65 | 20/20 | 0 / 0 | 15,84 s | 15/20 | 20,2 / 119 | 24,55 s | (référence) |
+| `ppo_s5_a` | 20/20 | 0 / 0 | 15,46 s | 19/20 | 2,8 / 10 | 19,77 s | non |
+| `ppo_s5_b` | 20/20 | 4 / 4 | 17,80 s | 17/20 | 12,25 / 118 | 19,23 s | non |
+
+- `s5_a` passe le volet statique (et bat T65 de 0,38 s) mais échoue le volet procédural : 19/20 finis et 2,8 chocs en moyenne, contre 20/20 et 0 exigés.
+- `s5_b` échoue les deux volets (4 chocs en statique).
+- Aucun candidat promu : `data/models/best/` (T65) reste intact, pas de `best_t65/`.
+- Plateau final E2 : le mélange statique + procédural avec hit-weight améliore nettement la robustesse sur pistes aléatoires (chocs 20,2 → 2,8, finis 15 → 19/20) sans atteindre le zéro-choc exigé. `ppo_s5_a` reste dans `data/checkpoints/` (non versionné) comme meilleur candidat procédural.

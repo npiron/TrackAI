@@ -68,3 +68,13 @@
 - Relancé les 4 évals (20 ép., seed 0, laps 3) : résultats identiques aux metrics.json (s5_a statique 20/20, 0 choc, 15,46 s ; procédural 19/20, 2,8 chocs ; s5_b statique 4 chocs, 17,80 s ; procédural 17/20, 12,25 chocs).
 - Tests rapides : 50 passed, 1 skipped. Aucun code modifié, checkpoints ignorés par git, tableau de docs/SPEED_E2.md cohérent.
 - s5_a est promouvable sur critères story, à confirmer en S-6 (robustesse).
+
+## 2026-11-07 21:13 · dev · S-6 Promotion ou plateau E2
+- s5_a (statique 20/20, 0 choc, 15,46 s) échoue le critère procédural : 19/20 finis, 2,8 chocs ; s5_b échoue les deux. Rien promu, best/ intact.
+- Section « Verdict E2 » ajoutée à docs/SPEED_E2.md (chiffres identiques à metrics.json).
+
+## 2026-11-07 21:14 · reviewer · S-6 approved
+- Relu le diff : seul `docs/SPEED_E2.md` (section « Verdict E2 ») change ; `data/` et `.team` intacts (`git status` vide).
+- Tableau comparé à `.goal/metrics.json` : s5_a 15,46 s/0 choc statique, 19/20 et 2,8 chocs procédural ; s5_b 4 chocs, 17,80 s, 17/20 ; T65 20,2 chocs procédural. Identiques.
+- Aucune promotion : cohérent avec le critère (s5_a 19/20 et 2,8 chocs en procédural, s5_b 4 chocs en statique).
+- Tests rapides : 50 passed, 1 skipped.
