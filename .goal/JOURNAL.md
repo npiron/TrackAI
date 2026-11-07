@@ -104,3 +104,11 @@
 - Relancé eval des 2 candidats (statique + procédural, 20 ép., seed 0) : résultats identiques à ceux du dev (s8_a 16,50 s / 2 chocs ; s8_b 18,82 s / 4 chocs). Les 4 entrées dupliquées de ma réévaluation ont été retirées de metrics.json.
 - Tests rapides : 50 passed, 1 skipped. `.team` intact. Zips présents.
 - Story d'exploration : résultat négatif documenté dans docs/SPEED_E2.md ; best/ inchangé. Note : metrics.json a des échappements unicode réécrits (bruit de diff sans conséquence).
+
+## 2026-11-07 21:23 · dev · S-9 Promouvoir le meilleur candidat S-8 ou verdict final
+- Comparaison s8_a/s8_b à best/ (s5_a) : aucun ne passe le critère (chocs en statique, temps > 15,46 s).
+- `best/` laissé intact ; section « Verdict E3 » ajoutée à `docs/SPEED_E2.md` (cible 15,30 s et bonus non atteints).
+
+## 2026-11-07 21:23 · loop · End
+
+- Session ended after 20 step(s), 8 story(ies) done in total.
