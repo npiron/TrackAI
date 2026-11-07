@@ -1,6 +1,6 @@
 """Banc d'évaluation reproductible.
 
-Usage : python scripts/eval.py --model <chemin.zip|random> --episodes N --seed S [--static|--no-static] [--metrics chemin.json]
+Usage : python scripts/eval.py --model <chemin.zip|random> --episodes N --seed S [--static|--no-static|--bench] [--metrics chemin.json]
 Chaque épisode k utilise la graine S+k (piste + politique aléatoire) : deux lancements
 identiques donnent le même résultat. Ajoute une entrée dans .goal/metrics.json (.team/ si .goal/ n'existe pas).
 Sans flag : pistes procédurales (= --no-static).
@@ -18,6 +18,9 @@ import numpy as np
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_METRICS = os.path.join(_ROOT, ".goal" if os.path.isdir(os.path.join(_ROOT, ".goal")) else ".team", "metrics.json")
+
+
+BENCH_EPISODES = 50
 
 
 def _load_model(path):
@@ -62,7 +65,8 @@ def wall_stats(hits, succ):
     }
 
 
-def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
+def run_eval(model_path, episodes, seed, procedural=True, laps_n=1, bench=False):
+    """bench : l'épisode k utilise la piste de graine k (pistes fixes, seed ignoré)."""
     from src.rl.wrappers import GymTimeAttack
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
     shield = model_path.startswith("shield:")  # T55 : politique + garde-fou (NON conforme « agent seul »)
@@ -72,13 +76,14 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
         from scripts.heuristic_lap import _safe_action
     if model_path == "heuristic":
         from scripts.heuristic_lap import heuristic_action
-    rng = np.random.RandomState(seed)
+    rng = np.random.RandomState(0 if bench else seed)
     rets, cps, succ, laps, lens = [], [], [], [], []
     laps_done, totals, hits = [], [], []
     for k in range(episodes):
-        random.seed(seed + k)
-        np.random.seed(seed + k)
-        obs, _ = env.reset()
+        eseed = k if bench else seed + k
+        random.seed(eseed)
+        np.random.seed(eseed)
+        obs, _ = env.reset(options={"track_seed": k} if bench else None)
         ret, steps, done, info = 0.0, 0, False, {}
         while not done:
             if model_path == "heuristic":
@@ -114,6 +119,7 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1):
         "mean_episode_steps": round(float(np.mean(lens)), 4),
         **multi_lap_stats(succ, laps_done, totals),
         **wall_stats(hits, succ),
+        **({"wall_hits_by_seed": hits} if bench else {}),
     }
 
 
@@ -137,15 +143,21 @@ def main(argv=None):
     p.add_argument("--model", required=True, help="chemin .zip ou 'random'")
     p.add_argument("--episodes", type=int, default=10)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--bench", action="store_true", help="banc fixe : 50 pistes de graines 0 à 49")
     g = p.add_mutually_exclusive_group()
     g.add_argument("--static", action="store_true", help="piste fixe")
     g.add_argument("--no-static", action="store_true", help="pistes aléatoires procédurales (défaut)")
     p.add_argument("--laps", type=int, default=1, help="nombre de tours")
     p.add_argument("--metrics", default=DEFAULT_METRICS)
     a = p.parse_args(argv)
-    res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static, laps_n=a.laps)
+    if a.bench and (a.static or a.no_static):
+        p.error("--bench est incompatible avec --static/--no-static")
+    if a.bench:
+        a.episodes = BENCH_EPISODES
+    res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static, laps_n=a.laps, bench=a.bench)
     entry = {"date": time.strftime("%Y-%m-%d %H:%M"), "model": a.model, "episodes": a.episodes,
              "seed": a.seed, "static": a.static, "laps": a.laps,
+             **({"bench": True} if a.bench else {}),
              "human_best_total": _human_best(), **res}
     append_metrics(a.metrics, entry)
     print(json.dumps(entry, ensure_ascii=False))

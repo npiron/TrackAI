@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scripts import eval as ev
@@ -45,3 +46,32 @@ def test_static_flags_parsing(monkeypatch):
 def test_default_metrics_in_goal():
     assert ev.DEFAULT_METRICS.endswith(os.path.join(".goal", "metrics.json")) or not os.path.isdir(
         os.path.join(os.path.dirname(ev.DEFAULT_METRICS), ""))
+
+
+def test_track_seed_fixes_track():
+    from src.game.env import TimeAttackEnv
+    env = TimeAttackEnv(procedural=True)
+    env.reset(track_seed=7)
+    t1 = env.track
+    env.reset(track_seed=7)
+    t2 = env.track
+    env.reset(track_seed=8)
+    t3 = env.track
+    assert t1.seed == t2.seed == 7
+    assert np.array_equal(np.asarray(t1.spline_points), np.asarray(t2.spline_points))
+    assert t3.seed == 8
+    assert not np.array_equal(np.asarray(t1.spline_points), np.asarray(t3.spline_points))
+
+
+def test_gym_reset_track_seed_option():
+    from src.rl.wrappers import GymTimeAttack
+    env = GymTimeAttack(render_mode=None, procedural=True)
+    env.reset(seed=1, options={"track_seed": 5})
+    assert env.ta.track.seed == 5
+    env.reset()
+
+
+def test_bench_incompatible_with_static(tmp_path):
+    import pytest
+    with pytest.raises(SystemExit):
+        ev.main(["--model", "random", "--bench", "--static", "--metrics", str(tmp_path / "m.json")])

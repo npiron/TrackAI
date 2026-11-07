@@ -134,3 +134,14 @@
 - Diff : uniquement `docs/SPEED_E2.md` (section « Verdict E3 »). `git status .team` vide ; `best/` intact, `best.json` cohérent avec metrics.json.
 - Chiffres du tableau (s5_a, s8_a, s8_b) vérifiés contre `.goal/metrics.json` ; T65 conforme à SPEED_E1/E2. Aucun candidat ne passe le critère de promotion (s8_a 2 chocs/16,50 s ; s8_b 4 chocs/18,82 s) : non-promotion correcte.
 - Tests rapides : 50 passed, 1 skipped. Cible 15,30 s non atteinte (15,46 s), bonus non atteint : plateau documenté.
+
+## 2026-11-07 21:36 · dev · S-10 Banc procédural fixe
+- `track_seed` dans TimeAttackEnv.reset et options du wrapper ; `eval.py --bench` (50 pistes, graines 0..49).
+- Baseline best/ : finish 0.92, 3.18 chocs moy., reproductible (2 runs identiques) ; docs/BENCH_V2.md.
+- Tests : 53 passent.
+
+## 2026-11-07 21:37 · reviewer · S-10 approved
+- Diff relu (env.reset, wrappers options, eval --bench, 3 tests) : propre, comportement par défaut inchangé (track_seed None → graine aléatoire comme avant).
+- Tests rapides : 53 passed, 1 skipped.
+- `eval.py --bench --laps 3` lancé deux fois (metrics temporaires) : entrées identiques hors date ; finish_rate 0.92, mean_wall_hits 3.18, clean_rate 0.10.
+- docs/BENCH_V2.md cohérent avec wall_hits_by_seed (top 5 : 36, 2, 14, 5, 10) ; entrée bench dans metrics.json.

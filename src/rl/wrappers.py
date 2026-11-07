@@ -97,7 +97,9 @@ class GymTimeAttack(gym.Env):
             print(f"Error loading rewards config: {e}")
 
     def reset(self, seed=None, options=None):
-        obs = self.ta.reset() # This regenerates the track if procedural
+        track_seed = (options or {}).get("track_seed")
+        # This regenerates the track if procedural (track_seed fixes it)
+        obs = self.ta.reset() if track_seed is None else self.ta.reset(track_seed=track_seed)
         
         # Calculate initial distance for progress tracking
         # We need raw distance to keep reward scale consistent

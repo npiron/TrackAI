@@ -45,10 +45,10 @@ class TimeAttackEnv:
 
         self.reset()
 
-    def reset(self):
-        # Regenerate track if procedural mode is active
+    def reset(self, track_seed: Optional[int] = None):
+        # Regenerate track if procedural mode is active (track_seed fixes it)
         if self.procedural:
-            self.track = generate_procedural_track()
+            self.track = generate_procedural_track(seed=track_seed)
             # print(f"DEBUG: Track generated with {len(self.track.checkpoints)} CPs")
             
         sx, sy = self.track.start_pos
