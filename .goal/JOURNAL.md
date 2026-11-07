@@ -145,3 +145,15 @@
 - Tests rapides : 53 passed, 1 skipped.
 - `eval.py --bench --laps 3` lancé deux fois (metrics temporaires) : entrées identiques hors date ; finish_rate 0.92, mean_wall_hits 3.18, clean_rate 0.10.
 - docs/BENCH_V2.md cohérent avec wall_hits_by_seed (top 5 : 36, 2, 14, 5, 10) ; entrée bench dans metrics.json.
+
+## 2026-11-07 21:38 · loop · Call interrupted
+
+- `dev` interrupted by TERM after 50s, see `/Users/nicolaspiron/TrackAI/.goal/logs/20261107-213750-dev.log`.
+
+## 2026-11-07 21:38 · loop · Story released
+
+- S-11 back to ready/rework (interrupted by TERM), attempt not counted.
+
+## 2026-11-07 21:38 · loop · End
+
+- Session ended after 5 step(s), 10 story(ies) done in total.
