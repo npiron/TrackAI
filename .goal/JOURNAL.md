@@ -192,3 +192,12 @@
 - pytest rapide : 63 passed, 1 skipped. Commande Verify : `(35,) (35,)`.
 - `data/human_best.json` (non suivi, artefact de test/exécution) volontairement exclu du commit.
 - Pas de mesure metrics.json : la story ne change pas le modèle.
+
+## 2026-11-07 21:56 · dev · S-13 Mesures de référence nouvelle physique
+- 4 mesures lancées (heuristic/best × statique/banc), ajoutées à metrics.json.
+- docs/TEACHER_V2.md créé, renvoi ajouté en tête de BENCH_V2.md.
+- heuristic : 12,56 s / 10 chocs statique, 13 chocs au banc ; best/ : 22 et 43 chocs.
+
+## 2026-11-07 21:58 · reviewer · S-13 sent back
+- Relancé heuristic statique (12,56 s/10 chocs), best/ banc (0,92 fini/43,16 chocs) : identiques ; tests rapides 63 passed, 1 skipped. metrics.json restauré après mes relances.
+- Défaut : top 5 des graines à chocs faux dans TEACHER_V2.md (graine 11 à 22 chocs omise).
