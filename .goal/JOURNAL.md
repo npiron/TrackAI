@@ -252,3 +252,11 @@
 - S-16 (S) graines ≥ 1000 + mix-static dès le BC : ready.
 - S-17 (M) candidat v2 n°1, mesures statique + banc : ready.
 - S-18 (M) candidat n°2 selon diagnostic, S-19 (S) promotion dans best/ : draft, à finaliser après S-17 / S-18.
+## 2026-11-07 23:30 · dev · S-16 imitate hors banc
+- collect : graines procédurales 1000+seed+k, --mix-static actif dès le BC initial.
+- 2 tests ajoutés ; pytest 67 passed, vérif imitate OK.
+
+## 2026-11-07 23:30 · reviewer · S-16 approved
+- pytest rapide : 67 passed, 1 skipped. imitate.py --obs-version 2 --mix-static --episodes 6 --epochs 1 : /tmp/chk_v2.zip sauvé, 1703 échantillons.
+- Diff lu : graines 1000+seed+k en procédural, mix-static passé au BC initial, défaut inchangé. Test de mix ne vérifie pas les deux types de pistes (noté en inbox).
+- data/human_best.json (généré par les runs) non commité.

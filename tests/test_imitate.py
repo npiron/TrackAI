@@ -33,3 +33,23 @@ def test_mini_bc_v2_then_eval(tmp_path):
     assert "finish_rate" in r
     e = ev.main(["--model", "heuristic", "--episodes", "1", "--static", "--obs-version", "2", "--metrics", m])
     assert "mean_return" in e
+
+
+def test_collect_procedural_seeds_outside_bench(monkeypatch):
+    from src.rl.wrappers import GymTimeAttack
+    seen = []
+    orig = GymTimeAttack.step
+
+    def step(self, a):
+        if self.ta.procedural:
+            seen.append(self.ta.track.seed)
+        return orig(self, a)
+    monkeypatch.setattr(GymTimeAttack, "step", step)
+    collect(3, 1, True, seed=0, eps_levels=(0.0,), max_steps=3)
+    assert seen and all(s >= 1000 for s in seen)
+
+
+def test_collect_mix_static_v2():
+    from src.game.env import TimeAttackEnv
+    O, A = collect(4, 1, True, mix_static=True, eps_levels=(0.0,), max_steps=5, env_kw={"obs_version": 2})
+    assert O.shape[1] == TimeAttackEnv.OBS_V2_SIZE and len(O) == 20

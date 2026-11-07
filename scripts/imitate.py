@@ -39,7 +39,10 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
         eps = eps_levels[k % len(eps_levels)]
         if mix_static:
             env = env_s if k % 2 == 0 else env_p
-        obs, _ = env.reset()
+        if env.ta.procedural:  # graines >= 1000 : disjointes du banc (0-49)
+            obs, _ = env.reset(options={"track_seed": 1000 + seed + k})
+        else:
+            obs, _ = env.reset()
         start, hits = len(O), []
         for _ in range(max_steps):
             a = heuristic_action(env.ta.obs_v1(), env.ta)  # le professeur voit toujours l'obs v1
@@ -117,7 +120,7 @@ def main(argv=None):
     p.add_argument("--hit-weight", type=int, default=1,
                    help="DAgger : poids K des ~30 pas précédant un choc mur (échantillons dupliqués), défaut 1 = off")
     p.add_argument("--mix-static", action="store_true",
-                   help="DAgger : épisodes alternant piste fixe (pairs) et procédurale (impairs)")
+                   help="BC initial et DAgger : épisodes alternant piste fixe (pairs) et procédurale (impairs)")
     p.add_argument("--obs-version", type=int, choices=(1, 2), default=1,
                    help="observation de l'env/politique (sans --init ; avec --init : déduite du modèle)")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
@@ -153,7 +156,7 @@ def main(argv=None):
             loss, acc = behavior_clone(model, On, A, a.epochs, lr=a.lr, seed=a.seed)
             print(f"BC: perte {loss:.4f}, précision {acc:.3f}")
     else:
-        O, A = collect(a.episodes, a.laps, not a.static, a.seed, env_kw=kw)
+        O, A = collect(a.episodes, a.laps, not a.static, a.seed, env_kw=kw, mix_static=a.mix_static)
         print(f"{len(O)} échantillons, répartition actions: {np.bincount(A, minlength=9).tolist()}")
         venv = VecNormalize(DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
                                                                laps=a.laps, **kw)]),
