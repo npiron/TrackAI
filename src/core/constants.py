@@ -7,9 +7,9 @@ FPS = 50
 
 # Physics constants
 MAX_SPEED = 23.0  # ~ vitesse terminale ACCEL*FRICTION/(1-FRICTION)=22.32 (cf. docs/PHYSICS.md #1)
-ACCEL = 0.18        # Reduced for smoother acceleration
-BRAKE = 0.5
-FRICTION = 0.992
+ACCEL = 0.271       # façon Trackmania : départ vif puis la vitesse plafonne (35 % en 0,7 s, 90 % en 3,8 s)
+BRAKE = 0.22        # freinage progressif : de la vitesse max à l'arrêt en ~2 s
+FRICTION = 0.988    # traînée en accélération ; vitesse terminale ACCEL*FRICTION/(1-FRICTION) = 22.3
 COAST_FRICTION = 0.994  # roue libre : frein moteur léger (-26 % par seconde)
 TURN_SPEED = 0.08       # vitesse de rotation max (rad/frame), plafond de sécurité
 LATERAL_GRIP = 0.35     # part du glissement latéral rattrapée par frame (adhérence normale)

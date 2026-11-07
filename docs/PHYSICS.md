@@ -45,6 +45,7 @@ La dynamique est maintenant dans `src/game/physics.py` (`drive`), partagée par 
 | La voiture pivotait sur place à l'arrêt (rotation maximale à vitesse nulle) | Rotation par le roulement (modèle bicyclette) : nulle à l'arrêt, braquage utile qui baisse avec la vitesse (`STEER_CURVATURE`, `STEER_SPEED_SENS`) ; les roues tournent quand même à l'arrêt |
 | Pas de marche arrière | Frein maintenu à l'arrêt : marche arrière (`REVERSE_ACCEL`, `REVERSE_MAX`) ; la rotation s'inverse en reculant |
 | Roue libre très freinée (−2,5 %/frame) | Frein moteur léger (`COAST_FRICTION` 0.994, −26 %/s) |
+| Accélération plate (0→20 en 5,6 s), frein brutal (0,8 s depuis la vitesse max) | Départ vif puis plafond, façon Trackmania (`ACCEL` 0.271, `FRICTION` 0.988 : 0→8 en 0,7 s, 0→20 en 3,7 s, même vitesse terminale 22,3) ; freinage progressif (`BRAKE` 0.22, ~1,6 s depuis la vitesse max) |
 | Glisse constante de 14-17° en virage | Adhérence plus forte (`LATERAL_GRIP` 0.35, ~5-8°) ; les pneus réalignent la vitesse sans perdre sa norme |
 | Drift seulement mesuré | Drift : coup de frein en braquant au-dessus de `DRIFT_MIN_SPEED`, adhérence `DRIFT_GRIP` tant qu'on braque, rotation accrue, perte de vitesse par la glisse |
 | Murs : glissement sur l'axe X ou Y de l'écran | Glissement le long du mur (normale lue dans le masque), perte selon sin²(angle d'impact), petit renvoi, cap réaligné sur le mur ; on ne reste jamais planté de face |
