@@ -293,3 +293,13 @@
 - S-18 (M) candidats v2_b (plus de DAgger) / v2_c (hit-weight 30) : ready, chiffres de S-17 intégrés.
 - S-19 (S) promotion + archivage best_s5a_v1 : ready.
 - Note lead : v2_a satisfait déjà banc < 1 choc/course (0,58) ; reste 0,02 s au statique et 15 pistes fautives.
+
+## 2026-11-07 23:43 · dev · S-18 Candidat v2 n°2
+- Entraîné ppo_v2_b (DAgger 8×16, 3 min 18) et ppo_v2_c (hit-weight 30, 1 min 49) ; 4 mesures ajoutées à metrics.json.
+- v2_b : banc 0,16 choc/course (8 chocs, 6 pistes), statique 14,16 s ; v2_c pire que v2_a (0,70). Meilleur : v2_b.
+- Section « Candidats n°2 » ajoutée à docs/IMITATION_V2.md.
+
+## 2026-11-07 23:44 · reviewer · S-18 approved
+- Rejoué statique et banc de v2_b et v2_c : chiffres identiques à metrics.json et au doc (v2_b banc 0,16 / 8 chocs / 6 pistes ; v2_c 0,70 / 35 chocs / 16 pistes ; statique 14,16 s / 0 choc / 20/20).
+- Tests rapides : 68 passed, 1 skipped. Aucun code modifié, checkpoints non versionnés, 4 entrées metrics sans doublon.
+- Meilleur candidat v2_b (désigné selon la règle) ; 0 choc au banc et statique ≤ 14,12 s non atteints, à traiter en S-19/lead.
