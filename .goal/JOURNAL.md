@@ -260,3 +260,10 @@
 - pytest rapide : 67 passed, 1 skipped. imitate.py --obs-version 2 --mix-static --episodes 6 --epochs 1 : /tmp/chk_v2.zip sauvé, 1703 échantillons.
 - Diff lu : graines 1000+seed+k en procédural, mix-static passé au BC initial, défaut inchangé. Test de mix ne vérifie pas les deux types de pistes (noté en inbox).
 - data/human_best.json (généré par les runs) non commité.
+
+## 2026-11-07 23:33 · lead · Plan
+- Inbox (reviewer, S-16) acceptée : test du mix trop faible + `data/human_best.json` non ignoré → nouvelle story S-20 (S, ready) dans E5. Message déplacé dans inbox/done/.
+- E5 reste l'epic ouvert ; S-17 est la suite. Rien d'autre à changer.
+
+## 2026-11-07 23:33 · refiner · E5
+- S-20 (S) Renforcer le test du mix fixe/procédural + .gitignore human_best.json : ready.
