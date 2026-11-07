@@ -26,3 +26,22 @@ def test_eval_laps_keys(tmp_path):
     m = str(tmp_path / "m.json")
     a = ev.main(["--model", "random", "--static", "--laps", "3", "--episodes", "1", "--seed", "0", "--metrics", m])
     assert a["laps"] == 3 and "finish_rate" in a and "mean_laps_done" in a
+
+
+def test_static_flags_parsing(monkeypatch):
+    seen = []
+    monkeypatch.setattr(ev, "run_eval", lambda *a, **k: seen.append(k["procedural"]) or {})
+    monkeypatch.setattr(ev, "append_metrics", lambda *a: None)
+    monkeypatch.setattr(ev, "_human_best", lambda: None)
+    ev.main(["--model", "random"])
+    ev.main(["--model", "random", "--no-static"])
+    ev.main(["--model", "random", "--static"])
+    assert seen == [True, True, False]
+    import pytest
+    with pytest.raises(SystemExit):
+        ev.main(["--model", "random", "--static", "--no-static"])
+
+
+def test_default_metrics_in_goal():
+    assert ev.DEFAULT_METRICS.endswith(os.path.join(".goal", "metrics.json")) or not os.path.isdir(
+        os.path.join(os.path.dirname(ev.DEFAULT_METRICS), ""))

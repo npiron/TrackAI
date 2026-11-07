@@ -2658,5 +2658,26 @@
     "mean_wall_hits": 3.0,
     "max_wall_hits": 3,
     "clean_rate": 0.0
+  },
+  {
+    "date": "2026-11-07 21:08",
+    "model": "data/models/best/best.zip",
+    "episodes": 20,
+    "seed": 0,
+    "static": false,
+    "laps": 3,
+    "human_best_total": null,
+    "mean_return": 6297.7109,
+    "mean_checkpoints": 6.9,
+    "success_rate": 0.75,
+    "mean_lap_time": 24.5507,
+    "mean_episode_steps": 1046.2,
+    "finish_rate": 0.75,
+    "mean_total_time": 24.5507,
+    "best_total_time": 19.46,
+    "mean_laps_done": 2.35,
+    "mean_wall_hits": 20.2,
+    "max_wall_hits": 119,
+    "clean_rate": 0.0
   }
 ]

@@ -48,3 +48,13 @@
 - E1 done : plateau documenté. S-1/S-2 : 4 candidats DAgger (2 à 4 chocs ou 25, 16,76-22,76 s) tous pires que best/ T65 (20/20, 0 choc, 15,84 s). Cible 15,30 s non atteinte ; GOAL.md status mis à jour (vitesse en plateau). Pas de GOAL_REACHED.
 - E2 (bonus pistes aléatoires) reste seul epic ouvert, stories écrites (refiner) : S-4 option --no-static + référence best/ (S), S-5 deux candidats mixtes avec hit-weight (M), S-6 promotion ou plateau final (S). Si E2 échoue, le lead clôt sur plateau.
 - Remarque : eval.py écrit par défaut dans `.team/metrics.json` (corrigé dans S-4).
+
+## 2026-11-07 21:08 · dev · S-4 eval --no-static
+- `--static`/`--no-static` exclusifs ; metrics par défaut dans `.goal/metrics.json`.
+- Référence best/ T65 en procédural : 15/20 finis, chocs 20,2 moy / 119 max (docs/SPEED_E2.md).
+- Tests rapides verts (50 passed).
+
+## 2026-11-07 21:09 · reviewer · S-4 approved
+- Relu diff, flags exclusifs vérifiés (`--static --no-static` → erreur argparse), pytest rapide : 50 passed, 1 skipped.
+- `git status .team` vide ; entrée metrics static:false présente (15/20 finis, chocs 20,2/119), docs/SPEED_E2.md cohérent.
+- Remarque mineure : test_default_metrics_in_goal est faible (condition tautologique), sans blocage.

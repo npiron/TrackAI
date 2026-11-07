@@ -1,8 +1,9 @@
 """Banc d'évaluation reproductible.
 
-Usage : python scripts/eval.py --model <chemin.zip|random> --episodes N --seed S [--metrics chemin.json]
+Usage : python scripts/eval.py --model <chemin.zip|random> --episodes N --seed S [--static|--no-static] [--metrics chemin.json]
 Chaque épisode k utilise la graine S+k (piste + politique aléatoire) : deux lancements
-identiques donnent le même résultat. Ajoute une entrée dans .team/metrics.json.
+identiques donnent le même résultat. Ajoute une entrée dans .goal/metrics.json (.team/ si .goal/ n'existe pas).
+Sans flag : pistes procédurales (= --no-static).
 """
 import argparse
 import json
@@ -15,7 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 
-DEFAULT_METRICS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".team", "metrics.json")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_METRICS = os.path.join(_ROOT, ".goal" if os.path.isdir(os.path.join(_ROOT, ".goal")) else ".team", "metrics.json")
 
 
 def _load_model(path):
@@ -135,7 +137,9 @@ def main(argv=None):
     p.add_argument("--model", required=True, help="chemin .zip ou 'random'")
     p.add_argument("--episodes", type=int, default=10)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--static", action="store_true", help="piste fixe")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--static", action="store_true", help="piste fixe")
+    g.add_argument("--no-static", action="store_true", help="pistes aléatoires procédurales (défaut)")
     p.add_argument("--laps", type=int, default=1, help="nombre de tours")
     p.add_argument("--metrics", default=DEFAULT_METRICS)
     a = p.parse_args(argv)
