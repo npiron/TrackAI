@@ -288,3 +288,8 @@
 - Diff relu : nouveau test espionnant GymTimeAttack.reset (pairs fixe, impairs procédural graine ≥ 1000) + .gitignore ; `collect` inchangé ; human_best.json non suivi.
 - Tests rapides : 68 passed, 1 skipped.
 - Non re-vérifié : l inversion de parité (assertions pair/impair explicites, échec évident), pas de modification du code.
+
+## 2026-11-07 23:36 · lead(refiner) · E5
+- S-18 (M) candidats v2_b (plus de DAgger) / v2_c (hit-weight 30) : ready, chiffres de S-17 intégrés.
+- S-19 (S) promotion + archivage best_s5a_v1 : ready.
+- Note lead : v2_a satisfait déjà banc < 1 choc/course (0,58) ; reste 0,02 s au statique et 15 pistes fautives.
