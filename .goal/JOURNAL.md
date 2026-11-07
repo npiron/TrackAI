@@ -303,3 +303,13 @@
 - Rejoué statique et banc de v2_b et v2_c : chiffres identiques à metrics.json et au doc (v2_b banc 0,16 / 8 chocs / 6 pistes ; v2_c 0,70 / 35 chocs / 16 pistes ; statique 14,16 s / 0 choc / 20/20).
 - Tests rapides : 68 passed, 1 skipped. Aucun code modifié, checkpoints non versionnés, 4 entrées metrics sans doublon.
 - Meilleur candidat v2_b (désigné selon la règle) ; 0 choc au banc et statique ≤ 14,12 s non atteints, à traiter en S-19/lead.
+
+## 2026-11-07 23:47 · dev · S-19 Promouvoir le meilleur modèle v2
+- ancien best archivé dans best_s5a_v1, ppo_v2_b promu dans best/ avec best.json (obs v2).
+- eval rejoué : statique 14,16 s / 0 choc, banc 16,47 s / 8 chocs au total, identique à S-18.
+- BEST_STATUS.md réécrit ; pytest 69 verts.
+
+## 2026-11-07 23:46 · reviewer · S-19 approved
+- best/ (3 fichiers) = ppo_v2_b ; best_s5a_v1/ contient l'ancien best (3 fichiers, dates d'origine) ; best.json : origine, commande, obs_version 2, mesures.
+- Rejoué : statique 20/20, 14,16 s, 0 choc ; banc 50/50, 16,4748 s, 0,16 choc (8 au total) = best.json.
+- pytest rapide : 68 passed, 1 skipped. Modèles gitignorés (non commités), docs/BEST_STATUS.md cohérent.

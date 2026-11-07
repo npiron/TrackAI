@@ -1,53 +1,39 @@
-# État du meilleur modèle (T35)
+# État du meilleur modèle (S-19)
 
 ## Modèle
-`data/models/best/best.zip` (+ `best_vecnormalize.pkl`, `best.json`), gitignoré : issu de T31 = `ppo_t31a`,
-clonage de comportement + 5 tours DAgger bruités (eps 0 / 0,05 / 0,1, 30 ép./tour) sur le professeur
-heuristique T30 (`scripts/heuristic_lap.py`, 15,90 s à l'époque). Piste statique, 3 tours.
+`data/models/best/best.zip` (+ `best_vecnormalize.pkl`, `best.json`), gitignoré : `ppo_v2_b` (S-18),
+imitation BC + 8 tours DAgger sur le professeur heuristique, observation v2 (`obs_version: 2`, détectée
+automatiquement par `scripts/eval.py`). Commandes et comparatif : `docs/IMITATION_V2.md` (« Candidats n°2 »).
+
+Ancien best (`ppo_s5_a`, physique obsolète : 19,48 s / 22 chocs statique, 43,16 chocs au banc) archivé tel
+quel dans `data/models/best_s5a_v1/`. Plus anciens : `best_t65` (voir `data/models/`).
+
+## Promotion
+Règle : statique 20/20 finis et 0 choc, banc 50/50 finis avec moins de chocs que l'ancien best. `ppo_v2_b` :
+statique 20/20, 0 choc ; banc 50/50, 8 chocs au total (0,16/course) contre 43,16 : **promu**.
 
 ## Reproduction
-Le professeur actuel dans le dépôt est celui de T37 (15,80 s) : ré-imiter donnera un modèle proche mais
-pas identique à `best/` (T31 a été entraîné sur le professeur T30). Pour mesurer `best/` tel quel, passer
-directement à l'évaluation.
-
-Entraînement (~4 min, commande T31, sur le professeur courant) :
+Entraînement (~3 min 18 s) :
 ```
-SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --static --laps 3 --dagger 5 \
-  --dagger-episodes 30 --dagger-eps 0 0.05 0.1 --epochs 40 --out data/checkpoints/ppo_t31a
+SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --obs-version 2 --mix-static --laps 3 \
+  --episodes 60 --epochs 8 --lr 2e-4 --wall-penalty -50 --hit-weight 10 \
+  --dagger 8 --dagger-episodes 16 --dagger-eps 0 0.05 --seed 1801 --out data/checkpoints/ppo_v2_b
 ```
-Évaluation (20 ép., seed 0) :
+Évaluation (relancée le 2026-11-07 23:45, mêmes chiffres que `best.json`) :
 ```
 SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/best.zip --static --laps 3 --episodes 20 --seed 0
-```
-Robustesse (100 ép., seed 1000) :
-```
-SDL_VIDEODRIVER=dummy .venv/bin/python scripts/robust_eval.py --model data/models/best/best.zip --static --laps 3 --episodes 100 --seed 1000 --eps 0 0.05 0.1
-```
-Audit :
-```
-SDL_VIDEODRIVER=dummy .venv/bin/python scripts/audit_lap.py --static --laps 3 --models data/models/best/best.zip --out /tmp/audit.md
+SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/best.zip --bench --laps 3
 ```
 
-## Mesures (relancées le 2026-11-04 01:14)
+## Mesures
 | mesure | résultat |
 |---|---|
-| eval 20 ép., laps 3, seed 0 | 20/20, 15,90 s (795 steps) |
-| robustesse eps 0 | 100/100, 15,9 s |
-| robustesse eps 0,05 | 100/100, 18,63 s moy, pire 22,22 s |
-| robustesse eps 0,1 | 99/100, 19,20 s moy, pire 23,22 s |
-| audit | 8 cp dans l'ordre à chaque tour, 0 frame hors piste, 0 contact mur, bord au pire -2,2 px (précision spline) |
+| statique, 20 ép., laps 3, seed 0 | 20/20, 14,16 s, 0 choc |
+| banc, 50 pistes, laps 3 | 50/50, 16,47 s, 0,16 choc/course (max 3, 6 pistes, 8 chocs) |
 
-Autres jalons : heuristique T33 15,68 s mais fragile (50 % à eps 0,05) ; heuristique T37 15,80 s et robuste
-(99-100 %) ; PPO affiné (T27) 17,48 s, donc dégrade le BC. Borne théorique indicative T32 : ~13,96 s
-(non rigoureuse, voir `BOUND_T32.md`).
+Pistes fautives du banc : 6, 21, 22, 25, 38 (1 choc) et 39 (3 chocs). Professeur : 14,12 s statique, 16,75 s banc, 0 choc.
 
 ## Limites
-- Piste fixe (statique) : surapprentissage au tracé ; pas de généralisation testée.
-- Professeur = heuristique à spline : le modèle ne peut guère dépasser son professeur.
-- PPO en affinage dégrade le modèle BC (T27).
-- Gains restants plausibles : ≤ ~1-2 s (voir T32) ; ré-imiter le professeur T37 pourrait donner < 15,90 s.
+- Pas encore 0 choc au banc ; statique 14,16 s contre 14,12 s pour le professeur.
+- Robustesse (eps) non mesurée pour ce modèle.
 - Effet de bord : l'env réécrit `replays/personal_best.json`.
-
-## Action humaine
-Le critère vitesse vs humain n'est pas évaluable : `data/human_best.json` est absent
-(`human_best_total: null`). Jouer `python scripts/human_lap.py --laps 3` pour le créer.
