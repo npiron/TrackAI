@@ -45,3 +45,17 @@ Critère de promotion (S-6) : statique 20/20, 0 choc, ≤ 15,84 s (aucune régre
 - `s5_b` échoue les deux volets (4 chocs en statique).
 - Aucun candidat promu : `data/models/best/` (T65) reste intact, pas de `best_t65/`.
 - Plateau final E2 : le mélange statique + procédural avec hit-weight améliore nettement la robustesse sur pistes aléatoires (chocs 20,2 → 2,8, finis 15 → 19/20) sans atteindre le zéro-choc exigé. `ppo_s5_a` reste dans `data/checkpoints/` (non versionné) comme meilleur candidat procédural.
+
+## Promotion s5_a
+
+`ppo_s5_a` est promu dans `data/models/best/` (`best.zip`, `best_vecnormalize.pkl`, `best.json`) ; l'ancien `best/` (T65) est archivé dans `data/models/best_t65/`.
+
+Le critère S-6 (0 choc et 20/20 en procédural) était plus strict que la contrainte du goal, qui demande de garder dans `best/` le meilleur modèle, pas un modèle parfait. `s5_a` domine T65 sur toutes les mesures (20 épisodes, seed 0, 3 tours) :
+
+| mesure | T65 | `s5_a` |
+|---|---|---|
+| statique : temps / chocs | 15,84 s / 0 | 15,46 s / 0 |
+| procédural : finis | 15/20 | 19/20 |
+| procédural : chocs moyens | 20,2 | 2,8 |
+
+Réévalué depuis `best/best.zip` : mêmes chiffres (voir `.goal/metrics.json`).

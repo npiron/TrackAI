@@ -83,3 +83,14 @@
 - E2 done : bonus non atteint (s5_a 19/20, 2,8 chocs en procédural) mais s5_a domine T65 partout (statique 15,46 s vs 15,84 s, 0 choc). S-6 ne l'a pas promu (critère trop strict) alors que la contrainte demande le meilleur modèle dans best/.
 - E3 ouvert (dernier) : S-7 promouvoir s5_a, S-8 deux candidats DAgger mixtes depuis s5_a (cible ≤ 15,30 s, 0,16 s d'écart), S-9 promotion ou verdict final. Pas de GOAL_REACHED : vitesse 15,46 s > 15,30 s.
 - Refiner : stories S-7 (S), S-8 (M), S-9 (S) écrites, ready. Si E3 échoue, plateau documenté et arrêt.
+
+## 2026-11-07 21:15 · dev · S-7 Promouvoir ppo_s5_a dans best/
+- Ancien best/ (T65) archivé dans best_t65/, best/ remplacé par s5_a avec best.json.
+- Évals depuis best/ : statique 15,46 s 0 choc ; procédural 19/20, 2,8 chocs.
+- Section « Promotion s5_a » ajoutée à docs/SPEED_E2.md.
+
+## 2026-11-07 21:16 · reviewer · S-7 approved
+- `best/` : zip et pkl identiques (cmp) à `ppo_s5_a` ; `best_t65/` contient bien l'ancien best ; `best.json` cohérent avec metrics.json.
+- eval statique relancée : 20/20, 0 choc, 15,46 s. `--no-static` : 19/20, 2,8 chocs, 19,77 s. Même résultat que les notes du dev.
+- tests rapides : 50 passed, 1 skipped. `git status .team` : propre.
+- docs/SPEED_E2.md : section « Promotion s5_a » présente. Mes deux évals avaient ajouté des doublons dans metrics.json, je les ai retirés.
