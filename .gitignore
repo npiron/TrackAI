@@ -60,3 +60,8 @@ replays/*.json
 # Équipe d agents
 .team/logs/
 .team/.goal_hash
+.goal/logs/
+.goal/.goal_hash
+.goal/.lead_mark
+.goal/TODO.md
+.goal/usage.jsonl

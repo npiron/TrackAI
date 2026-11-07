@@ -1,0 +1,23 @@
+{
+  "team": "trio",
+  "lead": {
+    "model": "sonnet",
+    "effort": "medium",
+    "fallback": ""
+  },
+  "refiner": {
+    "model": "sonnet",
+    "effort": "medium",
+    "fallback": ""
+  },
+  "dev": {
+    "model": "sonnet",
+    "effort": "medium",
+    "fallback": ""
+  },
+  "reviewer": {
+    "model": "sonnet",
+    "effort": "medium",
+    "fallback": ""
+  }
+}
