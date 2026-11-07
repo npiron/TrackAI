@@ -44,6 +44,14 @@ def _reset_car(ta, v, heading=0.0):
     ta.car.angular_velocity = 0.0
 
 
+def _hold(ta, v):
+    """Impose la vitesse v en gardant la direction de `vel` (la physique lit `vel`, pas `speed`)."""
+    n = float(np.linalg.norm(ta.car.vel))
+    if n > 1e-9:
+        ta.car.vel = ta.car.vel * (v / n)
+    ta.car.speed = v
+
+
 def measure_longitudinal():
     """Gain de vitesse par frame a(v) pour : plein gaz, frein seul, frein+gaz (grille de v)."""
     ta = _env()
@@ -65,12 +73,12 @@ def measure_cornering():
     for v in grid:
         _reset_car(ta, v)
         for _ in range(150):                     # régime établi
-            ta.car.speed = v
+            _hold(ta, v)
             ta.step((1.0, 0, 0))
         p0, h0 = ta.car.pos.copy(), ta.car.heading
         length = 0.0
         for _ in range(100):
-            ta.car.speed = v
+            _hold(ta, v)
             before = ta.car.pos.copy()
             ta.step((1.0, 0, 0))
             length += float(np.linalg.norm(ta.car.pos - before))
@@ -329,7 +337,10 @@ def main():
     P(f"- Meilleur temps atteint : **{a.reference:.2f} s** -> écart **{gap:+.2f} s** ({100 * gap / a.reference:+.1f} %).")
     P(f"- Intervalle de sensibilité (k=12..24, ligne de course) : {min(r[2] for r in sens if r[0] >= 12):.2f}-"
       f"{max(r[2] for r in sens if r[0] >= 12):.2f} s.")
-    if gap > 1.0:
+    if gap < 0:
+        rec = ("**Borne invalide** : plus lente que le meilleur temps atteint (fenêtre de courbure trop "
+               "pessimiste) ; relancer avec `--kwin` plus grand.")
+    elif gap > 1.0:
         rec = ("**Continuer la recherche** : la borne laisse plus d'une seconde (heuristique/imitation à "
                "paramétrer par secteur, cf. T33).")
     elif gap > 0.3:

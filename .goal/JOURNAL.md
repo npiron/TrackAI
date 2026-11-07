@@ -233,3 +233,12 @@
 - eval statique best/ 3 tours 20 ép. : 19,48 s, 22 chocs, finish 1,0 = chiffres S-13.
 - Test mini BC v2 → eval/robust_eval/heuristic v2 présent et vert. Pas de mesure metrics.json (story d'outillage).
 - `data/human_best.json` (effet de bord d'eval, non ignoré) laissé hors du commit.
+
+## 2026-11-07 23:28 · dev · S-15 Remesurer la borne inférieure
+- `lower_bound.py` : correction de la mesure de virage (`vel` rescalé au lieu de `speed`), message « borne invalide ».
+- Calibration par défaut absurde (31,69 s > 14,12 s) ; avec `--kwin 24` : 12,77 s, écart 1,35 s, consigné dans `docs/BOUND_V2.md`.
+- pytest rapide vert (65 passed).
+
+## 2026-11-07 23:28 · reviewer · S-15 approved
+- Relancé lower_bound.py --laps 3 --reference 14.12 : 31,69 s (invalide, signalé par le nouveau message) ; avec --kwin 24 : 12,77 s, écart +1,35 s, conforme à docs/BOUND_V2.md.
+- pytest rapide : 65 passed, 1 skipped. Diff limité à lower_bound.py (+_hold) et au doc ; data/human_best.json laissé hors commit. Pas de mesure metrics.json (outillage).
