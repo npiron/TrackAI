@@ -27,3 +27,8 @@
 - Rejoué eval.py (20 ép., seed 0, static, laps 3) sur s1_a et s1_b : a = 20/20, 2 chocs, 22,76 s ; b = 20/20, 4 chocs, 16,76 s. Identique aux notes du dev et à `metrics.json`.
 - Tests rapides : 48 passed, 1 skipped. `best/` et `.team/` non modifiés ; checkpoints ignorés par git.
 - Critères de la story remplis (runs ≤ 10 min, mesures, verdict chiffré dans `docs/SPEED_E1.md`). Cible 15,30 s non atteinte : résultat négatif documenté, pas un défaut.
+
+## 2026-11-07 21:06 · dev · S-2 Variantes de réglage
+- Aucun candidat S-1 sans choc : départ depuis best/ T65, 2 runs (hit-weight 20 ; lr 3e-4 + 60 epochs), graine 2500.
+- Résultats : s2_a 25 chocs / 18,20 s ; s2_b 3 chocs / 16,82 s. Cible non atteinte, rien promu.
+- Tableau dans docs/SPEED_E1.md, mesures dans .goal/metrics.json.
