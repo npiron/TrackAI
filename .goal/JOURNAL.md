@@ -313,3 +313,19 @@
 - best/ (3 fichiers) = ppo_v2_b ; best_s5a_v1/ contient l'ancien best (3 fichiers, dates d'origine) ; best.json : origine, commande, obs_version 2, mesures.
 - Rejoué : statique 20/20, 14,16 s, 0 choc ; banc 50/50, 16,4748 s, 0,16 choc (8 au total) = best.json.
 - pytest rapide : 68 passed, 1 skipped. Modèles gitignorés (non commités), docs/BEST_STATUS.md cohérent.
+
+## 2026-11-07 23:47 · loop · Agent failed
+
+- `lead` failed (exit 1), retry 1/2 in 30s, see `/Users/nicolaspiron/TrackAI/.goal/logs/20261107-234654-lead+refiner.log`.
+
+## 2026-11-07 23:47 · loop · Agent failed
+
+- `lead` failed (exit 1), retry 2/2 in 30s, see `/Users/nicolaspiron/TrackAI/.goal/logs/20261107-234731-lead+refiner.log`.
+
+## 2026-11-07 23:48 · loop · Stopped on error
+
+- `lead` failed (exit 1) after 2 retries, see `/Users/nicolaspiron/TrackAI/.goal/logs/20261107-234803-lead+refiner.log`.
+
+## 2026-11-07 23:48 · loop · End
+
+- Session ended after 28 step(s), 20 story(ies) done in total.
