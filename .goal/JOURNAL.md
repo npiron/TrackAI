@@ -267,3 +267,11 @@
 
 ## 2026-11-07 23:33 · refiner · E5
 - S-20 (S) Renforcer le test du mix fixe/procédural + .gitignore human_best.json : ready.
+
+## 2026-11-07 23:34 · dev · S-17 candidat v2 n°1
+- ppo_v2_a (BC 60 ép. + 4 DAgger, 1 min 52) : statique 14,14 s / 0 choc ; banc 16,50 s, 29 chocs sur 15 pistes.
+- docs/IMITATION_V2.md écrit, 2 entrées dans metrics.json ; pytest 67 passed.
+
+## 2026-11-07 23:34 · reviewer · S-17 approved
+- Rejoué statique (14,14 s / 0 choc) et banc (16,50 s, 0,58 chocs, 29 sur 15 pistes) : chiffres identiques au doc et aux metrics ; top 5 graines vérifié.
+- pytest rapide : 67 passed, 1 skipped. Doublons de metrics.json ajoutés par mes rejeux retirés. data/human_best.json non commité (inbox).
