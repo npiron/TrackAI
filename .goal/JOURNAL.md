@@ -242,3 +242,13 @@
 ## 2026-11-07 23:28 · reviewer · S-15 approved
 - Relancé lower_bound.py --laps 3 --reference 14.12 : 31,69 s (invalide, signalé par le nouveau message) ; avec --kwin 24 : 12,77 s, écart +1,35 s, conforme à docs/BOUND_V2.md.
 - pytest rapide : 65 passed, 1 skipped. Diff limité à lower_bound.py (+_hold) et au doc ; data/human_best.json laissé hors commit. Pas de mesure metrics.json (outillage).
+
+## 2026-11-07 23:29 · lead · Plan
+- E7 et E4 clos : professeur réglé 14,12 s / 0 choc statique, banc 0 choc (metrics.json) ; borne 12,77 s ; baseline best/ 19,48 s / 22 chocs. Critère B chiffré (14,12 s). REPLAN levé.
+- E5 est l'epic ouvert ; E6 attend.
+- Décision : l'entraînement utilise des graines de piste ≥ 1000 (le professeur a été réglé sur 0-49).
+
+## 2026-11-07 23:29 · refiner · E5
+- S-16 (S) graines ≥ 1000 + mix-static dès le BC : ready.
+- S-17 (M) candidat v2 n°1, mesures statique + banc : ready.
+- S-18 (M) candidat n°2 selon diagnostic, S-19 (S) promotion dans best/ : draft, à finaliser après S-17 / S-18.
