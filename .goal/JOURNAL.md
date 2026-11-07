@@ -181,3 +181,14 @@
 ## 2026-11-07 21:53 · refiner · E7
 - S-13 mesures de référence heuristic/best sur statique + banc (S, ready) ; S-14 réglage du professeur, 0 choc puis vitesse (M, ready, dépend S-13) ; S-15 borne lower_bound remesurée (S, ready, P3).
 - S-11 (obs v2) reste ready et indépendante : peut se faire en parallèle.
+
+## 2026-11-07 21:54 · dev · S-11 Observation v2
+- `obs_version=2` (35 valeurs) ajoutée dans TimeAttackEnv et GymTimeAttack ; v1 par défaut, identique à HEAD sur 300 pas.
+- `obs_v1()` exposée pour le professeur heuristique ; `_cast_rays` prend la portée en paramètre.
+- 5 nouveaux tests ; 63 passed.
+
+## 2026-11-07 21:54 · reviewer · S-11 approved
+- Diff relu : v1 inchangée (`_obs` renommée `_obs_v1`, défaut obs_version=1), v2 = 35 valeurs documentées, `obs_v1()` exposé, physique et jit_ops intacts, docstring heuristic_action ajoutée.
+- pytest rapide : 63 passed, 1 skipped. Commande Verify : `(35,) (35,)`.
+- `data/human_best.json` (non suivi, artefact de test/exécution) volontairement exclu du commit.
+- Pas de mesure metrics.json : la story ne change pas le modèle.

@@ -19,8 +19,29 @@ class TimeAttackEnv:
              target_dist, target_dir_x, target_dir_y, on_track, 
              lidar_1, lidar_2, lidar_3, lidar_4, lidar_5]
       action = (steer, accel, brake) in [-1..1], [0..1], [0..1]
+
+    obs_version=2 : 35 floats (v1 inchangée par défaut) :
+      0-8   : identiques à v1 (speed_n, local_vx, local_vy, ang_vel, prev_steer,
+              target_dist, target_dir_x, target_dir_y, on_track)
+      9     : car.steering (position réelle du volant, [-1, 1])
+      10-24 : 5 points de la ligne centrale à venir (espacés de V2_POINT_SPACING px d'arc,
+              à partir de l'indice de spline le plus proche), 3 valeurs chacun dans le repère
+              de la voiture : distance normalisée [0,1], sin, cos de l'angle (cos>0 : devant, sin>0 : à droite)
+      25    : courbure à venir (changement de cap moyen entre points, / (pi/4), clip [-1, 1], >0 : à droite)
+      26-34 : 9 lidars (-pi/2 à pi/2 par pas de pi/8), portée V2_RAY_LENGTH px, normalisés [0,1]
+    ta.obs_v1() renvoie toujours l'observation v1 courante (pour le professeur heuristique).
     """
-    def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1):
+    V2_POINT_SPACING = 40.0
+    V2_N_POINTS = 5
+    V2_RAY_LENGTH = 300.0
+    V2_LIDAR_ANGLES = [-math.pi / 2 + i * math.pi / 8 for i in range(9)]
+    OBS_V2_SIZE = 35
+
+    def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1, obs_version: int = 1):
+        if obs_version not in (1, 2):
+            raise ValueError("obs_version doit valoir 1 ou 2")
+        self.obs_version = obs_version
+        self._arc_cache = None
         self.laps = max(1, int(laps))
         self.lap_count = 0
         self.lap_times: List[float] = []
@@ -240,7 +261,57 @@ class TimeAttackEnv:
         dist = np.linalg.norm(self.car.pos - vec(fx, fy))
         return dist < FINISH_RADIUS
 
+    def obs_v1(self):
+        """Observation v1 (14 valeurs) courante, quelle que soit obs_version."""
+        return self._obs_v1()
+
     def _obs(self):
+        if self.obs_version == 2:
+            return self._obs_v2()
+        return self._obs_v1()
+
+    def _arc_lengths(self):
+        sp = self.track.spline_points
+        if self._arc_cache is None or self._arc_cache[0] is not sp:
+            seg = np.linalg.norm(np.roll(sp, -1, axis=0) - sp, axis=1)
+            cum = np.concatenate(([0.0], np.cumsum(seg)))  # cum[-1] = longueur totale (boucle fermée)
+            self._arc_cache = (sp, cum)
+        return self._arc_cache[1]
+
+    def _obs_v2(self):
+        base = self._obs_v1()[:9]
+        sp = self.track.spline_points
+        cum = self._arc_lengths()
+        total = float(cum[-1])
+        n = len(sp)
+        pos = np.asarray(self.car.pos, dtype=np.float64)
+        i0 = int(np.argmin(np.sum((sp - pos) ** 2, axis=1)))
+        h = self.car.heading
+        ch, sh = math.cos(h), math.sin(h)
+        pts = []
+        for k in range(1, self.V2_N_POINTS + 1):
+            target = (cum[i0] + k * self.V2_POINT_SPACING) % total
+            j = int(np.searchsorted(cum[:-1], target, side="right") - 1) % n
+            pts.append(sp[j])
+        pts = np.array(pts, dtype=np.float64)
+        feats = []
+        for p in pts:
+            dx, dy = p[0] - pos[0], p[1] - pos[1]
+            lx = dx * ch + dy * sh
+            ly = -dx * sh + dy * ch
+            d = math.hypot(lx, ly)
+            dn = min(1.0, d / (self.V2_N_POINTS * self.V2_POINT_SPACING * 1.25))
+            ang = math.atan2(ly, lx)
+            feats += [dn, math.sin(ang), math.cos(ang)]
+        chain = np.vstack([sp[i0][None, :], pts])
+        seg = np.diff(chain, axis=0)
+        heads = np.arctan2(seg[:, 1], seg[:, 0])
+        dh = (np.diff(heads) + math.pi) % (2 * math.pi) - math.pi
+        curv = float(np.clip(np.mean(dh) / (math.pi / 4), -1.0, 1.0))
+        lidar = self._cast_rays(self.V2_LIDAR_ANGLES, self.V2_RAY_LENGTH)
+        return np.array([*base, float(self.car.steering), *feats, curv, *lidar], dtype=np.float32)
+
+    def _obs_v1(self):
         # PILOT-CENTRIC OBSERVATION (Local Coordinates)
         # We want the AI to learn "Driving", not "Map Memorization".
         
@@ -338,12 +409,12 @@ class TimeAttackEnv:
             *lidar_readings
         ], dtype=np.float32)
 
-    def _cast_rays(self, angles: List[float]) -> List[float]:
+    def _cast_rays(self, angles: List[float], ray_length: float = 150.0) -> List[float]:
         """
         Cast rays from car center to detect wall/track boundaries.
         Optimized using Numba JIT.
         """
-        RAY_LENGTH = 150.0 # pixels
+        RAY_LENGTH = ray_length # pixels (v1 : 150)
         
         # Prepare inputs for JIT
         px, py = self.car.pos

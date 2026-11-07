@@ -158,6 +158,10 @@ def _safe_action(ta, base):
 
 
 def heuristic_action(obs, ta=None):
+    """Action du professeur. Ne lit que obs[0], obs[3], obs[6], obs[7], obs[11] (obs v1).
+
+    Avec une env en obs_version=2, passer `ta.obs_v1()` (et non l'obs v2).
+    """
     a = base_action(obs, ta)
     if SAFE_HORIZON and ta is not None and hasattr(ta.car, "steering"):
         a = _safe_action(ta, a)

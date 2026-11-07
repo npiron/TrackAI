@@ -227,3 +227,78 @@ class TestObservationValues:
             obs, reward, done, truncated, info = gym_env.step(action)
             # Just verify it doesn't crash and produces valid output
             assert np.all(np.isfinite(obs)), f"Action {action} ({name}) failed"
+
+
+class TestObservationV2:
+    """obs_version=2 (35 valeurs) ; v1 reste le défaut."""
+
+    def test_v1_default_shape(self):
+        from src.rl.wrappers import GymTimeAttack
+        from src.game.env import TimeAttackEnv
+        from src.game.track import build_track
+        assert TimeAttackEnv(build_track()).reset().shape == (14,)
+        g = GymTimeAttack(procedural=False)
+        assert g.observation_space.shape == (14,)
+        assert g.reset()[0].shape == (14,)
+
+    def test_v2_shape_and_finite_procedural(self):
+        from src.rl.wrappers import GymTimeAttack
+        g = GymTimeAttack(procedural=True, obs_version=2)
+        n = g.ta.OBS_V2_SIZE
+        assert g.observation_space.shape == (n,)
+        obs, _ = g.reset()
+        assert obs.shape == (n,)
+        rng = np.random.default_rng(0)
+        for _ in range(200):
+            obs, _, term, trunc, _ = g.step(int(rng.integers(0, 9)))
+            assert obs.shape == (n,) and np.all(np.isfinite(obs))
+            assert -1.0 <= obs[9] <= 1.0
+            assert np.all((obs[26:] >= 0.0) & (obs[26:] <= 1.0))
+            if term or trunc:
+                g.reset()
+
+    def test_v2_first_points_ahead_on_straight(self):
+        """Sur une ligne droite connue, le 1er point est devant (angle ~ 0)."""
+        from src.game.env import TimeAttackEnv
+        from src.game.track import build_track
+        env = TimeAttackEnv(build_track(), obs_version=2)
+        env.reset()
+        sp = np.array([[100.0 + 10.0 * i, 300.0] for i in range(200)])
+        env.track.spline_points = sp
+        env._arc_cache = None
+        env.car.pos = np.array([500.0, 300.0])
+        env.car.heading = 0.0
+        obs = env._obs()
+        for k in range(5):
+            dn, s, c = obs[10 + 3 * k: 13 + 3 * k]
+            assert abs(s) < 1e-3 and c > 0.999
+            assert dn > 0
+        assert abs(obs[25]) < 1e-3
+
+    def test_v1_preserved_in_v2_and_obs_v1(self):
+        from src.game.env import TimeAttackEnv
+        from src.game.track import build_track
+        e1, e2 = TimeAttackEnv(build_track()), TimeAttackEnv(build_track(), obs_version=2)
+        o1, o2 = e1.reset(), e2.reset()
+        assert np.array_equal(o1[:9], o2[:9])
+        for a in [(1, 1, 0), (-1, 1, 0), (0.5, 0, 1)] * 20:
+            o1, *_ = e1.step(a)
+            o2, *_ = e2.step(a)
+            assert np.array_equal(o1[:9], o2[:9])
+            assert np.array_equal(e2.obs_v1(), o1)
+            assert e1.obs_v1().shape == (14,)
+
+    def test_heuristic_action_with_obs_v1(self):
+        import importlib
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
+        hl = importlib.import_module("heuristic_lap")
+        from src.game.env import TimeAttackEnv
+        from src.game.track import build_track
+        e1, e2 = TimeAttackEnv(build_track()), TimeAttackEnv(build_track(), obs_version=2)
+        e1.reset(); e2.reset()
+        for _ in range(30):
+            a1 = hl.heuristic_action(e1.obs_v1(), e1)
+            a2 = hl.heuristic_action(e2.obs_v1(), e2)
+            assert a1 == a2
+            assert isinstance(a2, (int, np.integer))
+            e1.step((0, 1, 0)); e2.step((0, 1, 0))

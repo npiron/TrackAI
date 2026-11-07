@@ -24,11 +24,11 @@ class GymTimeAttack(gym.Env):
       7: Left + Brake
       8: Right + Brake
 
-    Obs: 14 floats (Pilot-Centric)
+    Obs: 14 floats (Pilot-Centric) ; obs_version=2 : 35 floats (voir TimeAttackEnv)
     """
     metadata = {"render_modes": ["human"]}
 
-    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0):
+    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1):
         super().__init__()
         # Options d'entraînement (défaut : désactivées). wall_penalty : récompense ajoutée par choc (négative = pénalité).
         self.wall_fatal = bool(wall_fatal)
@@ -37,12 +37,14 @@ class GymTimeAttack(gym.Env):
         # Initialize with procedural config
         # If procedural=True, track=None (auto-gen). If False, we need a static track.
         if procedural:
-            self.ta = TimeAttackEnv(track=None, procedural=True, laps=self.laps)
+            self.ta = TimeAttackEnv(track=None, procedural=True, laps=self.laps, obs_version=obs_version)
         else:
-            self.ta = TimeAttackEnv(build_track(), procedural=False, laps=self.laps)
+            self.ta = TimeAttackEnv(build_track(), procedural=False, laps=self.laps, obs_version=obs_version)
 
         # Obs: 14 floats (Pilot-Centric)
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(14,), dtype=np.float32)
+        # (obs_version=2 : 35 floats, voir TimeAttackEnv)
+        n_obs = TimeAttackEnv.OBS_V2_SIZE if obs_version == 2 else 14
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(n_obs,), dtype=np.float32)
         # 9 Discrete Actions for Complete Arcade Control (on/off buttons)
         self.action_space = spaces.Discrete(9)
 
