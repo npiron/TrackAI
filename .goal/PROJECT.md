@@ -15,7 +15,7 @@ TrackAI : jeu de course vu de dessus en Pygame (`trackmania_clone.py`, `src/`) e
 ## Rules
 
 - Physique de la voiture figée : toute modification passe d'abord par l'inbox.
-- Entraînements de 10 min maximum par itération.
+- Entraînements de 30 min maximum par itération.
 - Pas de screenshot de l'app ; toujours `SDL_VIDEODRIVER=dummy` pour les scripts sans affichage.
 - `.team/` est l'historique de l'ancienne équipe : le lire, ne pas le modifier.
 

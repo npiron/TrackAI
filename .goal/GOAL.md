@@ -1,24 +1,29 @@
 # Goal
 
-Entraîner un agent qui fait 3 tours du circuit fixe sans jamais toucher un mur, 20 courses sur 20, puis réduire le temps total.
+Passer un cap : un agent qui roule sans choc sur des circuits aléatoires jamais vus, puis qui bat son professeur (pilote programmé H=29, 14,62 s) sur le circuit fixe. Les commandes restent des touches (9 actions discrètes, comme un clavier) ; le dosage se fait en tapotant, la physique fait déjà monter le volant progressivement.
 
-Ajouter une option d'entraînement `wall_fatal` (désactivée par défaut, le jeu ne change pas) et compter les chocs par course dans `eval.py`.
-Y aller par paliers : grosse pénalité par choc d'abord, mort au contact ensuite, pour ne pas apprendre à l'agent à rouler au pas.
-Bonus : même résultat sur des circuits aléatoires jamais vus.
+Plan, dans l'ordre :
+
+1. Observation v2, sans changer la physique : position réelle du volant (`car.steering`), 5 prochains points de la ligne centrale dans le repère de la voiture (distance, angle), courbure à venir, 9 lidars plus longs au lieu de 5. L'observation v1 (14 valeurs) reste disponible par option pour évaluer les anciens modèles.
+2. Ré-imitation (BC + DAgger depuis le professeur H=29) avec l'observation v2, sur un mélange piste fixe + pistes procédurales. Elle valide l'observation v2 : au moins aussi bon que best/ s5_a en statique (15,46 s, 0 choc) et nettement moins de chocs en procédural (cible < 1 choc/course, contre 2,8).
+3. Affinage PPO depuis ce modèle, sans oubli : faible learning rate, petit clip, perte d'imitation auxiliaire décroissante, récompense = progression le long de la piste par pas + petite pénalité de temps + forte pénalité par choc, 8 environnements en parallèle, mélange fixe + procédural. But : passer sous 14,62 s en statique sans choc, et réduire encore les chocs en procédural.
+4. Optionnel : professeur à trajectoire optimisée hors ligne sur la piste fixe (borne ≈ 13,96 s), puis imitation.
+
+Priorité : d'abord zéro choc sur pistes procédurales, ensuite la vitesse.
 
 ## Constraints
 
-- Autorisé : ajouter un mode multi-tours (paramètre `laps`, 1 par défaut) au jeu et à l'environnement, sans changer la physique ni le comportement en 1 tour.
 - Ne pas modifier la physique de la voiture sans le proposer d'abord dans l'inbox.
-- Entraînements de 10 min maximum par itération. Un modèle peut être repris d'une itération à l'autre.
-- Chaque modèle candidat est évalué avec `scripts/eval.py` sur au moins 20 épisodes, graine fixe, et ajouté à `metrics.json`.
-- Garder le meilleur modèle dans `data/models/best/`, avec sa mesure.
+- Garder les 9 actions discrètes (pas d'actions continues).
+- Entraînements de 30 min maximum par itération. Un modèle peut être repris d'une itération à l'autre.
+- Banc procédural fixe : 50 pistes (graines 0 à 49), toujours les mêmes, pour comparer les modèles ; plus l'éval statique habituelle (`scripts/eval.py --static --laps 3`, 20 épisodes, graine 0). Chaque candidat mesuré est ajouté à `metrics.json`.
+- Garder le meilleur modèle dans `data/models/best/` avec sa mesure ; archiver l'ancien avant de le remplacer.
 - Pas de screenshot de l'app.
-- Historique de l'ancienne équipe (tâches T1-T69, journal, feuille de route) : `.team/`, en lecture seule. La prochaine tâche prévue était T69 (`.team/TODO.md`).
+- Historique de l'ancienne équipe : `.team/`, en lecture seule. Docs des essais précédents dans `docs/` (notamment `SPEED_E2.md`, `BOUND_T32.md`, `WALL_BASELINE.md`).
 
 ## Success criterion
 
 > Maintained by the planner. Do not edit by hand.
 
-- criterion: sur `build_track()` (piste fixe, seed 42, `--static`), avec `laps=3`, via `scripts/eval.py` sur ≥ 20 épisodes, graine 0, politique déterministe : (1) fiabilité = 20/20 épisodes qui terminent les 3 tours avec **0 choc contre un mur** (compteur `wall_hits`, un choc = pas où le déplacement sortirait de la piste) et sans timeout ; (2) vitesse = temps total moyen des 3 tours **≤ 15,30 s** (ou ≤ temps humain si `data/human_best.json` existe et est plus bas). Validé par le reviewer dans `metrics.json`. Lecture retenue : « le plus bas possible » est borné par le professeur H=29 (14,62 s) et la borne 13,96 s ; 15,30 s = récupérer ~0,5 s des 1,2 s d'écart. Si deux epics vitesse échouent, le lead arrête sur plateau documenté. Bonus : même résultat sur circuits aléatoires jamais vus (`--no-static`).
-- status: in progress, E3 final en cours (s5_a 15,46 s, 20/20, 0 choc, à promouvoir) ; avant : vitesse en plateau après E1 (4 candidats DAgger échoués, 15,84 s) ; (last measure: best/ T65, validé reviewer : 20/20 finis, 0 choc, 15,84 s, laps 3 seed 0 ; fiabilité ATTEINTE, vitesse 15,84 s > 15,30 s ; bonus pistes aléatoires 19/20, 7,35 chocs (T67) non atteint ; temps humain absent)
+- criterion: to be defined
+- status: not evaluated
