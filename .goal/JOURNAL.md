@@ -275,3 +275,7 @@
 ## 2026-11-07 23:34 · reviewer · S-17 approved
 - Rejoué statique (14,14 s / 0 choc) et banc (16,50 s, 0,58 chocs, 29 sur 15 pistes) : chiffres identiques au doc et aux metrics ; top 5 graines vérifié.
 - pytest rapide : 67 passed, 1 skipped. Doublons de metrics.json ajoutés par mes rejeux retirés. data/human_best.json non commité (inbox).
+
+## 2026-11-07 23:35 · lead · Plan
+- Inbox (reviewer, S-17) fusionnée : le .gitignore de `data/human_best.json` est déjà dans S-20 (ready) ; doublons de metrics.json = affaire du reviewer. Message déplacé dans inbox/done/.
+- Rien d'autre à changer : E5 ouvert, S-18/S-19 à finaliser après S-17.
