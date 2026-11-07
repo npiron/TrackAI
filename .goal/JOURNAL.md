@@ -129,3 +129,8 @@
 ## 2026-11-07 21:35 · refiner · E4
 - S-10 banc 50 pistes + baseline best/ (M), S-11 observation v2 (M, hard), S-12 eval/imitate/robust_eval v1+v2 (M, dépend de S-10 et S-11). Toutes ready.
 - Point d'attention : le professeur lit l'obs v1 ; prévu via `ta.obs_v1()`.
+
+## 2026-11-07 21:35 · reviewer · S-9 approuvée
+- Diff : uniquement `docs/SPEED_E2.md` (section « Verdict E3 »). `git status .team` vide ; `best/` intact, `best.json` cohérent avec metrics.json.
+- Chiffres du tableau (s5_a, s8_a, s8_b) vérifiés contre `.goal/metrics.json` ; T65 conforme à SPEED_E1/E2. Aucun candidat ne passe le critère de promotion (s8_a 2 chocs/16,50 s ; s8_b 4 chocs/18,82 s) : non-promotion correcte.
+- Tests rapides : 50 passed, 1 skipped. Cible 15,30 s non atteinte (15,46 s), bonus non atteint : plateau documenté.

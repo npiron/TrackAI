@@ -79,3 +79,19 @@ Lecture :
 - Aucun candidat ne passe sous 15,30 s : s8_a perd 1,04 s en statique et touche 2 fois le mur ; s8_b est à 18,82 s avec 4 chocs.
 - Procédural : s8_a termine 20/20 mais avec plus de chocs que s5_a (7,6 contre 2,8, max 75) ; s8_b 18/20, 4,0 chocs. Aucun ne domine s5_a.
 - Un seul tirage par configuration (graine et bruit DAgger varient ensemble). Une itération DAgger de plus depuis s5_a dégrade la statique : `best/` (s5_a) reste inchangé.
+
+## Verdict E3
+
+Critère de promotion (S-9) : statique 20/20, 0 choc, temps ≤ 15,46 s (best/ s5_a) ET procédural finis ≥ 19/20, chocs moyens ≤ 2,8, avec au moins un des deux strictement meilleur. Chiffres repris de `.goal/metrics.json` (20 épisodes, seed 0, 3 tours).
+
+| modèle | statique : finis | chocs (moy / max) | temps total | procédural : finis | chocs (moy / max) | temps total moyen (finis) | promu |
+|---|---|---|---|---|---|---|---|
+| `best_t65` (T65) | 20/20 | 0 / 0 | 15,84 s | 15/20 | 20,2 / 119 | 24,55 s | non (archive) |
+| `ppo_s5_a` = `best/` | 20/20 | 0 / 0 | 15,46 s | 19/20 | 2,8 / 10 | 19,77 s | (référence) |
+| `ppo_s8_a` | 20/20 | 2 / 2 | 16,50 s | 20/20 | 7,6 / 75 | 19,52 s | non |
+| `ppo_s8_b` | 20/20 | 4 / 4 | 18,82 s | 18/20 | 4,0 / 28 | 19,75 s | non |
+
+- `s8_a` et `s8_b` échouent le volet statique (chocs > 0, temps > 15,46 s) et le volet procédural (chocs moyens > 2,8 ; `s8_b` finit 18/20). Aucune promotion : `data/models/best/` (s5_a) reste intact, pas de `best_s5a/`.
+- Cible 15,30 s : non atteinte. Meilleur temps statique sans choc : 15,46 s (`best/`), soit 0,16 s au-dessus.
+- Bonus (robustesse procédurale propre) : non atteint (meilleur : 2,8 chocs moyens, 19/20).
+- Plateau final E3 : une itération DAgger supplémentaire depuis s5_a dégrade la statique sans gain procédural net. Un seul tirage par configuration.
