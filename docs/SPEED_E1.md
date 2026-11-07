@@ -39,3 +39,17 @@ Verdict :
 - Aucune variante n'atteint la cible : toutes deux touchent des murs et sont plus lentes que T65.
 - `hit-weight 20` dégrade fortement (25 chocs, 18,20 s) ; `lr 3e-4 --epochs 60` est proche de S-1 b (3 chocs, 16,82 s) sans gain.
 - Le DAgger depuis T65 ne tient pas son niveau en fin de BC ; aucun candidat promu, `best/` intact.
+
+## Verdict E1
+
+Aucun candidat de S-1 ou S-2 ne bat T65 (20/20, 0 choc, 15,84 s) : `data/models/best/` reste inchangé, rien n'est promu (pas de `best_t65/`).
+
+| candidat | finis | chocs (moy / max) | temps total |
+|---|---|---|---|
+| `best/` T65 (référence) | 20/20 | 0 / 0 | 15,84 s |
+| `ppo_s1_a` | 20/20 | 2 / 2 | 22,76 s |
+| `ppo_s1_b` | 20/20 | 4 / 4 | 16,76 s |
+| `ppo_s2_a` (`--hit-weight 20`) | 20/20 | 25 / 25 | 18,20 s |
+| `ppo_s2_b` (`--lr 3e-4 --epochs 60`) | 20/20 | 3 / 3 | 16,82 s |
+
+Plateau : 15,84 s sans choc. Cible ≤ 15,30 s non atteinte ; les 4 candidats DAgger (professeur H=29, 14,62 s) perdent la fiabilité et sont plus lents. Le BC final sur l'ensemble agrégé ne retient pas la performance vue pendant les DAgger (jusqu'à 15,34 s sur un tour). Pistes pour le lead : autre méthode que DAgger (PPO affiné avec pénalité de choc), ou accepter le plateau.

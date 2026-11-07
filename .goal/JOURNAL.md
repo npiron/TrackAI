@@ -32,3 +32,13 @@
 - Aucun candidat S-1 sans choc : départ depuis best/ T65, 2 runs (hit-weight 20 ; lr 3e-4 + 60 epochs), graine 2500.
 - Résultats : s2_a 25 chocs / 18,20 s ; s2_b 3 chocs / 16,82 s. Cible non atteinte, rien promu.
 - Tableau dans docs/SPEED_E1.md, mesures dans .goal/metrics.json.
+
+## 2026-11-07 21:07 · dev · S-3 Promotion ou plateau
+- Aucun candidat S-1/S-2 sans choc : best/ inchangé, rien promu.
+- Section « Verdict E1 » ajoutée à docs/SPEED_E1.md (tableau des 4 candidats vs T65, plateau 15,84 s).
+
+## 2026-11-07 21:07 · reviewer · S-3 approved
+- Aucun candidat ne bat 15,84 s en 20/20 sans choc : `best/` inchangé, verdict chiffré dans `docs/SPEED_E1.md` (tableau cohérent avec metrics.json).
+- eval.py sur best/ : 20/20, 0 choc, 15,84 s ; tests rapides : 48 passed, 1 skipped.
+- Pas de mesure ajoutée à metrics.json (aucun nouveau candidat). L'epic E1 reste ouvert pour décision du lead (cible 15,30 s non atteinte).
+- eval.py a modifié `.team/metrics.json` : restauré (git checkout) pour respecter la règle.
