@@ -78,3 +78,8 @@
 - Tableau comparé à `.goal/metrics.json` : s5_a 15,46 s/0 choc statique, 19/20 et 2,8 chocs procédural ; s5_b 4 chocs, 17,80 s, 17/20 ; T65 20,2 chocs procédural. Identiques.
 - Aucune promotion : cohérent avec le critère (s5_a 19/20 et 2,8 chocs en procédural, s5_b 4 chocs en statique).
 - Tests rapides : 50 passed, 1 skipped.
+
+## 2026-11-07 21:15 · lead · Plan (epic-complete E2)
+- E2 done : bonus non atteint (s5_a 19/20, 2,8 chocs en procédural) mais s5_a domine T65 partout (statique 15,46 s vs 15,84 s, 0 choc). S-6 ne l'a pas promu (critère trop strict) alors que la contrainte demande le meilleur modèle dans best/.
+- E3 ouvert (dernier) : S-7 promouvoir s5_a, S-8 deux candidats DAgger mixtes depuis s5_a (cible ≤ 15,30 s, 0,16 s d'écart), S-9 promotion ou verdict final. Pas de GOAL_REACHED : vitesse 15,46 s > 15,30 s.
+- Refiner : stories S-7 (S), S-8 (M), S-9 (S) écrites, ready. Si E3 échoue, plateau documenté et arrêt.
