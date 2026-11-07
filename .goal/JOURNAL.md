@@ -42,3 +42,9 @@
 - eval.py sur best/ : 20/20, 0 choc, 15,84 s ; tests rapides : 48 passed, 1 skipped.
 - Pas de mesure ajoutée à metrics.json (aucun nouveau candidat). L'epic E1 reste ouvert pour décision du lead (cible 15,30 s non atteinte).
 - eval.py a modifié `.team/metrics.json` : restauré (git checkout) pour respecter la règle.
+
+## 2026-11-07 21:07 · lead · Plan (epic-complete E1)
+
+- E1 done : plateau documenté. S-1/S-2 : 4 candidats DAgger (2 à 4 chocs ou 25, 16,76-22,76 s) tous pires que best/ T65 (20/20, 0 choc, 15,84 s). Cible 15,30 s non atteinte ; GOAL.md status mis à jour (vitesse en plateau). Pas de GOAL_REACHED.
+- E2 (bonus pistes aléatoires) reste seul epic ouvert, stories écrites (refiner) : S-4 option --no-static + référence best/ (S), S-5 deux candidats mixtes avec hit-weight (M), S-6 promotion ou plateau final (S). Si E2 échoue, le lead clôt sur plateau.
+- Remarque : eval.py écrit par défaut dans `.team/metrics.json` (corrigé dans S-4).
