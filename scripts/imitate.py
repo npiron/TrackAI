@@ -19,7 +19,7 @@ EPS_LEVELS = (0.0, 0.1, 0.2, 0.3)
 
 def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None, env_kw=None,
             hit_weight=1, hit_window=30, mix_static=False):
-    """Renvoie (obs[N,14], actions[N]) ; l'étiquette est toujours l'action de l'heuristique.
+    """Renvoie (obs[N,14 ou 35], actions[N]) ; l'étiquette est toujours l'action de l'heuristique.
 
     policy : fonction obs -> action ; si fournie, c'est elle qui conduit (DAgger), l'heuristique corrige.
     mix_static : épisodes pairs sur piste fixe, impairs sur piste procédurale (ignore `procedural`).
@@ -42,7 +42,7 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
         obs, _ = env.reset()
         start, hits = len(O), []
         for _ in range(max_steps):
-            a = heuristic_action(obs, env.ta)
+            a = heuristic_action(env.ta.obs_v1(), env.ta)  # le professeur voit toujours l'obs v1
             O.append(obs.copy())
             A.append(a)
             if policy is not None:
@@ -118,6 +118,8 @@ def main(argv=None):
                    help="DAgger : poids K des ~30 pas précédant un choc mur (échantillons dupliqués), défaut 1 = off")
     p.add_argument("--mix-static", action="store_true",
                    help="DAgger : épisodes alternant piste fixe (pairs) et procédurale (impairs)")
+    p.add_argument("--obs-version", type=int, choices=(1, 2), default=1,
+                   help="observation de l'env/politique (sans --init ; avec --init : déduite du modèle)")
     p.add_argument("--out", default="data/checkpoints/ppo_t24_bc")
     a = p.parse_args(argv)
     if a.teacher_horizon is not None:
@@ -126,8 +128,10 @@ def main(argv=None):
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
     from src.rl.wrappers import GymTimeAttack
-    kw = dict(wall_fatal=a.wall_fatal, wall_penalty=a.wall_penalty)
+    kw = dict(wall_fatal=a.wall_fatal, wall_penalty=a.wall_penalty, obs_version=a.obs_version)
     if a.init:
+        from scripts.eval import _load_model, detect_obs_version
+        kw["obs_version"] = detect_obs_version(_load_model(a.init)[0])
         venv = VecNormalize.load(a.init.replace(".zip", "") + "_vecnormalize.pkl",
                                  DummyVecEnv([lambda: GymTimeAttack(render_mode=None, procedural=not a.static,
                                                                     laps=a.laps, **kw)]))

@@ -221,3 +221,15 @@
 - eval banc 50 pistes 3 tours : 50/50 finis, 0 choc partout, 16,746 s (mesure refaite).
 - Diff limité aux constantes de heuristic_lap.py + doc TEACHER_V2 (avant/après, méthode, essais abandonnés) ; physique intouchée. `data/human_best.json` (généré par le jeu) laissé hors du commit.
 - Réserve notée dans le doc : constantes réglées sur les 50 graines du banc (surapprentissage possible).
+
+## 2026-11-07 23:26 · dev · S-12 eval/imitate/robust_eval v1 et v2
+- obs_version auto-détectée d'après le modèle (eval, robust_eval) ; --obs-version pour forcer.
+- imitate : --obs-version, professeur toujours sur obs_v1 ; --init déduit la version.
+- best/ statique : 19,48 s / 22 chocs inchangé ; 2 nouveaux tests, 65 passent.
+
+## 2026-11-07 23:27 · reviewer · S-12 approuvée
+- Diff relu (eval/imitate/robust_eval + tests) : détection auto de l'obs_version, heuristique via `obs_v1()`, `--obs-version` ajouté, rien hors scope.
+- Tests rapides : 65 passed, 1 skipped.
+- eval statique best/ 3 tours 20 ép. : 19,48 s, 22 chocs, finish 1,0 = chiffres S-13.
+- Test mini BC v2 → eval/robust_eval/heuristic v2 présent et vert. Pas de mesure metrics.json (story d'outillage).
+- `data/human_best.json` (effet de bord d'eval, non ignoré) laissé hors du commit.

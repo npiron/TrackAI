@@ -46,6 +46,22 @@ def _load_model(path):
     return model, stats
 
 
+def detect_obs_version(model, forced=None):
+    """obs_version d'après la forme d'observation du modèle (14 -> 1, taille v2 -> 2) ; `forced` prioritaire.
+    Sans modèle (random/heuristic) : `forced` ou 1."""
+    if forced is not None:
+        return int(forced)
+    if model is None:
+        return 1
+    from src.game.env import TimeAttackEnv
+    n = model.observation_space.shape[0]
+    if n == 14:
+        return 1
+    if n == TimeAttackEnv.OBS_V2_SIZE:
+        return 2
+    raise ValueError(f"taille d'observation inconnue : {n}")
+
+
 def multi_lap_stats(succ, laps_done, totals):
     """Métriques multi-tours à partir des résultats par épisode (totals = temps totaux des épisodes réussis)."""
     return {
@@ -65,13 +81,15 @@ def wall_stats(hits, succ):
     }
 
 
-def run_eval(model_path, episodes, seed, procedural=True, laps_n=1, bench=False):
-    """bench : l'épisode k utilise la piste de graine k (pistes fixes, seed ignoré)."""
+def run_eval(model_path, episodes, seed, procedural=True, laps_n=1, bench=False, obs_version=None):
+    """bench : l'épisode k utilise la piste de graine k (pistes fixes, seed ignoré).
+    obs_version : None = déduite du modèle (1 pour random/heuristic)."""
     from src.rl.wrappers import GymTimeAttack
-    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
     shield = model_path.startswith("shield:")  # T55 : politique + garde-fou (NON conforme « agent seul »)
     real_path = model_path[len("shield:"):] if shield else model_path
     model, vn = (None, None) if model_path in ("random", "heuristic") else _load_model(real_path)
+    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n,
+                        obs_version=detect_obs_version(model, obs_version))
     if shield:
         from scripts.heuristic_lap import _safe_action
     if model_path == "heuristic":
@@ -87,7 +105,7 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1, bench=False)
         ret, steps, done, info = 0.0, 0, False, {}
         while not done:
             if model_path == "heuristic":
-                action = heuristic_action(obs, env.ta)
+                action = heuristic_action(env.ta.obs_v1(), env.ta)
             elif model is None:
                 action = int(rng.randint(env.action_space.n))
             else:
@@ -148,13 +166,16 @@ def main(argv=None):
     g.add_argument("--static", action="store_true", help="piste fixe")
     g.add_argument("--no-static", action="store_true", help="pistes aléatoires procédurales (défaut)")
     p.add_argument("--laps", type=int, default=1, help="nombre de tours")
+    p.add_argument("--obs-version", type=int, choices=(1, 2), default=None,
+                   help="force la version d'observation (défaut : déduite du modèle, 1 pour random/heuristic)")
     p.add_argument("--metrics", default=DEFAULT_METRICS)
     a = p.parse_args(argv)
     if a.bench and (a.static or a.no_static):
         p.error("--bench est incompatible avec --static/--no-static")
     if a.bench:
         a.episodes = BENCH_EPISODES
-    res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static, laps_n=a.laps, bench=a.bench)
+    res = run_eval(a.model, a.episodes, a.seed, procedural=not a.static, laps_n=a.laps, bench=a.bench,
+                   obs_version=a.obs_version)
     entry = {"date": time.strftime("%Y-%m-%d %H:%M"), "model": a.model, "episodes": a.episodes,
              "seed": a.seed, "static": a.static, "laps": a.laps,
              **({"bench": True} if a.bench else {}),

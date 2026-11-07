@@ -12,13 +12,14 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
-from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics, wall_stats
+from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics, detect_obs_version, wall_stats
 
 
-def run(model_path, episodes, seed, eps, laps_n, procedural=False):
+def run(model_path, episodes, seed, eps, laps_n, procedural=False, obs_version=None):
     from src.rl.wrappers import GymTimeAttack
-    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n)
     model, vn = (None, None) if model_path == "heuristic" else _load_model(model_path)
+    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n,
+                        obs_version=detect_obs_version(model, obs_version))
     if model_path == "heuristic":
         from scripts.heuristic_lap import heuristic_action
     succ, totals, fails, hits = [], [], [], []
@@ -38,7 +39,7 @@ def run(model_path, episodes, seed, eps, laps_n, procedural=False):
                 action = int(rng.randint(env.action_space.n))
                 nrand += 1
             elif model is None:
-                action = heuristic_action(obs, env.ta)
+                action = heuristic_action(env.ta.obs_v1(), env.ta)
             else:
                 action = int(model.predict(o, deterministic=True)[0])
             obs, r, term, trunc, info = env.step(action)
@@ -70,6 +71,8 @@ def main(argv=None):
     p.add_argument("--static", action="store_true")
     p.add_argument("--laps", type=int, default=3)
     p.add_argument("--eps", type=float, nargs="+", default=[0.0, 0.05])
+    p.add_argument("--obs-version", type=int, choices=(1, 2), default=None,
+                   help="force la version d'observation (défaut : déduite du modèle)")
     p.add_argument("--out")
     p.add_argument("--metrics", default=DEFAULT_METRICS)
     a = p.parse_args(argv)
@@ -79,7 +82,7 @@ def main(argv=None):
              "| eps | finish | temps moyen (s) | écart-type | pire (s) | chocs moy | chocs max | clean |", "|---|---|---|---|---|---|---|---|"]
     details = []
     for e in a.eps:
-        r = run(a.model, a.episodes, a.seed, e, a.laps, not a.static)
+        r = run(a.model, a.episodes, a.seed, e, a.laps, not a.static, a.obs_version)
         entry = {"date": time.strftime("%Y-%m-%d %H:%M"), "model": a.model, "episodes": a.episodes, "seed": a.seed,
                  "static": a.static, "laps": a.laps, "action_noise_eps": e, **{k: v for k, v in r.items() if k != "fails"}}
         append_metrics(a.metrics, entry)
