@@ -23,9 +23,25 @@
 - notes: T67 mix statique/procédural : 19/20, 7,35 chocs. Stories S-4 à S-6. Si échec, plateau final (deuxième epic sans gain).
 
 ### E3 · Promouvoir s5_a puis dernier essai depuis lui (vitesse ≤ 15,30 s, procédural propre)
-- status: open
+- status: done
+- result: s5_a promu (S-7) ; s8_a/s8_b (DAgger depuis s5_a) pires (S-8) ; plateau de l'ancien goal (obs v1), clos.
 - outcome: `best/` = meilleur modèle mesuré (s5_a au minimum, 15,46 s) ; puis 2 candidats DAgger mixtes depuis s5_a, mesurés statique et procédural ; promotion si strictement meilleur, sinon verdict final de plateau.
 - notes: dernier epic (règle « deux epics vitesse sans gain » : E3 est l'ultime tentative, ensuite plateau et arrêt). Pas de changement de physique, entraînements ≤ 10 min.
+
+### E4 · Banc 50 pistes et observation v2
+- status: open
+- outcome: `eval.py --bench` (50 pistes graines 0-49) mesure best/ (baseline en metrics.json) ; `obs_version=2` disponible (steering réel, 5 points de ligne centrale en repère voiture, courbure, 9 lidars longs), v1 (14 valeurs) intacte par défaut ; eval/imitate chargent un modèle v1 ou v2 sans erreur.
+- notes: stories S-10 à S-12. Physique inchangée. Mesure d'abord.
+
+### E5 · Ré-imitation avec observation v2 (BC + DAgger, mix fixe + procédural)
+- status: open
+- outcome: modèle v2 ≥ best/ en statique (≤ 15,46 s, 0 choc) et < 1 choc/course sur le banc 50 pistes ; promu dans best/ (ancien archivé).
+- notes: professeur H=29 étiqueté depuis `ta` (pas depuis obs v2). Entraînements ≤ 30 min. Stories écrites quand E4 est fini.
+
+### E6 · Affinage PPO sans oubli depuis le modèle E5
+- status: open
+- outcome: PPO (lr faible, petit clip, perte d'imitation auxiliaire décroissante, récompense progression + pénalité de temps + forte pénalité par choc, 8 envs, mix fixe + procédural) : statique < 14,62 s, 0 choc ; banc procédural encore réduit. Critère A+B atteint.
+- notes: dépend d'E5. Étape 4 du goal (professeur optimisé hors ligne) seulement si E6 plafonne.
 
 ## Decisions
 
@@ -34,3 +50,5 @@
 - 2026-11-07 : E1 clos sur plateau (15,84 s, 4 candidats DAgger plus lents et avec chocs, mesures reviewer dans metrics.json). Cible 15,30 s abandonnée ; on passe au bonus E2 (seul epic restant) avec la contrainte de ne pas dégrader best/.
 
 - 2026-11-07 : E2 clos. Bonus procédural non atteint (19/20, 2,8 chocs) mais s5_a bat T65 partout (statique 15,46 s vs 15,84 s ; procédural 2,8 vs 20,2 chocs). Contrainte « garder le meilleur modèle dans best/ » : S-6 aurait dû le promouvoir ; E3 corrige (S-7), puis tente une dernière itération depuis s5_a (15,46 s est à 0,16 s de la cible 15,30 s). Si E3 échoue, GOAL en plateau documenté, arrêt.
+
+- 2026-11-07 : Nouveau goal (cap : zéro choc sur pistes jamais vues, puis battre le professeur 14,62 s). Plateau de l'ancien goal (best/ = s5_a, 15,46 s statique, 2,8 chocs procédural) = point de départ. Critère mesurable A (banc 50 pistes < 1 choc/course) + B (statique < 14,62 s). Ordre : banc + obs v2 (E4), ré-imitation (E5), PPO (E6). Le banc manque : eval.py actuel tire des pistes aléatoires non fixées par graine de piste.

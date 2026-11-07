@@ -112,3 +112,20 @@
 ## 2026-11-07 21:23 · loop · End
 
 - Session ended after 20 step(s), 8 story(ies) done in total.
+
+## 2026-11-07 21:33 · loop · Start
+
+- Session of 120 steps on `goal/main` (team: trio).
+
+## 2026-11-07 21:33 · loop · Goal changed
+
+- New goal: Passer un cap : un agent qui roule sans choc sur des circuits aléatoires jamais vus, puis qui bat son professeur (pilote programmé H=29, 14,62 s) sur le circuit fixe. Les commandes restent des touches (9 actions discrètes, comme un clavier) ; le dosage se fait en tapotant, la physique fait déjà mont
+
+## 2026-11-07 21:35 · lead · Plan
+- Nouveau goal : critère défini (A : banc 50 pistes, 50/50 finis et < 1 choc/course ; B : statique < 14,62 s, 0 choc). Statut : not evaluated (pas de mesure bench encore).
+- E3 clos (plateau de l'ancien goal, S-9 en review). Nouveaux epics : E4 banc + obs v2 (ouvert), E5 ré-imitation, E6 PPO sans oubli.
+- Le banc n'existe pas : eval.py ne fixe pas la graine de piste (génération par random.randint). S-10 l'ajoute, S-11 obs v2, S-12 branche eval/imitate.
+
+## 2026-11-07 21:35 · refiner · E4
+- S-10 banc 50 pistes + baseline best/ (M), S-11 observation v2 (M, hard), S-12 eval/imitate/robust_eval v1+v2 (M, dépend de S-10 et S-11). Toutes ready.
+- Point d'attention : le professeur lit l'obs v1 ; prévu via `ta.obs_v1()`.
