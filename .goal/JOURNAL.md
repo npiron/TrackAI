@@ -279,3 +279,12 @@
 ## 2026-11-07 23:35 · lead · Plan
 - Inbox (reviewer, S-17) fusionnée : le .gitignore de `data/human_best.json` est déjà dans S-20 (ready) ; doublons de metrics.json = affaire du reviewer. Message déplacé dans inbox/done/.
 - Rien d'autre à changer : E5 ouvert, S-18/S-19 à finaliser après S-17.
+
+## 2026-11-07 23:35 · dev · S-20 Test du mix fixe/procédural
+- Nouveau test espionnant reset : alternance fixe/procédural vérifiée, échoue si parité inversée.
+- data/human_best.json ajouté au .gitignore (non suivi).
+
+## 2026-11-07 23:36 · reviewer · S-20 approved
+- Diff relu : nouveau test espionnant GymTimeAttack.reset (pairs fixe, impairs procédural graine ≥ 1000) + .gitignore ; `collect` inchangé ; human_best.json non suivi.
+- Tests rapides : 68 passed, 1 skipped.
+- Non re-vérifié : l inversion de parité (assertions pair/impair explicites, échec évident), pas de modification du code.

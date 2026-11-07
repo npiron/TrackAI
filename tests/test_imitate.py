@@ -53,3 +53,23 @@ def test_collect_mix_static_v2():
     from src.game.env import TimeAttackEnv
     O, A = collect(4, 1, True, mix_static=True, eps_levels=(0.0,), max_steps=5, env_kw={"obs_version": 2})
     assert O.shape[1] == TimeAttackEnv.OBS_V2_SIZE and len(O) == 20
+
+
+def test_collect_mix_static_alternates_tracks(monkeypatch):
+    from src.rl.wrappers import GymTimeAttack
+    seen = []
+    orig = GymTimeAttack.reset
+
+    def reset(self, *a, **kw):
+        out = orig(self, *a, **kw)
+        seen.append((self.ta.procedural, self.ta.track.seed if self.ta.procedural else None))
+        return out
+    monkeypatch.setattr(GymTimeAttack, "reset", reset)
+    collect(6, 1, True, mix_static=True, eps_levels=(0.0,), max_steps=2)
+    resets = seen[-6:]
+    assert len(resets) == 6
+    for k, (proc, s) in enumerate(resets):
+        if k % 2 == 0:
+            assert not proc and s is None
+        else:
+            assert proc and s >= 1000

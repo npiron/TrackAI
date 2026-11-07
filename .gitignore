@@ -65,3 +65,4 @@ replays/*.json
 .goal/.lead_mark
 .goal/TODO.md
 .goal/usage.jsonl
+data/human_best.json
