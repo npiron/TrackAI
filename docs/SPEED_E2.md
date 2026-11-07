@@ -10,3 +10,23 @@ Commande : `SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/
 | `best/` T65 | 15/20 (75 %) | 20,2 / 119 | 0 % | 24,55 s | 19,46 s |
 
 Tours moyens effectués : 2,35 sur 3. C'est la référence à battre pour E2 : T65 est fiable sur la piste fixe (20/20, 0 choc) mais pas sur les pistes aléatoires.
+
+## S-5 : candidats mixtes statique + procédural avec hit-weight
+
+Départ `best/` T65, professeur H=29, `--mix-static --laps 3 --wall-penalty -50 --hit-weight 10 --episodes 12 --dagger 10 --dagger-episodes 8 --epochs 8 --lr 2e-4`. Seuls la graine et `--dagger-eps` diffèrent :
+
+- `ppo_s5_a` : `--dagger-eps 0 0.05 --seed 2600`
+- `ppo_s5_b` : `--dagger-eps 0 0.1 --seed 2700`
+
+Évaluation : `eval.py --model data/checkpoints/ppo_s5_X.zip --laps 3 --episodes 20 --seed 0` avec `--static` puis `--no-static` (4 entrées dans `.goal/metrics.json`).
+
+| modèle | durée d'entraînement | statique : finis | chocs (moy / max) | temps total moyen | procédural : finis | chocs (moy / max) | temps total moyen (finis) |
+|---|---|---|---|---|---|---|---|
+| `best/` T65 (réf. S-4) | n/a | 20/20 | 0 / 0 | 15,84 s | 15/20 | 20,2 / 119 | 24,55 s |
+| `ppo_s5_a` | 2 min 50 | 20/20 | 0 / 0 | 15,46 s | 19/20 | 2,8 / 10 | 19,77 s |
+| `ppo_s5_b` | 2 min 39 | 20/20 | 4 / 4 | 17,80 s | 17/20 | 12,25 / 118 | 19,23 s |
+
+Lecture :
+- `s5_a` tient 20/20 et 0 choc en statique, plus vite que best/ (15,46 s contre 15,84 s), et réduit nettement les chocs en procédural (2,8 contre 20,2 ; 19/20 finis contre 15/20). Candidat promouvable selon les critères de la story (à confirmer par S-6, notamment robustesse eps 0,05).
+- `s5_b` (bruit DAgger 0,1) est non promouvable : 4 chocs en statique et 17,80 s.
+- Les deux runs ont tourné en parallèle (durées gonflées), un seul tirage par configuration : l'écart a/b mêle bruit DAgger et graine.

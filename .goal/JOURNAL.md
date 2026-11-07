@@ -58,3 +58,13 @@
 - Relu diff, flags exclusifs vérifiés (`--static --no-static` → erreur argparse), pytest rapide : 50 passed, 1 skipped.
 - `git status .team` vide ; entrée metrics static:false présente (15/20 finis, chocs 20,2/119), docs/SPEED_E2.md cohérent.
 - Remarque mineure : test_default_metrics_in_goal est faible (condition tautologique), sans blocage.
+
+## 2026-11-07 21:12 · dev · S-5 candidats mixtes hit-weight
+- 2 runs imitate (--mix-static, hit-weight 10, H=29) en ~2 min 45 chacun ; 4 évals ajoutées à metrics.json.
+- s5_a (eps 0 0,05) : statique 20/20, 0 choc, 15,46 s (< best/ 15,84) ; procédural 19/20, 2,8 chocs. s5_b : 4 chocs en statique, non promouvable.
+- Tableau dans docs/SPEED_E2.md ; s5_a à valider en S-6.
+
+## 2026-11-07 21:14 · reviewer · S-5 approved
+- Relancé les 4 évals (20 ép., seed 0, laps 3) : résultats identiques aux metrics.json (s5_a statique 20/20, 0 choc, 15,46 s ; procédural 19/20, 2,8 chocs ; s5_b statique 4 chocs, 17,80 s ; procédural 17/20, 12,25 chocs).
+- Tests rapides : 50 passed, 1 skipped. Aucun code modifié, checkpoints ignorés par git, tableau de docs/SPEED_E2.md cohérent.
+- s5_a est promouvable sur critères story, à confirmer en S-6 (robustesse).
