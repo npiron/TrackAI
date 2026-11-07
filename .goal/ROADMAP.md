@@ -10,6 +10,11 @@
 
 ## Epics
 
+### E7 · Étape 0 : recaler le professeur sur la physique Trackmania
+- status: open
+- outcome: pilote programmé réglé (constantes de `scripts/heuristic_lap.py`) : statique 20/20 sans choc et banc 50 pistes sans choc, temps minimal ; son temps statique (le « professeur réglé ») est écrit dans `metrics.json` et dans le critère ; borne `lower_bound.py` remesurée (ou échec documenté) ; baselines best/ (s5_a, v1) sur le banc remesurées avec la nouvelle physique.
+- notes: stories S-13 à S-15. À faire AVANT E4 (obs v2) : S-11/S-12 peuvent tourner en parallèle mais E5 attend E7. Mesures d'avant la physique invalides (baseline S-10 : 3,18 chocs, ancienne physique).
+
 ### E1 · Vitesse : passer sous 15,30 s sans choc depuis best/ T65
 - status: done
 - outcome: un modèle candidat mesuré par eval.py (20 ép., seed 0, --static, laps 3) à 20/20, 0 choc, ≤ 15,30 s, copié dans `data/models/best/` avec sa mesure (ancien T65 dans `data/models/best_t65/`) ; sinon verdict chiffré de plateau.
@@ -35,8 +40,8 @@
 
 ### E5 · Ré-imitation avec observation v2 (BC + DAgger, mix fixe + procédural)
 - status: open
-- outcome: modèle v2 ≥ best/ en statique (≤ 15,46 s, 0 choc) et < 1 choc/course sur le banc 50 pistes ; promu dans best/ (ancien archivé).
-- notes: professeur H=29 étiqueté depuis `ta` (pas depuis obs v2). Entraînements ≤ 30 min. Stories écrites quand E4 est fini.
+- outcome: modèle v2 au moins aussi rapide que le professeur réglé (E7) en statique, 0 choc et < 1 choc/course sur le banc 50 pistes ; promu dans best/ (ancien archivé).
+- notes: dépend d'E7 (professeur réglé). Professeur étiqueté depuis `ta` (pas depuis obs v2). Entraînements ≤ 30 min. Stories écrites quand E4 est fini.
 
 ### E6 · Affinage PPO sans oubli depuis le modèle E5
 - status: open
@@ -52,3 +57,5 @@
 - 2026-11-07 : E2 clos. Bonus procédural non atteint (19/20, 2,8 chocs) mais s5_a bat T65 partout (statique 15,46 s vs 15,84 s ; procédural 2,8 vs 20,2 chocs). Contrainte « garder le meilleur modèle dans best/ » : S-6 aurait dû le promouvoir ; E3 corrige (S-7), puis tente une dernière itération depuis s5_a (15,46 s est à 0,16 s de la cible 15,30 s). Si E3 échoue, GOAL en plateau documenté, arrêt.
 
 - 2026-11-07 : Nouveau goal (cap : zéro choc sur pistes jamais vues, puis battre le professeur 14,62 s). Plateau de l'ancien goal (best/ = s5_a, 15,46 s statique, 2,8 chocs procédural) = point de départ. Critère mesurable A (banc 50 pistes < 1 choc/course) + B (statique < 14,62 s). Ordre : banc + obs v2 (E4), ré-imitation (E5), PPO (E6). Le banc manque : eval.py actuel tire des pistes aléatoires non fixées par graine de piste.
+
+- 2026-11-07 : Goal modifié (étape 0 ajoutée, physique Trackmania). Mesures d'avant invalidées (pilote 12,56 s mais 10 chocs/course, best/ 19,48 s, 22 chocs). Nouvel epic E7 (recalage du professeur) placé avant E4/E5/E6 ; critère B se référera au temps du professeur réglé, mesuré par S-13/S-14. E5 dépend d'E7.

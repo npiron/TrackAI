@@ -157,3 +157,27 @@
 ## 2026-11-07 21:38 · loop · End
 
 - Session ended after 5 step(s), 10 story(ies) done in total.
+
+## 2026-11-07 21:52 · loop · Start
+
+- Session of 75 steps on `goal/main` (team: trio).
+
+## 2026-11-07 21:52 · loop · Goal changed
+
+- New goal: Passer un cap : un agent qui roule sans choc sur des circuits aléatoires jamais vus, puis qui bat son professeur (pilote programmé, réglé à l'étape 0) sur le circuit fixe. Les commandes restent des touches (9 actions discrètes, comme un clavier) ; le dosage se fait en tapotant, la physique fait déjà
+
+## 2026-11-07 21:53 · lead · Plan
+- Goal modifié : étape 0 (recaler le professeur sur la physique Trackmania) ajoutée. Mesures antérieures invalidées, y compris la baseline du banc (S-10, ancienne physique).
+- Nouvel epic E7 (ouvert, avant E4) ; E5 dépend d'E7. Critère inchangé (B se référera au temps du professeur réglé) ; statut : in progress. S-12 : chiffres périmés corrigés, dépend de S-13.
+
+## 2026-11-07 21:53 · refiner · E7
+- S-13 mesures de référence heuristic/best sur statique + banc (S, ready) ; S-14 réglage du professeur, 0 choc puis vitesse (M, ready, dépend S-13) ; S-15 borne lower_bound remesurée (S, ready, P3).
+- S-11 (obs v2) reste ready et indépendante : peut se faire en parallèle.
+
+## 2026-11-07 21:53 · lead · Plan
+- Goal modifié : étape 0 (recaler le professeur sur la physique Trackmania) ajoutée. Mesures antérieures invalidées, y compris la baseline du banc (S-10, ancienne physique).
+- Nouvel epic E7 (ouvert, avant E4) ; E5 dépend d'E7. Critère inchangé (B se référera au temps du professeur réglé) ; statut : in progress. S-12 : chiffres périmés corrigés, dépend de S-13.
+
+## 2026-11-07 21:53 · refiner · E7
+- S-13 mesures de référence heuristic/best sur statique + banc (S, ready) ; S-14 réglage du professeur, 0 choc puis vitesse (M, ready, dépend S-13) ; S-15 borne lower_bound remesurée (S, ready, P3).
+- S-11 (obs v2) reste ready et indépendante : peut se faire en parallèle.
