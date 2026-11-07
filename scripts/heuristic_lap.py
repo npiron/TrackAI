@@ -11,13 +11,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Actions : 0 idle, 1 acc, 2 frein, 3 gauche, 4 droite, 5 G+acc, 6 D+acc, 7 G+frein, 8 D+frein
-STEER_DEADZONE = 0.0342   # rad : en dessous on va tout droit
+STEER_DEADZONE = 0.0759   # rad : en dessous on va tout droit (S-14, 2026-11-07 : réglé pour la physique Trackmania, voir docs/TEACHER_V2.md)
 MAX_V_N = 1.0           # vitesse normalisée maximale visée
-PREDICT_FRAMES = 9
-SPEED_PER_RADIUS = 0.2567   # px/frame par px de rayon
+PREDICT_FRAMES = 3      # S-14 (9 → 3)
+SPEED_PER_RADIUS = 0.1242   # px/frame par px de rayon (S-14 : 0,2567 → 0,1242, 0 choc statique et banc 3 tours ; ancienne valeur réglée pour l'ancienne physique)
 MAX_SPEED_PX = 23.0
-LOOK_MIN, LOOK_GAIN = 127, 400  # indices de spline en avance (± vitesse)
-SECTOR_MULT = [0.9738, 1.19, 1.0158, 0.9957, 1.0729, 1.1127]        # multiplicateurs de SPEED_PER_RADIUS par secteur de spline (vide = 1 partout)
+LOOK_MIN, LOOK_GAIN = 55, 318  # S-14 (127, 400 avant) : indices de spline en avance (± vitesse)
+SECTOR_MULT = []        # S-14 : secteurs de l'ancienne piste/physique supprimés ; multiplicateurs de SPEED_PER_RADIUS par secteur de spline (vide = 1 partout)
 INNER_OFFSET = 0.0      # px : décale la cible vers l'intérieur du virage (T49 ; 0 = comportement historique)
 CROSS_GAIN = 0.0        # rad par px d'écart latéral à la ligne centrale (T49 ; >0 : rappelle vers le centre)
 CORNER_V_N = 0.35       # vitesse visée pour un virage serré
@@ -96,7 +96,7 @@ def lookahead_error(ta, speed_n, i=None):
     return math.atan2(math.sin(ang), math.cos(ang))
 
 
-SAFE_HORIZON = 29       # T49 (32 → 29 en T57 : 14,62 s, 0 choc ; non monotone, 28 et 25 échouent) : > 0 = prédiction de N images ; écarte une action qui mène à un choc mur (0 = off)
+SAFE_HORIZON = 40      # S-14 (29 → 40 : 0 choc statique et banc, 2026-11-07) ; historique T49 (32 → 29 en T57 : 14,62 s, 0 choc ; non monotone, 28 et 25 échouent) : > 0 = prédiction de N images ; écarte une action qui mène à un choc mur (0 = off)
 _ACTS = {0: (0, 0, 0), 1: (0, 1, 0), 2: (0, 0, 1), 3: (-1, 0, 0), 4: (1, 0, 0),
          5: (-1, 1, 0), 6: (1, 1, 0), 7: (-1, 0, 1), 8: (1, 0, 1)}
 

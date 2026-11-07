@@ -17,6 +17,7 @@ TrackAI : jeu de course vu de dessus en Pygame (`trackmania_clone.py`, `src/`) e
 - Physique de la voiture (src/game/physics.py) figée : toute modification passe d'abord par l'inbox.
 - Entraînements de 30 min maximum par itération. Lancer un entraînement long au premier plan avec un timeout Bash explicite (jusqu'à 2 400 000 ms, autorisé par `.claude/settings.json`).
 - Pas de screenshot de l'app ; toujours `SDL_VIDEODRIVER=dummy` pour les scripts sans affichage.
+- macOS : `sed -i ''` (BSD sed, `sed -i 's/…/'` échoue). Pour attendre un processus lancé en arrière-plan, vérifier d'abord qu'il tourne (`pgrep`) et toujours borner l'attente (pas de `until …; do sleep; done` sans limite).
 - `.team/` est l'historique de l'ancienne équipe : le lire, ne pas le modifier.
 
 ## Language

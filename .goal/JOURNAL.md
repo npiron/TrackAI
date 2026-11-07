@@ -209,3 +209,15 @@
 ## 2026-11-07 21:58 · reviewer · S-13 approved
 - Top 5 corrigé vérifié sur wall_hits_by_seed (37, 44, 22, 11, 47) ; 4 mesures présentes dans metrics.json (heuristic 12,56 s/10 chocs statique, banc 0,94/13,0 ; best/ 19,48 s/22, banc 0,92/43,16).
 - Tests rapides : 63 passed, 1 skipped. Aucun code modifié. data/human_best.json exclu du commit.
+
+## 2026-11-07 23:24 · dev · S-14 Réglage du pilote programmé
+- Hill-climbing parallèle jetable (score statique + banc 3 tours, 10 s/choc) : 0 choc statique (14,12 s) et 0 choc sur les 50 pistes du banc (16,75 s).
+- Constantes de heuristic_lap.py mises à jour (SECTOR_MULT vidé, SPEED_PER_RADIUS 0,1242, SAFE_HORIZON 40...), docs/TEACHER_V2.md complété.
+- pytest rapide : 63 passed, 1 skipped.
+
+## 2026-11-07 23:25 · reviewer · S-14 approved
+- pytest rapide : 63 passed, 1 skipped.
+- eval statique heuristic 3 tours, 20 ép., graine 0 : 20/20, 0 choc, 14,12 s (mesure refaite par moi).
+- eval banc 50 pistes 3 tours : 50/50 finis, 0 choc partout, 16,746 s (mesure refaite).
+- Diff limité aux constantes de heuristic_lap.py + doc TEACHER_V2 (avant/après, méthode, essais abandonnés) ; physique intouchée. `data/human_best.json` (généré par le jeu) laissé hors du commit.
+- Réserve notée dans le doc : constantes réglées sur les 50 graines du banc (surapprentissage possible).
