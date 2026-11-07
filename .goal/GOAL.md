@@ -2,7 +2,7 @@
 
 Passer un cap : un agent qui roule sans choc sur des circuits aléatoires jamais vus, puis qui bat son professeur (pilote programmé, réglé à l'étape 0) sur le circuit fixe. Les commandes restent des touches (9 actions discrètes, comme un clavier) ; le dosage se fait en tapotant, la physique fait déjà monter le volant progressivement.
 
-La physique a été refaite façon Trackmania le 2026-11-07 (voir `docs/PHYSICS.md`, section « Physique façon Trackmania ») : plus de pivot à l'arrêt, marche arrière, drift au frein, glissement le long des murs. Toutes les mesures d'avant sont invalidées : pilote programmé 24,66 s (0 choc, réglages de l'ancienne physique), best/ s5_a 27,22 s avec 32 chocs.
+La physique a été refaite façon Trackmania le 2026-11-07 (voir `docs/PHYSICS.md`, section « Physique façon Trackmania ») : plus de pivot à l'arrêt, marche arrière, drift au frein, glissement le long des murs. Toutes les mesures d'avant sont invalidées : pilote programmé 12,56 s mais 10 chocs par course (réglages de l'ancienne physique), best/ s5_a 19,48 s avec 22 chocs.
 
 Plan, dans l'ordre :
 

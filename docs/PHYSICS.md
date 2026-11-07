@@ -51,4 +51,4 @@ La dynamique est maintenant dans `src/game/physics.py` (`drive`), partagée par 
 | Murs : glissement sur l'axe X ou Y de l'écran | Glissement le long du mur (normale lue dans le masque), perte selon sin²(angle d'impact), petit renvoi, cap réaligné sur le mur ; on ne reste jamais planté de face |
 | `car.speed` = scalaire indépendant | `car.speed` = composante de `vel` le long du cap (négative en marche arrière) |
 
-Référence remesurée (20 épisodes, piste fixe, 3 tours, graine 0) : pilote programmé (bouclier) 20/20, 0 choc, 24,66 s (réglé pour l'ancienne physique) ; best/ s5_a 20/20, 32 chocs, 27,22 s. Toutes les mesures antérieures (15,46 s, borne 13,96 s, réglages du professeur) sont invalidées. Banc `scripts/physics_check.py` : 20/20.
+Référence remesurée après le réglage accélération/frein (20 épisodes, piste fixe, 3 tours, graine 0) : pilote programmé 20/20, 12,56 s, 10 chocs par course (réglé pour l'ancienne physique) ; best/ s5_a 20/20, 19,48 s, 22 chocs. Toutes les mesures antérieures (15,46 s, borne 13,96 s, réglages du professeur) sont invalidées. Banc `scripts/physics_check.py` : 20/20.
