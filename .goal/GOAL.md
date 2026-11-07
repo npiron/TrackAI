@@ -1,19 +1,23 @@
 # Goal
 
-Passer un cap : un agent qui roule sans choc sur des circuits aléatoires jamais vus, puis qui bat son professeur (pilote programmé H=29, 14,62 s) sur le circuit fixe. Les commandes restent des touches (9 actions discrètes, comme un clavier) ; le dosage se fait en tapotant, la physique fait déjà monter le volant progressivement.
+Passer un cap : un agent qui roule sans choc sur des circuits aléatoires jamais vus, puis qui bat son professeur (pilote programmé, réglé à l'étape 0) sur le circuit fixe. Les commandes restent des touches (9 actions discrètes, comme un clavier) ; le dosage se fait en tapotant, la physique fait déjà monter le volant progressivement.
+
+La physique a été refaite façon Trackmania le 2026-11-07 (voir `docs/PHYSICS.md`, section « Physique façon Trackmania ») : plus de pivot à l'arrêt, marche arrière, drift au frein, glissement le long des murs. Toutes les mesures d'avant sont invalidées : pilote programmé 24,66 s (0 choc, réglages de l'ancienne physique), best/ s5_a 27,22 s avec 32 chocs.
 
 Plan, dans l'ordre :
 
+0. Recaler sur la nouvelle physique : régler à nouveau le pilote programmé (vitesses en virage, horizon du bouclier) pour qu'il soit rapide et sans choc, remesurer la borne (`scripts/lower_bound.py`) et le banc de 50 pistes ; le professeur réglé sert à toutes les étapes suivantes.
+
 1. Observation v2, sans changer la physique : position réelle du volant (`car.steering`), 5 prochains points de la ligne centrale dans le repère de la voiture (distance, angle), courbure à venir, 9 lidars plus longs au lieu de 5. L'observation v1 (14 valeurs) reste disponible par option pour évaluer les anciens modèles.
-2. Ré-imitation (BC + DAgger depuis le professeur H=29) avec l'observation v2, sur un mélange piste fixe + pistes procédurales. Elle valide l'observation v2 : au moins aussi bon que best/ s5_a en statique (15,46 s, 0 choc) et nettement moins de chocs en procédural (cible < 1 choc/course, contre 2,8).
-3. Affinage PPO depuis ce modèle, sans oubli : faible learning rate, petit clip, perte d'imitation auxiliaire décroissante, récompense = progression le long de la piste par pas + petite pénalité de temps + forte pénalité par choc, 8 environnements en parallèle, mélange fixe + procédural. But : passer sous 14,62 s en statique sans choc, et réduire encore les chocs en procédural.
-4. Optionnel : professeur à trajectoire optimisée hors ligne sur la piste fixe (borne ≈ 13,96 s), puis imitation.
+2. Ré-imitation (BC + DAgger depuis le professeur réglé à l'étape 0) avec l'observation v2, sur un mélange piste fixe + pistes procédurales. Elle valide l'observation v2 : 0 choc en statique, au moins aussi rapide que le professeur réglé, et < 1 choc/course sur le banc procédural.
+3. Affinage PPO depuis ce modèle, sans oubli : faible learning rate, petit clip, perte d'imitation auxiliaire décroissante, récompense = progression le long de la piste par pas + petite pénalité de temps + forte pénalité par choc, 8 environnements en parallèle, mélange fixe + procédural. But : battre le professeur en statique sans choc, et réduire encore les chocs en procédural.
+4. Optionnel : professeur à trajectoire optimisée hors ligne sur la piste fixe (borne à remesurer avec la nouvelle physique), puis imitation.
 
 Priorité : d'abord zéro choc sur pistes procédurales, ensuite la vitesse.
 
 ## Constraints
 
-- Ne pas modifier la physique de la voiture sans le proposer d'abord dans l'inbox.
+- Physique figée dans son état « Trackmania » du 2026-11-07 : toute modification passe d'abord par l'inbox.
 - Garder les 9 actions discrètes (pas d'actions continues).
 - Entraînements de 30 min maximum par itération. Un modèle peut être repris d'une itération à l'autre.
 - Banc procédural fixe : 50 pistes (graines 0 à 49), toujours les mêmes, pour comparer les modèles ; plus l'éval statique habituelle (`scripts/eval.py --static --laps 3`, 20 épisodes, graine 0). Chaque candidat mesuré est ajouté à `metrics.json`.
@@ -25,5 +29,5 @@ Priorité : d'abord zéro choc sur pistes procédurales, ensuite la vitesse.
 
 > Maintained by the planner. Do not edit by hand.
 
-- criterion: deux conditions mesurées sur un même modèle, par le reviewer, avec observation v2 : (A) banc procédural fixe (50 pistes, graines 0 à 49, 1 épisode par piste, 3 tours, `scripts/eval.py --bench`) : 50/50 finis et moyenne de chocs < 1 par course (intermédiaire ; cible finale 0 choc) ; (B) piste fixe (`eval.py --static --laps 3`, 20 épisodes, graine 0) : 20/20, 0 choc, temps total moyen < 14,62 s (professeur H=29). Priorité : A avant B. Lecture retenue du but : « roule sans choc » = < 1 choc/course sur pistes jamais vues.
+- criterion: deux conditions mesurées sur un même modèle, par le reviewer, avec observation v2 : (A) banc procédural fixe (50 pistes, graines 0 à 49, 1 épisode par piste, 3 tours, `scripts/eval.py --bench`) : 50/50 finis et moyenne de chocs < 1 par course (intermédiaire ; cible finale 0 choc) ; (B) piste fixe (`eval.py --static --laps 3`, 20 épisodes, graine 0) : 20/20, 0 choc, temps total moyen < celui du professeur réglé à l'étape 0 (nouvelle physique). Priorité : A avant B. Lecture retenue du but : « roule sans choc » = < 1 choc/course sur pistes jamais vues.
 - status: not evaluated

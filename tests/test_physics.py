@@ -1,5 +1,7 @@
 import math
 
+import numpy as np
+
 from scripts.physics_check import measure
 from src.core.constants import MAX_SPEED
 
@@ -53,3 +55,77 @@ def test_terminal_speed_reaches_max_speed():
     a = measure()
     assert a["terminal_reaches_max"]["pass"]
     assert a["terminal_speed_px_frame"] <= MAX_SPEED * 1.0 + 1e-6
+
+
+# --- Physique façon Trackmania (rotation par le roulement, marche arrière, drift, murs) ---
+
+def _free():
+    from scripts.physics_check import _free_env
+    e = _free_env()
+    e.reset()
+    return e
+
+
+def test_no_rotation_when_stopped():
+    e = _free()
+    h0 = e.car.heading
+    for _ in range(50):
+        e.step((1.0, 0.0, 0.0))
+    assert e.car.heading == h0          # la voiture ne pivote pas sur place
+    assert e.car.steering == 1.0        # mais les roues sont braquées
+
+
+def test_brake_when_stopped_reverses():
+    e = _free()
+    for _ in range(100):
+        e.step((0.0, 0.0, 1.0))
+    from src.core.constants import REVERSE_MAX
+    assert -REVERSE_MAX - 1e-6 <= e.car.speed < -3.0
+
+
+def test_rotation_grows_with_speed_then_steering_softens():
+    def yaw(v):
+        e = _free()
+        while e.car.speed < v:
+            e.step((0.0, 1.0, 0.0))
+        for _ in range(100):
+            e.step((1.0, 1.0 if e.car.speed < v else 0.0, 0.0))
+        h = e.car.heading
+        e.step((1.0, 1.0 if e.car.speed < v else 0.0, 0.0))
+        return (e.car.heading - h), e.car.speed
+    (w_slow, v_slow), (w_fast, v_fast) = yaw(3.0), yaw(22.0)
+    assert 0 < w_slow
+    assert v_fast / w_fast > 2 * v_slow / w_slow   # rayon bien plus grand à haute vitesse
+
+
+def test_brake_while_steering_starts_drift():
+    e = _free()
+    while e.car.speed < 20:
+        e.step((0.0, 1.0, 0.0))
+    for _ in range(10):
+        e.step((1.0, 1.0, 0.0))
+    assert not e.car.is_drifting
+    for _ in range(3):
+        e.step((1.0, 0.0, 1.0))
+    assert e.car.is_drifting
+    for _ in range(20):
+        e.step((0.0, 1.0, 0.0))
+    assert not e.car.is_drifting       # volant droit : le drift s'arrête
+
+
+def test_grazing_wall_keeps_more_speed_than_head_on():
+    from src.game.env import TimeAttackEnv
+    from src.game.track import build_track
+
+    def after_hit(off):
+        e = TimeAttackEnv(build_track(), procedural=False)
+        e.reset()
+        tan, _ = e.track.get_closest_track_info(e.car.pos)
+        e.car.heading = math.atan2(tan[1], tan[0]) + off
+        e.car.vel = 15 * np.array([math.cos(e.car.heading), math.sin(e.car.heading)])
+        for _ in range(80):
+            e.step((0.0, 0.0, 0.0))
+            if e.wall_hits:
+                return float(np.linalg.norm(e.car.vel))
+        raise AssertionError("pas de contact")
+    assert after_hit(0.15) > 2 * after_hit(1.4)

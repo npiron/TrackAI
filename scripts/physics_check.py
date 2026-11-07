@@ -173,7 +173,9 @@ def _wall_run(angle_off, v=15.0, frames=200):
         max_jump = max(max_jump, jump - vm)
         if jump < 0.5 * vm or c.speed < 0.97 * speed0:  # frame de contact (vitesse cassée par le mur)
             hit = True
-            max_mismatch = max(max_mismatch, abs(c.speed - vm) / max(c.speed, 1.0))
+            # speed = composante de vel le long du cap (la glisse latérale est voulue)
+            v_long = float(c.vel[0] * math.cos(c.heading) + c.vel[1] * math.sin(c.heading))
+            max_mismatch = max(max_mismatch, abs(c.speed - v_long) / max(abs(c.speed), 1.0))
     finite = all(math.isfinite(x) for x in (*c.pos, *c.vel, c.heading, c.speed))
     return {"frames_outside_track": outside, "max_jump_over_vel_px": round(max_jump, 3),
             "max_speed_vel_mismatch": round(max_mismatch, 3), "contact_seen": hit,

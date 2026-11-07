@@ -35,3 +35,19 @@ Banc `scripts/physics_check.py` : **20 scénarios, 20 pass, 0 fail** (entrée `p
 
 - Corrigés : #1 (MAX_SPEED=23, terminal 97 %), #2 (speed=|vel| après choc), #3/#4 (clip des actions), seuil de dérive relevé à 18° (#8).
 - Assumés (choix arcade, documentés ci-dessus) : #6, #7, #8, #10, #11, #12, #13, #15. Infirmés : #5, #9, #14.
+
+## Physique façon Trackmania (2026-11-07, demandée par Nicolas)
+
+La dynamique est maintenant dans `src/game/physics.py` (`drive`), partagée par `TimeAttackEnv.step` et le simulateur du pilote programmé (`scripts/heuristic_lap.py::_sim_step`). Constantes dans `src/core/constants.py`.
+
+| Avant | Maintenant |
+|---|---|
+| La voiture pivotait sur place à l'arrêt (rotation maximale à vitesse nulle) | Rotation par le roulement (modèle bicyclette) : nulle à l'arrêt, braquage utile qui baisse avec la vitesse (`STEER_CURVATURE`, `STEER_SPEED_SENS`) ; les roues tournent quand même à l'arrêt |
+| Pas de marche arrière | Frein maintenu à l'arrêt : marche arrière (`REVERSE_ACCEL`, `REVERSE_MAX`) ; la rotation s'inverse en reculant |
+| Roue libre très freinée (−2,5 %/frame) | Frein moteur léger (`COAST_FRICTION` 0.994, −26 %/s) |
+| Glisse constante de 14-17° en virage | Adhérence plus forte (`LATERAL_GRIP` 0.35, ~5-8°) ; les pneus réalignent la vitesse sans perdre sa norme |
+| Drift seulement mesuré | Drift : coup de frein en braquant au-dessus de `DRIFT_MIN_SPEED`, adhérence `DRIFT_GRIP` tant qu'on braque, rotation accrue, perte de vitesse par la glisse |
+| Murs : glissement sur l'axe X ou Y de l'écran | Glissement le long du mur (normale lue dans le masque), perte selon sin²(angle d'impact), petit renvoi, cap réaligné sur le mur ; on ne reste jamais planté de face |
+| `car.speed` = scalaire indépendant | `car.speed` = composante de `vel` le long du cap (négative en marche arrière) |
+
+Référence remesurée (20 épisodes, piste fixe, 3 tours, graine 0) : pilote programmé (bouclier) 20/20, 0 choc, 24,66 s (réglé pour l'ancienne physique) ; best/ s5_a 20/20, 32 chocs, 27,22 s. Toutes les mesures antérieures (15,46 s, borne 13,96 s, réglages du professeur) sont invalidées. Banc `scripts/physics_check.py` : 20/20.

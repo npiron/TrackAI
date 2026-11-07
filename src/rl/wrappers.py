@@ -187,7 +187,7 @@ class GymTimeAttack(gym.Env):
 
         # Extract Raw State for Reward Calculation (Observation agnostic)
         car = self.ta.car
-        speed = car.speed / MAX_SPEED # Normalize [0, 1]
+        speed = max(0.0, car.speed) / MAX_SPEED  # [0, 1] ; la marche arrière ne rapporte rien
         on_track = 1.0 if self.ta.track.inside_track(car.pos) else 0.0
         
         # === WALL-STUCK DETECTION ===

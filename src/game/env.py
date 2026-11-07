@@ -7,6 +7,7 @@ from typing import Optional, List, Tuple
 from src.core.constants import *
 from src.game.track import Track, generate_procedural_track
 from src.game.car import Car
+from src.game.physics import drive
 from src.utils.math_utils import vec
 from src.utils.jit_ops import cast_rays_jit
 
@@ -80,113 +81,67 @@ class TimeAttackEnv:
         accel = float(np.clip(accel, 0.0, 1.0))
         brake = float(np.clip(brake, 0.0, 1.0))
         
-        # ========== REALISTIC CAR PHYSICS ==========
-        
-        # 1. Update Speed (longitudinal)
-        if accel > 0:
-            self.car.speed += accel * ACCEL
-        if brake > 0:
-            self.car.speed -= brake * BRAKE
-            
-        # Friction / Drag (air resistance), plus frein moteur sans accélération
-        self.car.speed *= FRICTION if accel > 0 else COAST_FRICTION
-        
-        # Cap speed
-        self.car.speed = max(0.0, min(self.car.speed, MAX_SPEED))
-        
-        # 2. Physics-based Steering (Inertia & Virtual Steering Wheel)
-        # Smoothly update the car's steering angle based on input (Arcade Feel)
-        STEER_SPEED = 0.15 # 1.0 / 0.15 = ~7 frames to full lock
-        
-        # Update steering value
-        if steer > self.car.steering:
-            self.car.steering = min(steer, self.car.steering + STEER_SPEED)
-        elif steer < self.car.steering:
-            self.car.steering = max(steer, self.car.steering - STEER_SPEED)
-            
-        # Instead of direct heading change, we change angular velocity
-        # Steering applies torque (rotational acceleration)
-        TURN_POWER = 0.05  # How fast we can change turning rate
-        target_av = self.car.steering * TURN_SPEED # Max turn speed based on smoothed steering
-        
-        # Smoothly interpolate angular velocity towards target
-        self.car.angular_velocity += (target_av - self.car.angular_velocity) * TURN_POWER
-        
-        # Speed factor still applies (harder to turn at high speed)
-        speed_factor = 1.0 - (self.car.speed / MAX_SPEED) * 0.3
-        
-        # Apply rotation
-        self.car.heading += self.car.angular_velocity * speed_factor
-        
-        # Store action for next obs
+        # ========== PHYSIQUE (inspirée de Trackmania, voir src/game/physics.py) ==========
+        car = self.car
+        car.vel, car.heading, car.steering, car.angular_velocity, car.is_drifting = drive(
+            car.vel, car.heading, car.steering, car.angular_velocity, car.is_drifting, steer, accel, brake)
+        car.speed = float(car.vel @ np.array([math.cos(car.heading), math.sin(car.heading)]))
         self.prev_steer = steer
-        
-        # 3. Calculate intended velocity (where car WANTS to go)
-        intended_vx = math.cos(self.car.heading) * self.car.speed
-        intended_vy = math.sin(self.car.heading) * self.car.speed
-        intended_vel = vec(intended_vx, intended_vy)
-        
-        # 4. Apply lateral friction (prevent sliding/drifting)
-        # The car's velocity gradually aligns with its heading direction
-        # This creates grip and prevents unrealistic serpentine movement
-        
-        # Lateral friction strength (0.0 = ice, 1.0 = instant grip)
-        # Defined in constants.py (lower = more drift)
-        
-        # Gradually transition current velocity towards intended velocity
-        self.car.vel = self.car.vel * (1.0 - LATERAL_GRIP) + intended_vel * LATERAL_GRIP
-        
-        # 5. Update Position
-        new_pos = self.car.pos + self.car.vel
-        
-        # 4a. Check if new position would be off-road (HARD WALLS)
-        # 4a. Check if new position would be off-road (HARD WALLS with SLIDING)
+
+        # 6. Position et murs : on glisse le long du mur, perte selon l'angle d'impact
+        new_pos = car.pos + car.vel
         wall_now = False
         if self.track.inside_track(new_pos):
-            # Safe to move
-            self.car.pos = new_pos
+            car.pos = new_pos
             self.off_track_counter = 0
         else:
-            # WALL HIT! Try to slide.
             self.wall_hits += 1
             if not self._wall_prev:
                 self.wall_contacts += 1
             wall_now = True
-            # 1. Try moving along X only
-            pos_x_only = self.car.pos + vec(self.car.vel[0], 0)
-            if self.track.inside_track(pos_x_only):
-                self.car.pos = pos_x_only
-                self.car.vel[1] = 0 # Kill Y velocity
-                self.car.speed *= 0.9 # Friction
+            inward = self._wall_normal(car.pos)          # normale locale, vers la piste
+            tangent = np.array([-inward[1], inward[0]])
+            norm_v = float(np.linalg.norm(car.vel))
+            v_t = float(car.vel @ tangent)
+            impact = math.sqrt(max(0.0, 1.0 - (v_t / norm_v) ** 2)) if norm_v > 1e-6 else 0.0
+            keep = 1.0 - WALL_GRAZE_LOSS - WALL_IMPACT_LOSS * impact * impact
+            car.vel = tangent * v_t * max(0.0, keep) + inward * norm_v * impact * WALL_BOUNCE
+            # le choc remet en partie la caisse dans l'axe du mur (comme dans Trackmania) ;
+            # on prend le sens du mur le plus proche du cap, pour ne jamais rester planté de face
+            along = math.atan2(tangent[1], tangent[0])
+            diff = (along - car.heading + math.pi) % (2 * math.pi) - math.pi
+            if abs(diff) > math.pi / 2:
+                diff = (diff + 2 * math.pi) % (2 * math.pi) - math.pi
+            nose_in = max(impact, 1.0 - min(norm_v / 2.0, 1.0))  # quasi à l'arrêt contre le mur
+            car.heading += diff * WALL_ALIGN * nose_in
+            car.angular_velocity *= 1.0 - nose_in
+            # glisser le long du mur ; le masque est au pixel près, donc on se décolle d'1 px si besoin
+            for push in (0.0, 1.0, 2.0):
+                moved = car.pos + car.vel + inward * push
+                if self.track.inside_track(moved):
+                    car.pos = moved
+                    break
             else:
-                # 2. Try moving along Y only
-                pos_y_only = self.car.pos + vec(0, self.car.vel[1])
-                if self.track.inside_track(pos_y_only):
-                    self.car.pos = pos_y_only
-                    self.car.vel[0] = 0 # Kill X velocity
-                    self.car.speed *= 0.9 # Friction
-                else:
-                    # 3. Stuck -> Stop
-                    self.car.speed *= 0.5
-                    self.car.vel *= 0.5
-            
-            self.off_track_counter = 0 # No timeout game over
-
-            # Resync speed with the velocity left after the collision
-            # (speed := |vel|, which the wall has just reduced)
-            self.car.speed = float(np.linalg.norm(self.car.vel))
+                car.vel = np.zeros(2)
+            self.off_track_counter = 0
+            car.speed = float(car.vel @ np.array([math.cos(car.heading), math.sin(car.heading)]))
 
         self._wall_prev = wall_now
 
         # 4b. Check screen boundaries (backup safety)
         if self.track.hits_wall(self.car.pos):
+            self.car.vel *= 0.3
             self.car.speed *= 0.3
             self.car.pos[0] = max(5, min(W - 5, self.car.pos[0]))
             self.car.pos[1] = max(5, min(H - 5, self.car.pos[1]))
         
         # 4c. BOOST ZONES - Speed boost!
         if self.track.on_boost(self.car.pos):
-            self.car.speed = min(self.car.speed * 1.15, MAX_SPEED * 1.2)  # +15% speed, max 120%
+            norm_v = float(np.linalg.norm(self.car.vel))
+            if norm_v > 1e-6:
+                boosted = min(norm_v * 1.15, MAX_SPEED * 1.2)  # +15 %, plafond 120 %
+                self.car.vel *= boosted / norm_v
+                self.car.speed *= boosted / norm_v
         
         # 4d. DRIFT MECHANICS
         # Calculate drift angle (difference between heading and velocity direction)
@@ -241,6 +196,23 @@ class TimeAttackEnv:
             reward = 100.0
 
         return self._obs(), reward, self.done, {}
+
+    _WALL_DIRS = [np.array([math.cos(a), math.sin(a)]) for a in np.linspace(0, 2 * math.pi, 16, endpoint=False)]
+
+    def _wall_normal(self, pos: np.ndarray) -> np.ndarray:
+        """Normale du mur au point de contact, orientée vers la piste (lue dans le masque de collision)."""
+        acc = np.zeros(2)
+        for r in (4.0, 8.0):
+            for d in self._WALL_DIRS:
+                if self.track.inside_track(pos + d * r):
+                    acc += d
+        n = float(np.linalg.norm(acc))
+        if n > 1e-6:
+            return acc / n
+        pts = self.track.spline_points
+        to_c = pts[int(np.argmin(np.sum((pts - pos) ** 2, axis=1)))] - pos
+        n = float(np.linalg.norm(to_c))
+        return to_c / n if n > 1e-6 else np.zeros(2)
 
     def _update_checkpoints(self):
         # We need to enforce order? 

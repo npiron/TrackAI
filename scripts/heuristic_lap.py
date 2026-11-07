@@ -102,29 +102,18 @@ _ACTS = {0: (0, 0, 0), 1: (0, 1, 0), 2: (0, 0, 1), 3: (-1, 0, 0), 4: (1, 0, 0),
 
 
 def _sim_step(st, act, track):
-    """Copie de la physique de TimeAttackEnv.step (hors boost/bords écran). st = [x, y, vx, vy, cap, vitesse, braquage, vit_ang].
-    Renvoie (nouvel état, choc)."""
-    from src.core.constants import ACCEL, BRAKE, COAST_FRICTION, FRICTION, LATERAL_GRIP, MAX_SPEED, TURN_SPEED
-    x, y, vx, vy, hd, sp, stw, av = st
+    """Même dynamique que TimeAttackEnv.step (src/game/physics.drive), hors boost/bords écran.
+    st = [x, y, vx, vy, cap, vitesse, braquage, vit_ang, drift]. Renvoie (nouvel état, choc)."""
+    import math
+    from src.game.physics import drive
+    x, y, vx, vy, hd, sp, stw, av, dr = st
     steer, accel, brake = _ACTS[act]
-    if accel:
-        sp += ACCEL
-    if brake:
-        sp -= BRAKE
-    sp *= FRICTION if accel else COAST_FRICTION
-    sp = max(0.0, min(sp, MAX_SPEED))
-    if steer > stw:
-        stw = min(steer, stw + 0.15)
-    elif steer < stw:
-        stw = max(steer, stw - 0.15)
-    av += (stw * TURN_SPEED - av) * 0.05
-    hd += av * (1.0 - sp / MAX_SPEED * 0.3)
-    vx = vx * (1 - LATERAL_GRIP) + math.cos(hd) * sp * LATERAL_GRIP
-    vy = vy * (1 - LATERAL_GRIP) + math.sin(hd) * sp * LATERAL_GRIP
-    nx, ny = x + vx, y + vy
+    vel, hd, stw, av, dr = drive((vx, vy), hd, stw, av, dr, steer, accel, brake)
+    nx, ny = x + vel[0], y + vel[1]
     if not track.inside_track((nx, ny)):
         return None, True
-    return [nx, ny, vx, vy, hd, sp, stw, av], False
+    sp = float(vel[0] * math.cos(hd) + vel[1] * math.sin(hd))
+    return [nx, ny, float(vel[0]), float(vel[1]), hd, sp, stw, av, dr], False
 
 
 def _rollout(st, first, ta, horizon):
@@ -150,7 +139,7 @@ def _rollout(st, first, ta, horizon):
 def _safe_action(ta, base):
     c = ta.car
     st = [float(c.pos[0]), float(c.pos[1]), float(c.vel[0]), float(c.vel[1]), float(c.heading),
-          float(c.speed), float(c.steering), float(c.angular_velocity)]
+          float(c.speed), float(c.steering), float(c.angular_velocity), bool(c.is_drifting)]
     H = SAFE_HORIZON
     base_k = _rollout(list(st), base, ta, H)
     if base_k >= H:

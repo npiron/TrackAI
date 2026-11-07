@@ -7,7 +7,7 @@ class Car:
     pos: np.ndarray
     vel: np.ndarray
     heading: float
-    speed: float
+    speed: float  # vitesse signée le long du cap (négative en marche arrière)
     steering: float = 0.0
     angular_velocity: float = 0.0
     

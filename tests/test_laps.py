@@ -68,9 +68,10 @@ def test_gym_wrapper_laps_info():
     assert abs(info["total_time"] - sum(info["lap_times"])) < 1e-9
 
 
-# Hash de la trajectoire (obs, récompense, done) mesuré sur le code d'avant le mode multi-tours
-# (commit e32dec6~1) ; le code actuel avec laps omis doit le reproduire.
-REF_HASH = "efb6b7436b6f8429fae500076aa20f1b595c80710b28df4a9b4c6ebece52826e"
+# Hash de la trajectoire (obs, récompense, done) mesuré à l'origine sur le code d'avant le mode
+# multi-tours (commit e32dec6~1), puis remesuré avec la physique façon Trackmania (2026-11-07) ;
+# le code actuel avec laps omis doit le reproduire.
+REF_HASH = "c3ba059b3eaa81475880b0126cd3337b7645d1af9d90b7674ee690608b0d9ed9"
 
 
 def _traj_hash(**kw):
