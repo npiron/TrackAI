@@ -1,5 +1,7 @@
 # Banc procédural fixe (v2)
 
+> Baseline périmée (ancienne physique) : voir `docs/TEACHER_V2.md` pour les mesures de référence actuelles.
+
 50 pistes inconnues : l'épisode k utilise `generate_procedural_track(seed=k)`, k = 0..49, sans autre hasard (résultat identique à chaque lancement).
 
 Commande :

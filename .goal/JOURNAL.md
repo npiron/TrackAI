@@ -201,3 +201,11 @@
 ## 2026-11-07 21:58 · reviewer · S-13 sent back
 - Relancé heuristic statique (12,56 s/10 chocs), best/ banc (0,92 fini/43,16 chocs) : identiques ; tests rapides 63 passed, 1 skipped. metrics.json restauré après mes relances.
 - Défaut : top 5 des graines à chocs faux dans TEACHER_V2.md (graine 11 à 22 chocs omise).
+
+## 2026-11-07 21:58 · dev · S-13 Mesures de référence
+- Rework : top 5 des graines corrigé dans TEACHER_V2.md (37, 44, 22, 11, 47).
+- Aucun code modifié.
+
+## 2026-11-07 21:58 · reviewer · S-13 approved
+- Top 5 corrigé vérifié sur wall_hits_by_seed (37, 44, 22, 11, 47) ; 4 mesures présentes dans metrics.json (heuristic 12,56 s/10 chocs statique, banc 0,94/13,0 ; best/ 19,48 s/22, banc 0,92/43,16).
+- Tests rapides : 63 passed, 1 skipped. Aucun code modifié. data/human_best.json exclu du commit.
