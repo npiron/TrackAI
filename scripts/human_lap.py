@@ -1,6 +1,6 @@
 """Chrono humain sur la piste fixe, avec le même chrono que le banc (1/FPS par frame de TimeAttackEnv).
 
-Usage : python scripts/human_lap.py [--laps 3]   (flèches, R reset, ESC quitte)
+Usage : python scripts/human_lap.py [--laps 3] [--long]   (flèches, R reset, N nouveau circuit en --long, ESC quitte)
 Le meilleur total (tous les tours finis) est écrit dans data/human_best.json.
 """
 import argparse
@@ -53,7 +53,7 @@ def record(total, lap_times, laps, path=HUMAN_BEST):
     return True
 
 
-def play(laps):
+def play(laps, long_tracks=False):
     import pygame
     from src.core.constants import FPS, W, H
     from src.game.rendering import draw_track, draw_car, fmt_time
@@ -61,7 +61,9 @@ def play(laps):
     screen = pygame.display.set_mode((W, H))
     clock = pygame.time.Clock()
     font = pygame.font.SysFont("Menlo", 18)
-    track = build_track()
+    from src.game.track import generate_procedural_track
+    new_track = lambda: generate_procedural_track(variant=2) if long_tracks else build_track()
+    track = new_track()
     env = TimeAttackEnv(track, procedural=False, laps=laps)
     env.reset()
     msg = ""
@@ -74,19 +76,26 @@ def play(laps):
             if ev.type == pygame.KEYDOWN and ev.key == pygame.K_r:
                 env.reset()
                 msg = ""
+            if long_tracks and ev.type == pygame.KEYDOWN and ev.key == pygame.K_n:  # nouveau circuit
+                track = new_track()
+                env = TimeAttackEnv(track, procedural=False, laps=laps)
+                env.reset()
+                msg = ""
         k = pygame.key.get_pressed()
         if not env.done:
             env.step(((1.0 if k[pygame.K_RIGHT] else 0.0) - (1.0 if k[pygame.K_LEFT] else 0.0),
                       1.0 if k[pygame.K_UP] else 0.0, 1.0 if k[pygame.K_DOWN] else 0.0))
             if env.done:
                 if env.lap_count >= laps:
-                    msg = "FINI " + fmt_time(env.t) + (" (record !)" if record(env.t, env.lap_times, laps) else "")
+                    rec = (not long_tracks) and record(env.t, env.lap_times, laps)  # record : piste fixe seulement
+                    msg = "FINI " + fmt_time(env.t) + (" (record !)" if rec else "")
                 else:
                     msg = "ECHEC - R pour recommencer"
         draw_track(screen, track)
         draw_car(screen, env.car)
+        hint = "  N nouveau circuit" if long_tracks else ""
         txt = f"Tour {min(env.lap_count + 1, laps)}/{laps}  {fmt_time(env.t)}  " + \
-              " ".join(fmt_time(t) for t in env.lap_times) + "  " + msg
+              " ".join(fmt_time(t) for t in env.lap_times) + "  " + msg + hint
         screen.blit(font.render(txt, True, (235, 235, 245)), (14, 14))
         pygame.display.flip()
     pygame.quit()
@@ -95,4 +104,6 @@ def play(laps):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--laps", type=int, default=1)
-    play(ap.parse_args().laps)
+    ap.add_argument("--long", action="store_true", help="circuits longs aléatoires (N : nouveau circuit) ; pas de record")
+    a = ap.parse_args()
+    play(a.laps, a.long)

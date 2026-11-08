@@ -34,7 +34,7 @@ class GymTimeAttack(gym.Env):
     """
     metadata = {"render_modes": ["human"]}
 
-    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1,
+    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
                  reward_mode="legacy", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY):
         super().__init__()
         if reward_mode not in REWARD_MODES:
@@ -51,7 +51,8 @@ class GymTimeAttack(gym.Env):
         # Initialize with procedural config
         # If procedural=True, track=None (auto-gen). If False, we need a static track.
         if procedural:
-            self.ta = TimeAttackEnv(track=None, procedural=True, laps=self.laps, obs_version=obs_version)
+            self.ta = TimeAttackEnv(track=None, procedural=True, laps=self.laps, obs_version=obs_version,
+                                    track_variant=track_variant)
         else:
             self.ta = TimeAttackEnv(build_track(), procedural=False, laps=self.laps, obs_version=obs_version)
 
@@ -291,7 +292,7 @@ class GymTimeAttack(gym.Env):
             
             # Centering factor (Road radius is ~60)
             # 1.0 at center, 0.0 at edge
-            centering = max(0.0, 1.0 - (dist_to_center / 60.0))
+            centering = max(0.0, 1.0 - (dist_to_center / getattr(self.ta.track, 'half_width', 60.0)))
             
             # Combine: Must be aligned AND centered to get points
             # IMPORTANT: Punish going backwards HEAVILY

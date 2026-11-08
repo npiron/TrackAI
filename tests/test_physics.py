@@ -129,3 +129,30 @@ def test_grazing_wall_keeps_more_speed_than_head_on():
                 return float(np.linalg.norm(e.car.vel))
         raise AssertionError("pas de contact")
     assert after_hit(0.15) > 2 * after_hit(1.4)
+
+
+# --- Circuits longs (variante 2) ---
+
+def test_long_tracks_are_valid_and_longer():
+    from src.game.track import _track_ok, build_track, generate_procedural_track, V2_HALF_WIDTH
+    v1 = np.asarray(build_track().spline_points)
+    l1 = np.linalg.norm(np.diff(v1, axis=0), axis=1).sum()
+    lens = []
+    for seed in range(5):
+        t = generate_procedural_track(seed, variant=2)
+        assert t.half_width == V2_HALF_WIDTH
+        assert _track_ok(t.spline_points, min_radius=78, half_width=V2_HALF_WIDTH)
+        assert t.collision_mask.get_at(tuple(int(v) for v in t.start_pos)) == 1
+        a = np.asarray(t.spline_points)
+        lens.append(np.linalg.norm(np.diff(a, axis=0), axis=1).sum())
+    assert np.mean(lens) > 1.2 * l1
+    a = generate_procedural_track(7, variant=2).spline_points
+    b = generate_procedural_track(7, variant=2).spline_points
+    assert np.array_equal(a, b)  # même graine, même circuit
+
+
+def test_variant_1_unchanged_by_default():
+    from src.game.env import TimeAttackEnv
+    e = TimeAttackEnv(procedural=True)
+    e.reset(track_seed=3)
+    assert e.track.half_width == 60.0

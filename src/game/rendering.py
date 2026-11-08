@@ -9,7 +9,10 @@ from src.utils.math_utils import vec
 
 def draw_track(screen, track: Track):
     # Procédural (Surface pré-rendue)
-    if hasattr(track, 'visual_surface') and track.visual_surface is not None:
+    if getattr(track, 'spline_points', None) is not None and len(track.spline_points):
+        if track.visual_surface is None:
+            from src.game.track_art import paint_track
+            track.visual_surface = paint_track(track)
         screen.blit(track.visual_surface, (0, 0))
     else:
         # Fallback Legacy (Rectangles)
@@ -20,49 +23,42 @@ def draw_track(screen, track: Track):
             pygame.draw.rect(screen, COLOR_BORDER, track.rect_inner, width=4, border_radius=20)
             pygame.draw.rect(screen, COLOR_GRASS, track.rect_inner, border_radius=20)
 
-    # Checkpoints
+    painted = getattr(track, 'visual_surface', None) is not None
+    # Checkpoints : deux piliers de part et d'autre de la route (arche vue de dessus) + trait discret
     for cx, cy, angle_or_orient in track.checkpoints:
-        half_w = 50
-        
-        # Gestion hybride: angle (float) ou orientation character (str)
         if isinstance(angle_or_orient, str):
-            # Legacy 'V'/'H'
-            if angle_or_orient == 'V':
-                angle = math.pi / 2
-            else:
-                angle = 0
+            angle = math.pi / 2 if angle_or_orient == 'V' else 0
         else:
             angle = angle_or_orient
+        c, s_ = math.cos(angle), math.sin(angle)
+        if painted:
+            half_w = getattr(track, 'half_width', 60) + 2
+            p1 = (cx - c * half_w, cy - s_ * half_w)
+            p2 = (cx + c * half_w, cy + s_ * half_w)
+            pygame.draw.line(screen, (90, 170, 230), p1, p2, width=2)
+            for p in (p1, p2):
+                pygame.draw.circle(screen, (20, 30, 45), (int(p[0]), int(p[1])), 8)
+                pygame.draw.circle(screen, (70, 160, 235), (int(p[0]), int(p[1])), 6)
+        else:
+            half_w = 50
+            pygame.draw.line(screen, COLOR_CHECKPOINT, (cx - c * half_w, cy - s_ * half_w),
+                             (cx + c * half_w, cy + s_ * half_w), width=8)
 
-        # Calcul des points extrémités de la ligne de checkpoint
-        # Perpendiculaire à la route (l'angle stocké est déjà supposé être celui de la ligne de CP)
-        c = math.cos(angle)
-        s = math.sin(angle)
-        
-        p1 = (cx - c * half_w, cy - s * half_w)
-        p2 = (cx + c * half_w, cy + s * half_w)
-        
-        pygame.draw.line(screen, COLOR_CHECKPOINT, p1, p2, width=8)
-    
-    # Finish
-    # Finish
+    if painted:
+        return  # départ/arrivée déjà peints (damier)
+
     if track.finish_pos:
         if len(track.finish_pos) == 3:
             fx, fy, f_angle = track.finish_pos
             half_w = 50
-            c = math.cos(f_angle)
-            s = math.sin(f_angle)
-            p1 = (fx - c * half_w, fy - s * half_w)
-            p2 = (fx + c * half_w, fy + s * half_w)
-            # Draw Checkered Line (White Thick)
+            c, s_ = math.cos(f_angle), math.sin(f_angle)
+            p1 = (fx - c * half_w, fy - s_ * half_w)
+            p2 = (fx + c * half_w, fy + s_ * half_w)
             pygame.draw.line(screen, (255, 255, 255), p1, p2, width=12)
-            # Maybe a black stripe in middle for style
             pygame.draw.line(screen, (0, 0, 0), p1, p2, width=4)
         else:
             fx, fy = track.finish_pos
             pygame.draw.circle(screen, (255, 255, 255), (int(fx), int(fy)), 12)
-    
-    # Start
     if track.start_pos:
         sx, sy = track.start_pos
         pygame.draw.circle(screen, (255, 255, 0), (int(sx), int(sy)), 8)

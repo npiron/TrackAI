@@ -37,10 +37,12 @@ class TimeAttackEnv:
     V2_LIDAR_ANGLES = [-math.pi / 2 + i * math.pi / 8 for i in range(9)]
     OBS_V2_SIZE = 35
 
-    def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1, obs_version: int = 1):
+    def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1, obs_version: int = 1,
+                 track_variant: int = 1):
         if obs_version not in (1, 2):
             raise ValueError("obs_version doit valoir 1 ou 2")
         self.obs_version = obs_version
+        self.track_variant = int(track_variant)  # 1 : tracé historique, 2 : circuits longs (src/game/track.py)
         self._arc_cache = None
         self.laps = max(1, int(laps))
         self.lap_count = 0
@@ -51,7 +53,7 @@ class TimeAttackEnv:
             self.track = track
             self.procedural = False # Force static if track provided explicitly
         else:
-            self.track = generate_procedural_track()
+            self.track = generate_procedural_track(variant=self.track_variant)
             
         self.car: Optional[Car] = None
 
@@ -70,7 +72,7 @@ class TimeAttackEnv:
     def reset(self, track_seed: Optional[int] = None):
         # Regenerate track if procedural mode is active (track_seed fixes it)
         if self.procedural:
-            self.track = generate_procedural_track(seed=track_seed)
+            self.track = generate_procedural_track(seed=track_seed, variant=self.track_variant)
             # print(f"DEBUG: Track generated with {len(self.track.checkpoints)} CPs")
             
         sx, sy = self.track.start_pos
