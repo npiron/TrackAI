@@ -352,3 +352,14 @@
 ## 2026-11-08 19:14 · lead · Plan
 - Inbox : watch_best obs_version accepté, story S-25 (trivial, ready) rattachée à E6 priorité 3 ; message déplacé en done.
 - Pas de changement de direction, critère inchangé.
+
+## 2026-11-08 19:16 · dev · S-22 ppo_finetune
+- `scripts/ppo_finetune.py` : PPO lr 3e-5/clip 0,05 depuis best/, VecNormalize gelé, envs fixe/procédural ≥ 1000, perte CE auxiliaire décroissante après chaque mise à jour.
+- Tests ajoutés (smoke 1 000 pas, coef 0, alternance env) ; suite rapide verte ; smoke 20 000 pas ~2 400 pas/s, eval OK.
+- Doc `docs/PPO_V2.md` créée.
+
+## 2026-11-08 19:18 · reviewer · S-22 approved
+- pytest rapide : 72 passed, 1 skipped. Smoke 20 000 pas, 2 envs, 4 ép. aux : termine, .zip + _vecnormalize.pkl créés, 2456 pas/s, coef aux 0.027 au log.
+- `eval.py --static --episodes 3 --laps 3` sur le modèle sauvé : 3/3 finis, 0 choc, 14,10 s (obs v2 détectée).
+- Code relu : VecNormalize gelé, graines ≥ 1000, coef décroissant, test coef 0 OK. Doc PPO_V2.md présente. Pas de mesure metrics (smoke seulement).
+- `scripts/watch_best.py` (S-25) laissé hors du commit ; metrics.json restauré (écrit par eval.py).
