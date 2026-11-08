@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import pygame
 
-from scripts.eval import _load_model
+from scripts.eval import _load_model, detect_obs_version
 from src.core.constants import FPS
 from src.rl.wrappers import GymTimeAttack
 
@@ -27,7 +27,8 @@ def main():
     a = p.parse_args()
 
     model, vn = _load_model(a.model)
-    env = GymTimeAttack(render_mode="human", procedural=a.random, laps=a.laps)
+    env = GymTimeAttack(render_mode="human", procedural=a.random, laps=a.laps,
+                        obs_version=detect_obs_version(model))
     clock = pygame.time.Clock()
 
     for ep in range(1, a.episodes + 1):

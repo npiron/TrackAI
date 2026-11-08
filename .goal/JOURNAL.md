@@ -398,3 +398,13 @@
 - Rejoué sur best/ : statique 20/20, 14,08 s, 0 choc ; banc 50/50, 16,22 s, 0,12 choc/course (6 chocs, max 1) = best.json. best_v2b/ contient 3 fichiers.
 - pytest complet : 73 passed, 1 skipped. Docs BEST_STATUS.md et section Critère de PPO_V2.md cohérentes avec les chiffres.
 - Doublons de metrics.json créés par mon rejeu retirés (181 entrées). scripts/watch_best.py (S-25) exclu du commit.
+
+## 2026-11-08 19:49 · dev · S-25 Committer le correctif obs_version de watch_best.py
+- Relu le diff de watch_best.py (import + obs_version), conforme.
+- Import OK, 72 tests verts, best.zip v2 → obs (35,) et predict OK.
+- Passé en review.
+
+## 2026-11-08 19:50 · reviewer · S-25 approved
+- Diff relu : 2 lignes dans `scripts/watch_best.py` (import + `obs_version=detect_obs_version(model)`), rien d'autre.
+- `import scripts.watch_best` : OK. Tests rapides : 72 passed, 1 skipped.
+- `best.zip` : version 2, observation (35,), `predict` fonctionne. Pas de métrique (story hors critère de succès).
