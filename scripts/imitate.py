@@ -17,14 +17,51 @@ import numpy as np
 EPS_LEVELS = (0.0, 0.1, 0.2, 0.3)
 
 
+def _teacher_overrides():
+    """Constantes du professeur (heuristic_lap) telles que réglées dans ce processus, pour les workers."""
+    import scripts.heuristic_lap as h
+    return {k: getattr(h, k) for k in dir(h) if k.isupper()}
+
+
+def _collect_worker(job):
+    ks, args, kwargs, overrides = job
+    import torch
+    torch.set_num_threads(1)
+    import scripts.heuristic_lap as h
+    for k, v in overrides.items():
+        setattr(h, k, v)
+    return _collect_seq(*args, episode_ids=ks, **kwargs)
+
+
 def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None, env_kw=None,
-            hit_weight=1, hit_window=30, mix_static=False):
+            hit_weight=1, hit_window=30, mix_static=False, workers=None):
     """Renvoie (obs[N,14 ou 35], actions[N]) ; l'étiquette est toujours l'action de l'heuristique.
 
     policy : fonction obs -> action ; si fournie, c'est elle qui conduit (DAgger), l'heuristique corrige.
     mix_static : épisodes pairs sur piste fixe, impairs sur piste procédurale (ignore `procedural`).
     hit_weight K > 1 : les `hit_window` pas précédant chaque choc mur sont présents K fois (poids K).
+    workers : nombre de processus (défaut : tous les cœurs dès 8 épisodes ; 1 = séquentiel). Chaque épisode a sa propre
+    graine, le résultat est identique quel que soit le nombre de workers.
     """
+    args = (episodes, laps, procedural, seed, eps_levels, max_steps, policy, env_kw, hit_weight, hit_window,
+            mix_static)
+    if workers is None:  # en dessous de 8 épisodes, lancer des processus coûte plus qu'il ne rapporte
+        workers = (os.cpu_count() or 1) if episodes >= 8 else 1
+    if workers <= 1 or episodes <= 1:
+        return _collect_seq(*args)
+    import multiprocessing as mp
+    from concurrent.futures import ProcessPoolExecutor
+    jobs = [([k], args, {}, _teacher_overrides()) for k in range(episodes)]
+    with ProcessPoolExecutor(max_workers=min(workers, episodes), mp_context=mp.get_context("spawn")) as ex:
+        parts = list(ex.map(_collect_worker, jobs))
+    O = [o for po, _ in parts for o in po]
+    A = [x for _, pa in parts for x in pa]
+    return np.array(O, dtype=np.float32).reshape(len(O), -1), np.array(A, dtype=np.int64)
+
+
+def _collect_seq(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps=3000, policy=None, env_kw=None,
+                 hit_weight=1, hit_window=30, mix_static=False, episode_ids=None):
+    """Collecte séquentielle des épisodes `episode_ids` (défaut : tous) ; voir collect()."""
     from src.rl.wrappers import GymTimeAttack
     from scripts.heuristic_lap import heuristic_action
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps, **(env_kw or {}))
@@ -32,7 +69,7 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
     env_p = env if procedural or not mix_static else GymTimeAttack(render_mode=None, procedural=True, laps=laps,
                                                                     **(env_kw or {}))
     O, A = [], []
-    for k in range(episodes):
+    for k in (range(episodes) if episode_ids is None else episode_ids):
         random.seed(seed + k)
         np.random.seed(seed + k)
         rng = np.random.RandomState(seed + k)
@@ -63,6 +100,8 @@ def collect(episodes, laps, procedural, seed=0, eps_levels=EPS_LEVELS, max_steps
             for _r in range(hit_weight - 1):
                 O.extend(O[i] for i in sel)
                 A.extend(A[i] for i in sel)
+    if episode_ids is not None:
+        return O, A
     return np.array(O, dtype=np.float32), np.array(A, dtype=np.int64)
 
 
@@ -89,12 +128,28 @@ def behavior_clone(model, obs_n, acts, epochs, lr=1e-3, batch=256, seed=0):
     return float(loss), acc
 
 
+class NetPolicy:
+    """Politique déterministe sur obs brute (normalisée avec les stats de venv), picklable : elle peut
+    conduire dans les workers de collecte. Copie figée du réseau de décision (MlpPolicy)."""
+
+    def __init__(self, model, venv):
+        import copy
+        import torch
+        pol = model.policy
+        self.net = torch.nn.Sequential(copy.deepcopy(pol.mlp_extractor.policy_net), copy.deepcopy(pol.action_net)).eval()
+        self.mean = np.asarray(venv.obs_rms.mean, dtype=np.float64)
+        self.std = np.sqrt(np.asarray(venv.obs_rms.var, dtype=np.float64) + venv.epsilon)
+
+    def __call__(self, obs):
+        import torch
+        o = np.clip((obs - self.mean) / self.std, -10, 10).astype(np.float32)
+        with torch.no_grad():
+            return int(self.net(torch.as_tensor(o)[None]).argmax(1)[0])
+
+
 def make_policy(model, venv):
     """Politique déterministe sur obs brute, normalisée avec les stats courantes de venv."""
-    def pol(obs):
-        o = np.clip((obs - venv.obs_rms.mean) / np.sqrt(venv.obs_rms.var + venv.epsilon), -10, 10)
-        return model.predict(o.astype(np.float32), deterministic=True)[0]
-    return pol
+    return NetPolicy(model, venv)
 
 
 def main(argv=None):

@@ -133,7 +133,8 @@ def main(argv=None):
     p.add_argument("--timesteps", type=int, default=500_000)
     p.add_argument("--lr", type=float, default=3e-5)
     p.add_argument("--clip", type=float, default=0.05)
-    p.add_argument("--n-envs", type=int, default=8)
+    p.add_argument("--n-envs", type=int, default=16,
+                   help="environnements en parallèle (16 : ~+25 %% de pas/s sur un M1 8 cœurs ; un seul entraînement à la fois)")
     p.add_argument("--aux-coef0", type=float, default=1.0, help="coefficient initial de la perte d'imitation (→ 0 linéairement)")
     p.add_argument("--aux-episodes", type=int, default=60, help="épisodes de collecte du jeu de données professeur")
     p.add_argument("--laps", type=int, default=3)
@@ -163,7 +164,7 @@ def main(argv=None):
 
     AuxPPO = _make_ppo_class()
     model = AuxPPO.load(a.init, env=venv, device="cpu", seed=a.seed, custom_objects=dict(
-        learning_rate=a.lr, clip_range=a.clip, n_steps=512, batch_size=512, n_epochs=4,
+        learning_rate=a.lr, clip_range=a.clip, n_steps=min(512, max(64, 4096 // a.n_envs)), batch_size=512, n_epochs=4,
         ent_coef=0.0, gamma=0.995, gae_lambda=0.95))
     model.aux_coef0 = a.aux_coef0
     model.aux_coef_hist = None  # l'historique est sauvé dans le .zip : repartir de zéro
@@ -171,6 +172,7 @@ def main(argv=None):
 
     # Jeu de données professeur : le modèle initial conduit (DAgger-like), l'heuristique étiquette.
     import torch
+    torch.set_num_threads(2)  # petit réseau : plus de fils ne sert à rien, les envs ont besoin des cœurs
     ckw = dict(obs_version=obs_version, reward_mode=a.reward_mode, wall_penalty=a.wall_penalty)
     O, A = collect(a.aux_episodes, a.laps, True, a.seed, policy=make_policy(model, venv), env_kw=ckw,
                    hit_weight=10, mix_static=True)

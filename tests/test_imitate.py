@@ -45,7 +45,7 @@ def test_collect_procedural_seeds_outside_bench(monkeypatch):
             seen.append(self.ta.track.seed)
         return orig(self, a)
     monkeypatch.setattr(GymTimeAttack, "step", step)
-    collect(3, 1, True, seed=0, eps_levels=(0.0,), max_steps=3)
+    collect(3, 1, True, seed=0, eps_levels=(0.0,), max_steps=3, workers=1)  # monkeypatch : même processus
     assert seen and all(s >= 1000 for s in seen)
 
 
@@ -65,7 +65,7 @@ def test_collect_mix_static_alternates_tracks(monkeypatch):
         seen.append((self.ta.procedural, self.ta.track.seed if self.ta.procedural else None))
         return out
     monkeypatch.setattr(GymTimeAttack, "reset", reset)
-    collect(6, 1, True, mix_static=True, eps_levels=(0.0,), max_steps=2)
+    collect(6, 1, True, mix_static=True, eps_levels=(0.0,), max_steps=2, workers=1)  # monkeypatch : même processus
     resets = seen[-6:]
     assert len(resets) == 6
     for k, (proc, s) in enumerate(resets):
@@ -73,3 +73,11 @@ def test_collect_mix_static_alternates_tracks(monkeypatch):
             assert not proc and s is None
         else:
             assert proc and s >= 1000
+
+
+def test_collect_parallel_matches_sequential():
+    """La collecte en plusieurs processus donne exactement les mêmes données que la séquentielle."""
+    from scripts.imitate import collect
+    a = collect(3, 1, True, seed=5, max_steps=60, workers=1)
+    b = collect(3, 1, True, seed=5, max_steps=60, workers=3)
+    assert np.array_equal(a[0], b[0]) and np.array_equal(a[1], b[1])
