@@ -136,10 +136,14 @@ def _draw_skids(screen, car, c, s_):
     _skids["prev"] = (target, rear) if marking else None
 
 
-def draw_car(screen, car: Car):
+def draw_car(screen, car: Car, paint=None, skids=True):
+    """paint : couleur de carrosserie (défaut bleu) ; skids=False pour plusieurs voitures à l'écran."""
     p = (float(car.pos[0]), float(car.pos[1]))
     c, s_ = math.cos(car.heading), math.sin(car.heading)
-    _draw_skids(screen, car, c, s_)
+    body = paint or CAR_PAINT
+    dark = tuple(int(v * 0.6) for v in body[:3])
+    if skids:
+        _draw_skids(screen, car, c, s_)
     # ombre portée (carrosserie + ailerons)
     for part in (_CAR_BODY, _CAR_NOSE, _CAR_FRONT_WING, _CAR_REAR_WING):
         _poly(screen, _place(part, (p[0] + 3, p[1] + 4), c, s_), (0, 0, 0, 60))
@@ -168,15 +172,15 @@ def draw_car(screen, car: Car):
         _poly(screen, _place(rim, p, c, s_, wx, wy, rot), (190, 190, 196))
     # ailerons, carrosserie, nez, bande, cockpit et casque
     _poly(screen, _place(_CAR_REAR_WING, p, c, s_), CAR_CARBON)
-    _poly(screen, _place([(-18.5, -9.5), (-21.5, -9.5), (-21.5, -7.5), (-18.5, -7.5)], p, c, s_), CAR_PAINT)
-    _poly(screen, _place([(-18.5, 7.5), (-21.5, 7.5), (-21.5, 9.5), (-18.5, 9.5)], p, c, s_), CAR_PAINT)
-    _poly(screen, _place(_CAR_BODY, p, c, s_), CAR_PAINT)
+    _poly(screen, _place([(-18.5, -9.5), (-21.5, -9.5), (-21.5, -7.5), (-18.5, -7.5)], p, c, s_), body)
+    _poly(screen, _place([(-18.5, 7.5), (-21.5, 7.5), (-21.5, 9.5), (-18.5, 9.5)], p, c, s_), body)
+    _poly(screen, _place(_CAR_BODY, p, c, s_), body)
     _poly(screen, _place([(-1, -6.4), (-9, -6.6), (-13, -3.6), (-13, 3.6), (-9, 6.6), (-1, 6.4)], p, c, s_),
-          CAR_PAINT_DARK)  # pontons
-    _poly(screen, _place(_CAR_NOSE, p, c, s_), CAR_PAINT)
+          dark)  # pontons
+    _poly(screen, _place(_CAR_NOSE, p, c, s_), body)
     _poly(screen, _place(_CAR_FRONT_WING, p, c, s_), CAR_CARBON)
     for y0 in (-11.5, 9.5):
-        _poly(screen, _place([(21.5, y0), (18.5, y0), (18.5, y0 + 2), (21.5, y0 + 2)], p, c, s_), CAR_PAINT)
+        _poly(screen, _place([(21.5, y0), (18.5, y0), (18.5, y0 + 2), (21.5, y0 + 2)], p, c, s_), body)
     _poly(screen, _place(_CAR_STRIPE, p, c, s_), (245, 245, 245))
     _poly(screen, _place(_CAR_COCKPIT, p, c, s_), (18, 22, 30))
     hx, hy = _place([(0.5, 0)], p, c, s_)[0]

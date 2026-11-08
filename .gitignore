@@ -66,3 +66,6 @@ replays/*.json
 .goal/TODO.md
 .goal/usage.jsonl
 data/human_best.json
+
+# Vidéos générées
+videos/

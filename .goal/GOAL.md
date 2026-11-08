@@ -18,6 +18,7 @@ Priorité : finir 50/50 circuits longs avec < 1 choc par course, puis la vitesse
 - Entraînements de 30 min maximum par itération ; un modèle peut être repris d'une itération à l'autre.
 - Chaque candidat est mesuré sur le banc de 50 circuits longs (et la piste fixe pour info) et ajouté à `metrics.json`.
 - Garder le meilleur modèle dans `data/models/best/` avec sa mesure ; archiver l'ancien avant de le remplacer.
+- Pour la vidéo d'évolution : garder des « générations » (modèles intermédiaires dans `data/checkpoints/`, nommés dans l'ordre, au moins un par étape d'entraînement). À la fin, générer `videos/evolution_longs.mp4` avec `scripts/evolution_video.py --track-variant 2 --track-seed <graine hors banc> --models … --labels …`.
 - Pas de screenshot de l'app.
 - Historique : `.team/` (lecture seule) et `docs/`.
 
