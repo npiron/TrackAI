@@ -363,3 +363,13 @@
 - `eval.py --static --episodes 3 --laps 3` sur le modèle sauvé : 3/3 finis, 0 choc, 14,10 s (obs v2 détectée).
 - Code relu : VecNormalize gelé, graines ≥ 1000, coef décroissant, test coef 0 OK. Doc PPO_V2.md présente. Pas de mesure metrics (smoke seulement).
 - `scripts/watch_best.py` (S-25) laissé hors du commit ; metrics.json restauré (écrit par eval.py).
+
+## 2026-11-08 19:27 · dev · S-23 Deux candidats PPO depuis best/
+- ft_a (lr 3e-5) et ft_b (lr 1e-4), 1 M de pas, ~5 min chacun ; mesurés statique et banc.
+- ft_a : 14,12 s / 0 choc statique, banc 0,18 choc ; ft_b : banc 0,48. A+B non atteint (B strict hors d'atteinte).
+- Levier pour un dernier tour proposé dans l'inbox (wall-penalty -100, 3 M de pas).
+
+## 2026-11-08 19:26 · lead · Plan
+- Inbox S-23 : levier accepté (ft_a 14,12 s égal au professeur, banc 0,18 ; ft_b banc 0,48). Une dernière itération PPO : S-26 (lr 3e-5, wall-penalty -100, 3 M de pas, graines 3 et 4), ready, priorité 1. Message déplacé en done.
+- S-24 (promotion/verdict) dépend désormais de S-26 ; après S-26 plus d'itération PPO : plateau documenté si B reste manqué, étape 4 (professeur optimisé) à envisager alors.
+- Critère inchangé, pas de GOAL_REACHED.
