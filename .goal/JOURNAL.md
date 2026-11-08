@@ -348,3 +348,7 @@
 - pytest rapide : 70 passed, 1 skipped (dont 2 nouveaux tests).
 - eval statique 20 ép. 3 tours seed 0 : 14,16 s, 0 choc, finish_rate 1.0 (legacy inchangé).
 - scripts/watch_best.py exclu du commit (hors périmètre) → inbox.
+
+## 2026-11-08 19:14 · lead · Plan
+- Inbox : watch_best obs_version accepté, story S-25 (trivial, ready) rattachée à E6 priorité 3 ; message déplacé en done.
+- Pas de changement de direction, critère inchangé.
