@@ -10,6 +10,21 @@
 
 ## Epics
 
+### E8 · Banc circuits longs et professeur recalé
+- status: open
+- outcome: `eval.py --track-variant 2 --bench` mesure n'importe quel modèle sur 50 circuits longs (graines 0-49, 1 tour) ; baselines (professeur, best/ ft_c) dans `metrics.json` ; professeur recalé (`scripts/heuristic_lap.py`) : 50/50 finis, 0 choc sur le banc, puis temps minimisé ; son `mean_total_time` devient la référence du critère B.
+- notes: stories S-27 à S-30. Les mesures d'avant le 2026-11-08 (physique et circuits) sont périmées. Graines d'entraînement ≥ 1000 pour garder le banc en test.
+
+### E9 · Ré-imitation sur circuits longs (BC + DAgger, obs v2, mix variantes 1 et 2)
+- status: open
+- outcome: modèle v2 qui finit 50/50 du banc long avec < 1 choc/course ; promu dans best/ (ancien archivé) ; générations gardées dans `data/checkpoints/`.
+- notes: dépend d'E8 (professeur). imitate.py doit accepter `track_variant`. Stories à écrire quand E8 est fait.
+
+### E10 · Affinage PPO sur circuits longs (battre le professeur)
+- status: open
+- outcome: PPO sans oubli (`ppo_finetune.py`, variante 2) : temps du banc long < professeur recalé, toujours < 1 choc ; vidéo `videos/evolution_longs.mp4`.
+- notes: dépend d'E9. Ne pas refaire d'itération PPO sans gain (leçon d'E6).
+
 ### E7 · Étape 0 : recaler le professeur sur la physique Trackmania
 - status: done
 - outcome: pilote programmé réglé (constantes de `scripts/heuristic_lap.py`) : statique 20/20 sans choc et banc 50 pistes sans choc, temps minimal ; son temps statique (le « professeur réglé ») est écrit dans `metrics.json` et dans le critère ; borne `lower_bound.py` remesurée (ou échec documenté) ; baselines best/ (s5_a, v1) sur le banc remesurées avec la nouvelle physique.
@@ -51,6 +66,8 @@
 - notes: dépend d'E5 (fait). Stories S-21 à S-24 (récompense simple, script PPO+aux, 2 candidats, promotion). Étape 4 du goal (professeur optimisé hors ligne) seulement si E6 plafonne.
 
 ## Decisions
+
+- 2026-11-08 : Nouveau goal (physique maniable, circuits longs variante 2). Épics E1-E7 clos dans l'ancien contexte, mesures périmées (ft_c ne finit aucun circuit long). Critère : banc 50 circuits longs, A = 50/50 et < 1 choc/course, B = plus rapide que le professeur recalé. Ordre : banc + professeur (E8), imitation (E9), PPO (E10).
 
 - 2026-11-07 : Goal repris de `.team` (T1-T71). Fiabilité déjà atteinte par T65 (20/20, 0 choc, 15,84 s). « Plus bas possible » rendu mesurable : ≤ 15,30 s. Robustesse au bruit (24/100 à eps 0,05) jugée hors critère. Le temps humain manquant (action humaine) n'est pas attendu.
 

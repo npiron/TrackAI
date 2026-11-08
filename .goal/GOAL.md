@@ -26,5 +26,5 @@ Priorité : finir 50/50 circuits longs avec < 1 choc par course, puis la vitesse
 
 > Maintained by the planner. Do not edit by hand.
 
-- criterion: to be defined
+- criterion: banc de 50 circuits longs (`eval.py --bench --track-variant 2 --laps 1`, graines 0 à 49, mesuré par le reviewer dans `metrics.json`) : A = 50/50 finis et moyenne < 1 choc par course ; B (vitesse) = `mean_total_time` strictement inférieur à celui du professeur recalé (mesuré à l'étape 1). Priorité à A, puis B. Lecture retenue : « vite » = temps moyen du banc, comparé au professeur.
 - status: not evaluated

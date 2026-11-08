@@ -420,3 +420,19 @@
 ## 2026-11-08 19:51 · loop · End
 
 - Session ended after 16 step(s), 26 story(ies) done in total.
+
+## 2026-11-08 20:52 · loop · Start
+
+- Session of 60 steps on `goal/main` (team: trio).
+
+## 2026-11-08 20:52 · loop · Goal changed
+
+- New goal: Un agent qui roule vite et propre sur les circuits longs aléatoires (`generate_procedural_track(seed, variant=2)` : lignes droites, épingles, chicanes, route de 90 px), jamais vus à l'entraînement. Physique et circuits ont été refaits le 2026-11-08 (voir `docs/PHYSICS.md`, section « Maniabilité et c
+
+## 2026-11-08 20:53 · loop · Call interrupted
+
+- `lead` interrupted by TERM after 50s, see `/Users/nicolaspiron/TrackAI/.goal/logs/20261108-205255-lead+refiner.log`.
+
+## 2026-11-08 20:53 · loop · End
+
+- Session ended after 1 step(s), 26 story(ies) done in total.
