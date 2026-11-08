@@ -338,3 +338,13 @@
 - E5 clos : v2_b en best/ (banc 0,16 choc/course, statique 14,16 s vs 14,12 s). A intermédiaire atteint, B manqué de 0,04 s.
 - E6 ouvert, 4 stories écrites (refiner) : S-21 récompense simple, S-22 ppo_finetune.py (PPO lr faible + perte imitation décroissante), S-23 deux candidats mesurés, S-24 promotion/verdict. Banc 0-49 reste hors entraînement.
 - Critère mis à jour (statut). Pas de GOAL_REACHED : B non atteint.
+
+## 2026-11-08 19:14 · dev · S-21 Récompense « simple » optionnelle
+- `GymTimeAttack(reward_mode="simple")` : progression curviligne sur la ligne centrale × k_prog (tour ≈ +100) − 0,01/pas + chocs ; défaut `legacy` inchangé.
+- Test `tests/test_reward_simple.py` (tour du pilote programmé à 5 %, choc = −|wall_penalty|) ; 70 tests verts, eval statique 14,16 s / 0 choc.
+
+## 2026-11-08 19:13 · reviewer · S-21 approved
+- Diff relu : reward_mode legacy par défaut (chemin legacy intact), mode simple = progression centrale + temps + chocs + bonus env ; composantes somment au total.
+- pytest rapide : 70 passed, 1 skipped (dont 2 nouveaux tests).
+- eval statique 20 ép. 3 tours seed 0 : 14,16 s, 0 choc, finish_rate 1.0 (legacy inchangé).
+- scripts/watch_best.py exclu du commit (hors périmètre) → inbox.

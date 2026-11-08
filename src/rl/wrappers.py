@@ -9,6 +9,12 @@ from src.game.env import TimeAttackEnv
 from src.game.track import build_track
 from src.game.rendering import draw_track, draw_car, draw_ghost, draw_lidar
 
+# Récompense "simple" (reward_mode="simple") : progression le long de la ligne centrale + temps + chocs
+SIMPLE_LAP_REWARD = 100.0   # récompense de progression cumulée pour un tour de piste (k_prog = SIMPLE_LAP_REWARD / longueur de la ligne centrale)
+SIMPLE_TIME_PENALTY = 0.01  # pénalité par pas
+REWARD_MODES = ("legacy", "simple")
+
+
 class GymTimeAttack(gym.Env):
     """
     Gym wrapper around TimeAttackEnv.
@@ -28,8 +34,16 @@ class GymTimeAttack(gym.Env):
     """
     metadata = {"render_modes": ["human"]}
 
-    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1):
+    def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1,
+                 reward_mode="legacy", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY):
         super().__init__()
+        if reward_mode not in REWARD_MODES:
+            raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
+        # reward_mode "simple" : k_prog * Δprogression - time_penalty + wall_penalty * nouveaux chocs (+ bonus de fin de l'env).
+        # k_prog=None : SIMPLE_LAP_REWARD / longueur de la ligne centrale (un tour ≈ +SIMPLE_LAP_REWARD).
+        self.reward_mode = reward_mode
+        self._k_prog_arg = k_prog
+        self.time_penalty = float(time_penalty)
         # Options d'entraînement (défaut : désactivées). wall_penalty : récompense ajoutée par choc (négative = pénalité).
         self.wall_fatal = bool(wall_fatal)
         self.wall_hit_penalty = float(wall_penalty)
@@ -111,6 +125,7 @@ class GymTimeAttack(gym.Env):
         dist = np.sqrt(dx*dx + dy*dy)
         
         self._last_progress = -dist
+        self._simple_s = self._centerline_s()
         self._last_lap_count = 0
         self._last_speed = 0.0
         self._last_cp_count = 0
@@ -225,6 +240,9 @@ class GymTimeAttack(gym.Env):
         # Record position for replay
         self._current_trajectory.append((float(car.pos[0]), float(car.pos[1])))
         
+        if self.reward_mode == "simple":
+            return self._simple_step(obs, reward, done, info, new_hits)
+
         # New lap just started: checkpoints were reset, target changed
         lap_started = self.ta.lap_count != self._last_lap_count
         self._last_lap_count = self.ta.lap_count
@@ -437,6 +455,38 @@ class GymTimeAttack(gym.Env):
         terminated = bool(done)
         truncated = False
         return obs, total_reward, terminated, truncated, info
+
+    def _centerline_s(self):
+        """Abscisse curviligne (px) du point de la ligne centrale le plus proche de la voiture."""
+        sp = self.ta.track.spline_points
+        cum = self.ta._arc_lengths()
+        i = int(np.argmin(np.sum((sp - np.asarray(self.ta.car.pos, dtype=np.float64)) ** 2, axis=1)))
+        return float(cum[i])
+
+    def _simple_step(self, obs, reward, done, info, new_hits):
+        """Récompense simple : pas de terme hérité (alignement, vitesse, fantôme, urgence, checkpoints)."""
+        total_len = float(self.ta._arc_lengths()[-1])
+        k_prog = self._k_prog_arg if self._k_prog_arg is not None else SIMPLE_LAP_REWARD / total_len
+        s = self._centerline_s()
+        ds = s - self._simple_s
+        ds = (ds + total_len / 2) % total_len - total_len / 2  # bouclage : le plus court écart signé
+        self._simple_s = s
+        if not self.ta.track.inside_track(self.ta.car.pos):
+            ds = 0.0  # pas de récompense hors piste
+        progress = k_prog * ds
+        wall = self.wall_hit_penalty * new_hits
+        total_reward = float(progress - self.time_penalty + wall + reward)
+        info["reward_components"] = {
+            "progress": float(progress), "time_penalty": float(-self.time_penalty),
+            "wall": float(wall), "env": float(reward),
+        }
+        if self.render_mode == "human":
+            self.render()
+        info["checkpoints_reached"] = sum(self.ta.cp_visited)
+        info["is_success"] = bool(done and self.ta.lap_count >= self.laps)
+        info["lap_time"] = self.ta.t if info["is_success"] else 0.0
+        self._add_lap_info(info)
+        return obs, total_reward, bool(done), False, info
 
     def _add_lap_info(self, info):
         info["laps_done"] = self.ta.lap_count
