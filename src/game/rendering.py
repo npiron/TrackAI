@@ -222,3 +222,44 @@ def fmt_time(t: float) -> str:
     m = int(t // 60)
     s = t - 60 * m
     return f"{m:02d}:{s:06.3f}"
+
+
+# Touches du clavier vues par le bot : 0 rien, 1 haut, 2 bas, 3 gauche, 4 droite, 5 G+haut, 6 D+haut, 7 G+bas, 8 D+bas
+ACTION_KEYS = {0: (), 1: ("up",), 2: ("down",), 3: ("left",), 4: ("right",), 5: ("left", "up"), 6: ("right", "up"),
+               7: ("left", "down"), 8: ("right", "down")}
+
+
+def draw_keys(screen, action, speed=None, max_speed=None, font=None):
+    """Les 4 flèches du bot en bas de l'écran, allumées quand il les appuie, et sa vitesse."""
+    pressed = ACTION_KEYS.get(int(action), ())
+    w, h = screen.get_size()
+    k, gap = 46, 8
+    cx, by = 24 + k + gap + k // 2, h - 24  # en bas à gauche
+    pos = {"up": (cx - k // 2, by - 2 * k - gap), "left": (cx - k // 2 - k - gap, by - k),
+           "down": (cx - k // 2, by - k), "right": (cx + k // 2 + gap, by - k)}
+    panel = pygame.Surface((3 * k + 2 * gap + 200, 2 * k + gap + 24), pygame.SRCALPHA)
+    pygame.draw.rect(panel, (10, 12, 18, 170), panel.get_rect(), border_radius=14)
+    screen.blit(panel, (cx - k // 2 - k - gap - 12, by - 2 * k - gap - 12))
+    colors = {"up": (90, 220, 130), "down": (240, 90, 80), "left": (90, 180, 255), "right": (90, 180, 255)}
+    for name, (x, y) in pos.items():
+        on = name in pressed
+        rect = pygame.Rect(x, y, k, k)
+        pygame.draw.rect(screen, colors[name] if on else (52, 56, 66), rect, border_radius=8)
+        pygame.draw.rect(screen, (255, 255, 255) if on else (90, 96, 110), rect, 2, border_radius=8)
+        c = rect.center
+        s = 11
+        tri = {"up": [(c[0], c[1] - s), (c[0] - s, c[1] + s // 2), (c[0] + s, c[1] + s // 2)],
+               "down": [(c[0], c[1] + s), (c[0] - s, c[1] - s // 2), (c[0] + s, c[1] - s // 2)],
+               "left": [(c[0] - s, c[1]), (c[0] + s // 2, c[1] - s), (c[0] + s // 2, c[1] + s)],
+               "right": [(c[0] + s, c[1]), (c[0] - s // 2, c[1] - s), (c[0] - s // 2, c[1] + s)]}[name]
+        pygame.draw.polygon(screen, (20, 22, 28) if on else (150, 156, 170), tri)
+    if speed is not None and max_speed:
+        font = font or pygame.font.SysFont("Avenir Next,Helvetica Neue,Arial", 20, bold=True)
+        x0 = cx + k // 2 + gap + k + 20
+        frac = max(0.0, min(1.0, abs(speed) / max_speed))
+        bar = pygame.Rect(x0, by - k + 8, 150, 12)
+        pygame.draw.rect(screen, (52, 56, 66), bar, border_radius=6)
+        pygame.draw.rect(screen, (90, 220, 130) if speed >= 0 else (240, 90, 80),
+                         pygame.Rect(bar.x, bar.y, int(bar.w * frac), bar.h), border_radius=6)
+        label = font.render(f"{abs(speed) * 50:.0f} px/s", True, (230, 232, 238))
+        screen.blit(label, (x0, by - 2 * k - gap + 8))

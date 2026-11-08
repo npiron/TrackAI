@@ -73,6 +73,8 @@ class TimeAttackEnv:
         # Regenerate track if procedural mode is active (track_seed fixes it)
         if self.procedural:
             self.track = generate_procedural_track(seed=track_seed, variant=self.track_variant)
+            self.best_time = None   # nouveau circuit : le fantôme du meilleur tour ne vaut plus
+            self.best_ghost = []
             # print(f"DEBUG: Track generated with {len(self.track.checkpoints)} CPs")
             
         sx, sy = self.track.start_pos

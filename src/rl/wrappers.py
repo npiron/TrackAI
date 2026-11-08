@@ -534,5 +534,7 @@ class GymTimeAttack(gym.Env):
         # Draw LIDAR if available
         if hasattr(env, 'lidar_dist'):
             draw_lidar(screen, env.car, env.lidar_dist)
+        if getattr(self, 'overlay', None):
+            self.overlay(screen)  # dessin en plus (ex. touches du bot dans watch_best.py)
         
         pygame.display.flip()
