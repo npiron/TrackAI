@@ -1,6 +1,6 @@
 """Chrono humain sur la piste fixe, avec le même chrono que le banc (1/FPS par frame de TimeAttackEnv).
 
-Usage : python scripts/human_lap.py [--laps 3] [--long]   (flèches, R reset, N nouveau circuit en --long, ESC quitte)
+Usage : python scripts/human_lap.py [--laps 3] [--long]   (flèches, WASD ou ZQSD, R reset, N nouveau circuit en --long, ESC quitte)
 Le meilleur total (tous les tours finis) est écrit dans data/human_best.json.
 """
 import argparse
@@ -83,8 +83,12 @@ def play(laps, long_tracks=False):
                 msg = ""
         k = pygame.key.get_pressed()
         if not env.done:
-            env.step(((1.0 if k[pygame.K_RIGHT] else 0.0) - (1.0 if k[pygame.K_LEFT] else 0.0),
-                      1.0 if k[pygame.K_UP] else 0.0, 1.0 if k[pygame.K_DOWN] else 0.0))
+            # flèches, WASD (QWERTY) ou ZQSD (AZERTY : mêmes touches physiques)
+            up = k[pygame.K_UP] or k[pygame.K_w] or k[pygame.K_z]
+            down = k[pygame.K_DOWN] or k[pygame.K_s]
+            left = k[pygame.K_LEFT] or k[pygame.K_a] or k[pygame.K_q]
+            right = k[pygame.K_RIGHT] or k[pygame.K_d]
+            env.step(((1.0 if right else 0.0) - (1.0 if left else 0.0), 1.0 if up else 0.0, 1.0 if down else 0.0))
             if env.done:
                 if env.lap_count >= laps:
                     rec = (not long_tracks) and record(env.t, env.lap_times, laps)  # record : piste fixe seulement

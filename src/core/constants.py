@@ -6,31 +6,34 @@ W, H = 1400, 1000
 FPS = 50
 
 # Physics constants
-MAX_SPEED = 23.0  # ~ vitesse terminale ACCEL*FRICTION/(1-FRICTION)=22.32 (cf. docs/PHYSICS.md #1)
-ACCEL = 0.271       # façon Trackmania : départ vif puis la vitesse plafonne (35 % en 0,7 s, 90 % en 3,8 s)
-BRAKE = 0.22        # freinage progressif : de la vitesse max à l'arrêt en ~2 s
-FRICTION = 0.988    # traînée en accélération ; vitesse terminale ACCEL*FRICTION/(1-FRICTION) = 22.3
-COAST_FRICTION = 0.994  # roue libre : frein moteur léger (-26 % par seconde)
-TURN_SPEED = 0.08       # vitesse de rotation max (rad/frame), plafond de sécurité
+MAX_SPEED = 11.3  # vitesse terminale ACCEL*FRICTION/(1-FRICTION) = 11.0 px/frame (~550 px/s), à l'échelle des circuits
+ACCEL = 0.122       # poussée douce : 50 % de la vitesse max en ~1,3 s, 90 % en ~4,2 s
+BRAKE = 0.16        # freinage progressif : de la vitesse max à l'arrêt en ~1,5 s
+FRICTION = 0.989    # traînée en accélération ; vitesse terminale = 0.122*0.989/0.011 = 11.0
+COAST_FRICTION = 0.985  # roue libre : frein moteur net (-53 % par seconde), il faut tenir l'accélérateur
+TURN_SPEED = 0.14       # vitesse de rotation max (rad/frame), plafond de sécurité
 LATERAL_GRIP = 0.35     # part du glissement latéral rattrapée par frame (adhérence normale)
 COLLISION_SPEED_LOSS = 0.9
 
 # Direction façon Trackmania : la rotation vient du roulement (modèle bicyclette),
 # donc rien à l'arrêt ; le braquage utile baisse avec la vitesse.
 STEER_SPEED = 0.15          # montée du volant par frame (~7 frames pour braquer à fond)
-STEER_CURVATURE = 0.010     # courbure max (1/px) à basse vitesse : rayon mini ~100 px
-STEER_SPEED_SENS = 0.75     # perte de braquage à MAX_SPEED (0.75 = il en reste 25 %)
+STEER_CURVATURE = 0.016     # courbure max (1/px) à basse vitesse : rayon mini ~62 px
+STEER_SPEED_SENS = 0.4      # perte de braquage à MAX_SPEED (il en reste 60 % : rayon ~105 px à fond)
 YAW_RESPONSE = 0.35         # vitesse à laquelle la rotation suit le volant (0-1 par frame)
 
 # Marche arrière : frein maintenu à l'arrêt
-REVERSE_ACCEL = 0.10
-REVERSE_MAX = 5.0
+REVERSE_ACCEL = 0.08
+REVERSE_MAX = 3.5
 
 # Drift : frein + braquage à vitesse élevée, l'adhérence chute tant qu'on braque
-DRIFT_GRIP = 0.12
-DRIFT_MIN_SPEED = 10.0
-DRIFT_YAW_BOOST = 1.15      # la voiture pivote plus en drift
-DRIFT_SCRUB = 0.006         # perte de vitesse par frame et par radian de glisse
+DRIFT_GRIP = 0.03            # la glisse se résorbe lentement : on reste en travers
+DRIFT_MIN_SPEED = 4.5
+DRIFT_YAW_BOOST = 1.55      # la voiture pivote plus en drift
+DRIFT_MAX_SLIP = 1.1        # rad (~63°) : au-delà l'adhérence revient (pas de tête-à-queue)
+DRIFT_SCRUB = 0.003         # perte de vitesse par frame et par radian de glisse
+DRIFT_STEER_IN = 0.3        # braquage mini pour lancer un drift (coup de frein)
+DRIFT_STEER_OUT = 0.15      # le drift tient tant qu'on braque au-delà
 
 # Murs : on glisse le long du mur, la perte dépend de l'angle d'impact
 WALL_GRAZE_LOSS = 0.04      # perte minimale en frôlant

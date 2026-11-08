@@ -15,6 +15,7 @@ class Car:
     drift_angle: float = 0.0  # Angle entre heading et velocity
     is_drifting: bool = False
     drift_time: float = 0.0
+    braking: bool = False  # frein appuyé en roulant (traces au sol)
     
     # Stats tracking
     max_speed_reached: float = 0.0

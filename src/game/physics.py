@@ -14,7 +14,8 @@ import math
 import numpy as np
 
 from src.core.constants import (
-    ACCEL, BRAKE, COAST_FRICTION, DRIFT_GRIP, DRIFT_MIN_SPEED, DRIFT_SCRUB, DRIFT_YAW_BOOST,
+    ACCEL, BRAKE, COAST_FRICTION, DRIFT_GRIP, DRIFT_MIN_SPEED, DRIFT_SCRUB, DRIFT_STEER_IN,
+    DRIFT_MAX_SLIP, DRIFT_STEER_OUT, DRIFT_YAW_BOOST,
     FRICTION, LATERAL_GRIP, MAX_SPEED, REVERSE_ACCEL, REVERSE_MAX, STEER_CURVATURE,
     STEER_SPEED, STEER_SPEED_SENS, TURN_SPEED, YAW_RESPONSE,
 )
@@ -50,9 +51,9 @@ def drive(vel, heading, steering, angular_velocity, drifting, steer, accel, brak
 
     # 3. Drift
     speed = math.hypot(v_long, v_lat)
-    if brake > 0 and abs(steering) > 0.5 and v_long > DRIFT_MIN_SPEED:
+    if brake > 0 and abs(steering) > DRIFT_STEER_IN and v_long > DRIFT_MIN_SPEED:
         drifting = True
-    elif drifting and (abs(steering) < 0.3 or v_long < DRIFT_MIN_SPEED * 0.5):
+    elif drifting and (abs(steering) < DRIFT_STEER_OUT or speed < DRIFT_MIN_SPEED * 0.5):
         drifting = False
 
     # 4. Rotation : modèle bicyclette
@@ -69,7 +70,8 @@ def drive(vel, heading, steering, angular_velocity, drifting, steer, accel, brak
         ref = math.pi if v_long < 0 else 0.0
         slip = math.atan2(v_lat, v_long) - ref - angular_velocity
         slip = (slip + math.pi) % (2 * math.pi) - math.pi
-        slip *= 1.0 - (DRIFT_GRIP if drifting else LATERAL_GRIP)
+        grip = DRIFT_GRIP if drifting and abs(slip) < DRIFT_MAX_SLIP else LATERAL_GRIP
+        slip *= 1.0 - grip
         if drifting:
             speed *= 1.0 - DRIFT_SCRUB * abs(slip)
         d = heading + ref + slip

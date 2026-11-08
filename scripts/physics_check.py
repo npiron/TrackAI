@@ -50,7 +50,7 @@ TURN_RADIUS_RANGE = (20.0, 600.0)   # px, braquage plein ; ordre de grandeur lar
 MAX_DRIFT_DEG = 18.0                # angle heading/vel en régime établi
 MAX_STEER_REACTION_FRAMES = 15      # braquage plein atteint en <= 15 frames
 MAX_YAW_RATE_RAD_S = 6.0            # vitesse de rotation max plausible
-TURN_SPEEDS = (5.0, 15.0, 22.0)
+TURN_SPEEDS = tuple(round(f * MAX_SPEED, 2) for f in (0.2, 0.6, 0.95))
 
 
 def _wrap(a):

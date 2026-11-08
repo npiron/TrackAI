@@ -93,14 +93,14 @@ def test_rotation_grows_with_speed_then_steering_softens():
         h = e.car.heading
         e.step((1.0, 1.0 if e.car.speed < v else 0.0, 0.0))
         return (e.car.heading - h), e.car.speed
-    (w_slow, v_slow), (w_fast, v_fast) = yaw(3.0), yaw(22.0)
+    (w_slow, v_slow), (w_fast, v_fast) = yaw(0.15 * MAX_SPEED), yaw(0.95 * MAX_SPEED)
     assert 0 < w_slow
-    assert v_fast / w_fast > 2 * v_slow / w_slow   # rayon bien plus grand à haute vitesse
+    assert v_fast / w_fast > 1.2 * v_slow / w_slow   # rayon plus grand à haute vitesse
 
 
 def test_brake_while_steering_starts_drift():
     e = _free()
-    while e.car.speed < 20:
+    while e.car.speed < 0.9 * MAX_SPEED:
         e.step((0.0, 1.0, 0.0))
     for _ in range(10):
         e.step((1.0, 1.0, 0.0))

@@ -110,6 +110,7 @@ class TimeAttackEnv:
             car.vel, car.heading, car.steering, car.angular_velocity, car.is_drifting, steer, accel, brake)
         car.speed = float(car.vel @ np.array([math.cos(car.heading), math.sin(car.heading)]))
         self.prev_steer = steer
+        car.braking = bool(brake > 0 and car.speed > 0.5)
 
         # 6. Position et murs : on glisse le long du mur, perte selon l'angle d'impact
         new_pos = car.pos + car.vel

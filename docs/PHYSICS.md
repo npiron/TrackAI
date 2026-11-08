@@ -52,3 +52,11 @@ La dynamique est maintenant dans `src/game/physics.py` (`drive`), partagée par 
 | `car.speed` = scalaire indépendant | `car.speed` = composante de `vel` le long du cap (négative en marche arrière) |
 
 Référence remesurée après le réglage accélération/frein (20 épisodes, piste fixe, 3 tours, graine 0) : pilote programmé 20/20, 12,56 s, 10 chocs par course (réglé pour l'ancienne physique) ; best/ s5_a 20/20, 19,48 s, 22 chocs. Toutes les mesures antérieures (15,46 s, borne 13,96 s, réglages du professeur) sont invalidées. Banc `scripts/physics_check.py` : 20/20.
+
+## Maniabilité et circuits longs (2026-11-08, réglée au clavier par Nicolas)
+
+Vitesse ramenée à l'échelle des circuits et voiture plus maniable : `MAX_SPEED` 11.3 (terminale 11,0 px/frame, ~550 px/s au lieu de ~1 100), `ACCEL` 0.122 / `FRICTION` 0.989 (50 % en 1,25 s, 90 % en 4,2 s), `BRAKE` 0.16, roue libre `COAST_FRICTION` 0.985 (−53 %/s : il faut tenir l'accélérateur), direction plus franche (`STEER_CURVATURE` 0.016, `STEER_SPEED_SENS` 0.4, `TURN_SPEED` 0.14 : rayon ~70 px lent, ~100 px à fond). Drift plus facile et tenu : coup de frein avec ≥ 30 % de volant au-dessus de 4,5 px/frame, adhérence 0.03 en drift, rotation ×1,55, tenu tant que le volant dépasse 15 %, adhérence rétablie au-delà de ~63° (pas de tête-à-queue).
+
+Circuits longs : `generate_procedural_track(seed, variant=2)` (contour d'une forme en cases, lignes droites + virages arrondis, route de 90 px, ~4 800 px en moyenne). Variante 1 (piste fixe, banc de 50 pistes) inchangée.
+
+Références (piste fixe, 3 tours, 5 épisodes, graine 0) : pilote programmé 30,48 s, 0 choc (réglages de l'ancienne physique) ; best/ ft_c 32,1 s, 19 chocs. Sur circuits longs, ft_c ne finit aucun tour (10 essais). Banc `physics_check.py` : 20/20.
