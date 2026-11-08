@@ -329,3 +329,12 @@
 ## 2026-11-07 23:48 · loop · End
 
 - Session ended after 28 step(s), 20 story(ies) done in total.
+
+## 2026-11-08 19:11 · loop · Start
+
+- Session of 75 steps on `goal/main` (team: trio).
+
+## 2026-11-08 19:12 · lead · Plan
+- E5 clos : v2_b en best/ (banc 0,16 choc/course, statique 14,16 s vs 14,12 s). A intermédiaire atteint, B manqué de 0,04 s.
+- E6 ouvert, 4 stories écrites (refiner) : S-21 récompense simple, S-22 ppo_finetune.py (PPO lr faible + perte imitation décroissante), S-23 deux candidats mesurés, S-24 promotion/verdict. Banc 0-49 reste hors entraînement.
+- Critère mis à jour (statut). Pas de GOAL_REACHED : B non atteint.

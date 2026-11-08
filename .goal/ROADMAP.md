@@ -39,14 +39,15 @@
 - notes: stories S-10 à S-12. Physique inchangée. Mesure d'abord.
 
 ### E5 · Ré-imitation avec observation v2 (BC + DAgger, mix fixe + procédural)
-- status: open
+- status: done
+- result: ppo_v2_b promu (S-19) : banc 50/50, 0,16 choc/course (8 chocs, 6 pistes), statique 20/20, 0 choc, 14,16 s (professeur 14,12 s : +0,04 s). Critère A intermédiaire atteint, B manqué de 0,04 s.
 - outcome: modèle v2 au moins aussi rapide que le professeur réglé (14,12 s, E7) en statique, 0 choc et < 1 choc/course sur le banc 50 pistes ; promu dans best/ (ancien archivé).
 - notes: dépend d'E7 (professeur réglé). Professeur étiqueté depuis `ta` (pas depuis obs v2). Entraînements ≤ 30 min. Stories S-16 à S-19.
 
 ### E6 · Affinage PPO sans oubli depuis le modèle E5
 - status: open
 - outcome: PPO (lr faible, petit clip, perte d'imitation auxiliaire décroissante, récompense progression + pénalité de temps + forte pénalité par choc, 8 envs, mix fixe + procédural) : statique < 14,62 s, 0 choc ; banc procédural encore réduit. Critère A+B atteint.
-- notes: dépend d'E5. Étape 4 du goal (professeur optimisé hors ligne) seulement si E6 plafonne.
+- notes: dépend d'E5 (fait). Stories S-21 à S-24 (récompense simple, script PPO+aux, 2 candidats, promotion). Étape 4 du goal (professeur optimisé hors ligne) seulement si E6 plafonne.
 
 ## Decisions
 
@@ -61,3 +62,5 @@
 - 2026-11-07 : Goal modifié (étape 0 ajoutée, physique Trackmania). Mesures d'avant invalidées (pilote 12,56 s mais 10 chocs/course, best/ 19,48 s, 22 chocs). Nouvel epic E7 (recalage du professeur) placé avant E4/E5/E6 ; critère B se référera au temps du professeur réglé, mesuré par S-13/S-14. E5 dépend d'E7.
 
 - 2026-11-07 : E7 et E4 clos. Professeur réglé : 14,12 s, 0 choc statique (20/20) ; banc 50 pistes 0 choc, 16,75 s (metrics.json 23:24-23:25). Borne 12,77 s (calibration --kwin 24, écart 1,35 s). Baseline best/ : 19,48 s / 22 chocs statique, 43,16 chocs banc. Critère B = temps < 14,12 s. Réserve : professeur réglé sur les graines 0-49 : l'entraînement E5 utilise des graines de piste ≥ 1000 pour garder le banc en test.
+
+- 2026-11-08 : E5 clos. v2_b (best/) : banc 0,16 choc/course (A intermédiaire OK), statique 14,16 s vs 14,12 s (B manqué de 0,04 s). E6 (PPO + perte d'imitation) devient l'epic actif pour passer sous 14,12 s et viser 0 choc au banc ; S-21 à S-24.
