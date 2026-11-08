@@ -80,9 +80,19 @@ class Runner:
         return ta.lap_count * 100 + sum(ta.cp_visited)
 
 
-def _font(size, bold=False):
+BODY_FONT = "Avenir Next,Helvetica Neue,Arial"
+DISPLAY_FONTS = {  # police des titres et gros chiffres
+    "avenir": ("Avenir Next,Helvetica Neue", False),
+    "din": ("DIN Condensed", False),
+    "futura": ("Futura", True),
+    "racing": ("Avenir Next Condensed", True),   # condensée et en italique, façon course
+    "poster": ("Phosphate,Impact", False),
+}
+
+
+def _font(size, bold=False, family=BODY_FONT, italic=False):
     import pygame
-    return pygame.font.SysFont("Avenir Next,Helvetica Neue,Arial", size, bold=bold)
+    return pygame.font.SysFont(family, size, bold=bold, italic=italic)
 
 
 NEON_THEMES = {
@@ -141,8 +151,10 @@ def main(argv=None):
     p.add_argument("--style", default="classic", choices=("classic", "trails", "neon", "chart"),
                    help="classic : classement ; trails : trajectoires de chaque génération ; "
                         "neon : nuit + caméra qui suit la tête ; chart : courbe d'apprentissage en bas")
+    p.add_argument("--font", default="racing", choices=tuple(DISPLAY_FONTS), help="police des titres")
     p.add_argument("--theme", default="cyber", choices=tuple(NEON_THEMES), help="pour --style neon")
     p.add_argument("--cam", default="follow", choices=("follow", "full"), help="neon : caméra qui suit la tête ou circuit entier")
+    p.add_argument("--minimap", action="store_true", help="neon (caméra qui suit) : mini-carte en haut à droite")
     p.add_argument("--glow-trails", action="store_true", help="neon : traînées lumineuses de chaque génération")
     p.add_argument("--progress-csv", default="data/checkpoints/long/progress.csv", help="pour --style chart")
     p.add_argument("--still", type=float, default=None, help="image fixe à T secondes (PNG dans --out)")
@@ -169,11 +181,13 @@ def main(argv=None):
     screen = pygame.display.set_mode((VW, VH) if a.preview else (1, 1))
     frame = pygame.Surface((VW, VH))
     world = pygame.Surface((W, H))
-    f_title, f_sub, f_row, f_tag, f_big = _font(64, True), _font(34), _font(36), _font(22, True), _font(46, True)
-    f_huge = _font(150, True)
+    fam, ital = DISPLAY_FONTS[a.font]
+    f_title, f_big, f_huge = _font(72, True, fam, ital), _font(52, True, fam, ital), _font(170, True, fam, ital)
+    f_sub, f_row, f_tag = _font(34), _font(36, True), _font(22, True)
     tw, th = VW, int(VW * H / W)
     ty = 300
     trails = [[] for _ in runners]
+    cam_state = {"x": 0.0, "y": 0.0, "z": None}
     base_bg = None
     if a.style == "neon":
         draw_track(world, track)
@@ -266,30 +280,54 @@ def main(argv=None):
             lead = max(runners, key=lambda r: (r.result is not None and r.result[0] == "ok", r.progress,
                                                -(r.result[1] if r.result else 0)))
             if a.cam == "follow":
-                # caméra qui suit la voiture en tête, zoom x1,8, mini-carte en haut à droite
-                cx, cy = lead.env.ta.car.pos
-                vw_, vh_ = int(W / 1.8), int(W / 1.8 * 1.25)
-                x0 = int(min(max(cx - vw_ / 2, 0), W - vw_))
-                y0 = int(min(max(cy - vh_ / 2, 0), H - vh_))
-                view = world.subsurface(pygame.Rect(x0, y0, vw_, min(vh_, H - y0))).copy()
-                vh2 = int(VW * view.get_height() / view.get_width())
+                # caméra qui cadre le peloton de tête (les voitures encore en course les plus avancées),
+                # zoom de 1,4x à 2,6x selon leur écart, mouvements lissés ; mini-carte en haut à droite
+                running = [r for r in runners if not r.done] or [lead]
+                running.sort(key=lambda r: r.progress, reverse=True)
+                top = [r for r in running if r.progress >= running[0].progress - 2][:4]
+                xs = [float(r.env.ta.car.pos[0]) for r in top]
+                ys = [float(r.env.ta.car.pos[1]) for r in top]
+                tx, ty_ = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+                span = max(max(xs) - min(xs), max(ys) - min(ys)) + 260
+                tz = min(2.6, max(W / H, W / span))  # vue carrée : zoom >= W/H
+                cam = cam_state
+                if cam["z"] is None:
+                    cam.update(x=tx, y=ty_, z=tz)
+                k = 0.06 if a.still is None else 1.0
+                cam["x"] += (tx - cam["x"]) * k
+                cam["y"] += (ty_ - cam["y"]) * k
+                cam["z"] += (tz - cam["z"]) * k * 0.6
+                vw_ = int(W / cam["z"])
+                vh_ = min(H, vw_)
+                x0 = int(min(max(cam["x"] - vw_ / 2, 0), W - vw_))
+                y0 = int(min(max(cam["y"] - vh_ / 2, 0), H - vh_))
+                view = world.subsurface(pygame.Rect(x0, y0, vw_, vh_)).copy()
+                vh2 = VW
                 frame.blit(pygame.transform.smoothscale(view, (VW, vh2)), (0, 260))
-                mini = pygame.transform.smoothscale(world, (360, int(360 * H / W)))
-                pygame.draw.rect(frame, th_["edges"][0], pygame.Rect(VW - 390, 278, 364, mini.get_height() + 4), 2,
-                                 border_radius=6)
-                frame.blit(mini, (VW - 388, 280))
+                # cadre de la caméra sur la mini-carte
+                mk = 360 / W
+                if a.minimap:
+                    mini = pygame.transform.smoothscale(world, (360, int(360 * H / W)))
+                    pygame.draw.rect(frame, th_["edges"][0], pygame.Rect(VW - 390, 278, 364, mini.get_height() + 4), 2,
+                                     border_radius=6)
+                    frame.blit(mini, (VW - 388, 280))
+                    pygame.draw.rect(frame, (255, 255, 255), pygame.Rect(VW - 388 + x0 * mk, 280 + y0 * mk, vw_ * mk, vh_ * mk), 1)
             else:
                 vh2 = th
                 frame.blit(pygame.transform.smoothscale(world, (tw, th)), (0, 300))
                 vh2 += 40
             gen = f_huge.render(f"GÉN {runners.index(lead) + 1}", True, lead.color)
-            frame.blit(gen, (60, 260 + vh2 + 20))
-            frame.blit(f_row.render(f"en tête · {lead.label}", True, INK), (66, 260 + vh2 + 190))
-            leaderboard(260 + vh2 + 270, rows=list(reversed(range(n)))[:5 if a.cam == "follow" else 7])
-            frame.blit(f_title.render(a.title, True, th_["title"]), (60, 90))
-            frame.blit(f_sub.render(subtitle, True, th_["sub"]), (60, 175))
+            gy = 260 + vh2 + 10
+            frame.blit(gen, (54, gy))
             c = f_big.render(f"{t:05.2f} s", True, INK)
-            frame.blit(c, (VW - 60 - c.get_width(), 95))
+            frame.blit(c, (VW - 60 - c.get_width(), gy + gen.get_height() - c.get_height() - 10))
+            frame.blit(f_row.render(f"en tête · {lead.label}", True, INK), (66, gy + gen.get_height() + 4))
+            leaderboard(gy + gen.get_height() + 70, rows=list(reversed(range(n)))[:4 if a.cam == "follow" else 7])
+            title = f_title.render(a.title, True, th_["title"])
+            if title.get_width() > VW - 120:
+                title = pygame.transform.smoothscale(title, (VW - 120, int(title.get_height() * (VW - 120) / title.get_width())))
+            frame.blit(title, (60, 150 - title.get_height()))
+            frame.blit(f_sub.render(subtitle, True, th_["sub"]), (60, 175))
             if final:
                 best_banner(260 + vh2 // 2)
             return
