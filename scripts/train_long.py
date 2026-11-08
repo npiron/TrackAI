@@ -19,11 +19,12 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 import numpy as np
 
 
-def make_env(rank, seed, wall_penalty):
+def make_env(rank, seed, wall_penalty, laps=1, time_penalty=None):
     def _f():
         from src.rl.wrappers import GymTimeAttack
-        env = GymTimeAttack(render_mode=None, procedural=True, laps=1, obs_version=2, track_variant=2,
-                            reward_mode="simple", wall_penalty=wall_penalty)
+        kw = {} if time_penalty is None else {"time_penalty": time_penalty}
+        env = GymTimeAttack(render_mode=None, procedural=True, laps=laps, obs_version=2, track_variant=2,
+                            reward_mode="simple", wall_penalty=wall_penalty, **kw)
         env.reset(seed=seed + rank)
         return env
     return _f
@@ -39,6 +40,8 @@ def main(argv=None):
     p.add_argument("--wall-penalty", type=float, default=-2.5,
                    help="par pas en contact avec un mur (un tour rapporte ~+100) : il apprend à ne pas frotter")
     p.add_argument("--lr", type=float, default=3e-4)
+    p.add_argument("--laps", type=int, default=1)
+    p.add_argument("--time-penalty", type=float, default=None, help="par pas (défaut du wrapper : 0.01)")
     p.add_argument("--ent", type=float, default=0.01)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--init", default=None)
@@ -52,10 +55,11 @@ def main(argv=None):
     from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor, VecNormalize
 
     os.makedirs(a.out_dir, exist_ok=True)
-    venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty) for i in range(a.n_envs)]))
+    venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty, a.laps, a.time_penalty)
+                                      for i in range(a.n_envs)]))
     if a.init:
         venv = VecNormalize.load(a.init[:-4] + "_vecnormalize.pkl", venv)
-        model = PPO.load(a.init, env=venv, device="cpu")
+        model = PPO.load(a.init, env=venv, device="cpu", custom_objects=dict(learning_rate=a.lr, lr_schedule=lambda _: a.lr))
         gen0 = int(os.path.basename(a.init)[4:7])
     else:
         venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_obs=10.0, gamma=0.995)
@@ -82,7 +86,7 @@ def main(argv=None):
         def _on_step(self):
             for info in self.locals["infos"]:
                 if "episode" in info:
-                    self.laps.append(1.0 if info.get("laps_done", 0) >= 1 else 0.0)
+                    self.laps.append(1.0 if info.get("laps_done", 0) >= a.laps else 0.0)
                     self.prog.append(info.get("checkpoints_reached", 0))
                     self.hits.append(info.get("wall_hits", 0))
             if self.num_timesteps >= self.next_save:
