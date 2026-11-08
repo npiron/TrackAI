@@ -45,7 +45,8 @@
 - notes: dépend d'E7 (professeur réglé). Professeur étiqueté depuis `ta` (pas depuis obs v2). Entraînements ≤ 30 min. Stories S-16 à S-19.
 
 ### E6 · Affinage PPO sans oubli depuis le modèle E5
-- status: open
+- status: done
+- result: ft_c promu (S-24) : statique 14,08 s / 0 choc, banc 0,12 choc/course. A et B atteints ; B de justesse (0,04 s, dépendant de la graine).
 - outcome: PPO (lr faible, petit clip, perte d'imitation auxiliaire décroissante, récompense progression + pénalité de temps + forte pénalité par choc, 8 envs, mix fixe + procédural) : statique < 14,62 s, 0 choc ; banc procédural encore réduit. Critère A+B atteint.
 - notes: dépend d'E5 (fait). Stories S-21 à S-24 (récompense simple, script PPO+aux, 2 candidats, promotion). Étape 4 du goal (professeur optimisé hors ligne) seulement si E6 plafonne.
 
@@ -64,3 +65,5 @@
 - 2026-11-07 : E7 et E4 clos. Professeur réglé : 14,12 s, 0 choc statique (20/20) ; banc 50 pistes 0 choc, 16,75 s (metrics.json 23:24-23:25). Borne 12,77 s (calibration --kwin 24, écart 1,35 s). Baseline best/ : 19,48 s / 22 chocs statique, 43,16 chocs banc. Critère B = temps < 14,12 s. Réserve : professeur réglé sur les graines 0-49 : l'entraînement E5 utilise des graines de piste ≥ 1000 pour garder le banc en test.
 
 - 2026-11-08 : E5 clos. v2_b (best/) : banc 0,16 choc/course (A intermédiaire OK), statique 14,16 s vs 14,12 s (B manqué de 0,04 s). E6 (PPO + perte d'imitation) devient l'epic actif pour passer sous 14,12 s et viser 0 choc au banc ; S-21 à S-24.
+
+- 2026-11-08 : E6 clos, critère A+B atteint sur best/ = ft_c (metrics.json 19:46 : banc 50/50, 0,12 choc ; statique 14,08 s, 0 choc). GOAL_REACHED créé. Étape 4 (professeur optimisé) optionnelle, non lancée ; cible finale 0 choc au banc non exigée par le critère.

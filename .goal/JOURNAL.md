@@ -408,3 +408,15 @@
 - Diff relu : 2 lignes dans `scripts/watch_best.py` (import + `obs_version=detect_obs_version(model)`), rien d'autre.
 - `import scripts.watch_best` : OK. Tests rapides : 72 passed, 1 skipped.
 - `best.zip` : version 2, observation (35,), `predict` fonctionne. Pas de métrique (story hors critère de succès).
+
+## 2026-11-08 19:50 · lead · Plan
+- E6 clos : best/ = ft_c, rejoué par le reviewer (metrics.json 19:46) : banc 50/50, 0,12 choc/course (<1) ; statique 20/20, 0 choc, 14,08 s (<14,12 s). Critère A+B atteint, statut « reached », GOAL_REACHED créé.
+- Réserve : B tient de 0,04 s et dépend de la graine ; étape 4 optionnelle non lancée. Aucun nouvel epic.
+
+## 2026-11-08 19:51 · loop · Goal reached
+
+- The lead found the success criterion met. Stopping.
+
+## 2026-11-08 19:51 · loop · End
+
+- Session ended after 16 step(s), 26 story(ies) done in total.

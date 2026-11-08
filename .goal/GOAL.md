@@ -30,4 +30,4 @@ Priorité : d'abord zéro choc sur pistes procédurales, ensuite la vitesse.
 > Maintained by the planner. Do not edit by hand.
 
 - criterion: deux conditions mesurées sur un même modèle, par le reviewer, avec observation v2 : (A) banc procédural fixe (50 pistes, graines 0 à 49, 1 épisode par piste, 3 tours, `scripts/eval.py --bench`) : 50/50 finis et moyenne de chocs < 1 par course (intermédiaire ; cible finale 0 choc) ; (B) piste fixe (`eval.py --static --laps 3`, 20 épisodes, graine 0) : 20/20, 0 choc, temps total moyen < celui du professeur réglé à l'étape 0 (nouvelle physique) = 14,12 s (mesuré, 0 choc). Priorité : A avant B. Lecture retenue du but : « roule sans choc » = < 1 choc/course sur pistes jamais vues.
-- status: in progress (best/ = v2_b : banc 50/50, 0,16 choc/course → A intermédiaire atteint ; statique 14,16 s / 0 choc vs cible < 14,12 s ; E6 PPO en cours)
+- status: reached (best/ = ft_c, mesuré par le reviewer le 2026-11-08 19:46 dans metrics.json : banc 50/50, 0,12 choc/course < 1 ; statique 20/20, 0 choc, 14,08 s < 14,12 s)
