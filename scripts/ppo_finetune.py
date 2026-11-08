@@ -166,6 +166,7 @@ def main(argv=None):
         learning_rate=a.lr, clip_range=a.clip, n_steps=512, batch_size=512, n_epochs=4,
         ent_coef=0.0, gamma=0.995, gae_lambda=0.95))
     model.aux_coef0 = a.aux_coef0
+    model.aux_coef_hist = None  # l'historique est sauvé dans le .zip : repartir de zéro
     print(f"modèle initial chargé : {a.init} (obs v{obs_version}), {a.n_envs} env(s)", flush=True)
 
     # Jeu de données professeur : le modèle initial conduit (DAgger-like), l'heuristique étiquette.

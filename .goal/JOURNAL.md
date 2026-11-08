@@ -388,3 +388,13 @@
 - Rejoué ft_c/ft_d : statique 14,08 s / 0 choc (c), 14,26 s / 0 choc (d) ; banc c 0,12 (6 chocs), d 0,48 — identique au doc et à metrics.json.
 - Tests rapides : 72 passed, 1 skipped. Doublons de metrics.json créés par mon rejeu retirés (4 entrées, sans doublon).
 - Verdict : ft_c < 14,12 s strict, gain de 0,04 s dépendant de la graine ; plus d'itération PPO. scripts/watch_best.py (S-25) exclu du commit.
+
+## 2026-11-08 19:48 · dev · S-24 Promotion du meilleur candidat PPO
+- ft_c promu dans best/ (v2_b archivé dans best_v2b/) : statique 14,08 s / 0 choc, banc 0,12 choc/course, rejeu identique à best.json.
+- BEST_STATUS.md réécrit ; section « Critère » dans PPO_V2.md : A et B atteints, B de justesse (0,04 s, dépendant de la graine).
+- Correctif mineur ppo_finetune.py (aux_coef_hist remis à zéro au chargement) pour que le test passe avec le nouveau best.
+
+## 2026-11-08 19:49 · reviewer · S-24 approuvée
+- Rejoué sur best/ : statique 20/20, 14,08 s, 0 choc ; banc 50/50, 16,22 s, 0,12 choc/course (6 chocs, max 1) = best.json. best_v2b/ contient 3 fichiers.
+- pytest complet : 73 passed, 1 skipped. Docs BEST_STATUS.md et section Critère de PPO_V2.md cohérentes avec les chiffres.
+- Doublons de metrics.json créés par mon rejeu retirés (181 entrées). scripts/watch_best.py (S-25) exclu du commit.

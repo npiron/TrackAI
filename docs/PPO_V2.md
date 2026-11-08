@@ -70,3 +70,12 @@ Mesure : mêmes commandes `eval.py` que S-23 avec `X` = `c` ou `d`.
 **Meilleur de S-23 + S-26 : ft_c** (règle de S-23 : statique 20/20 et 0 choc, puis banc 50/50 avec le moins de chocs, puis temps). Il passe strictement sous 14,12 s (14,08 s, soit 4 pas de simulation de moins que le professeur) et améliore aussi le banc (0,12 contre 0,16 pour v2_b, 16,22 s contre 16,47 s).
 
 **Réserves** : ft_d, même réglage avec une autre graine, est plus lent (14,26 s) et son banc est à 0,48 : le résultat dépend de la graine. Le gain de ft_c sur 14,12 s est de 0,04 s (une seule graine favorable, statique déterministe), donc faible. Aucune autre itération PPO n'est prévue : ft_c est le candidat pour S-24 (promotion). Si S-24 juge le gain non significatif, c'est le verdict de plateau.
+
+## Critère (S-24)
+
+Promotion : `ppo_v2_ft_c` remplace `ppo_v2_b` dans `data/models/best/` (ancien best copié dans `data/models/best_v2b/`). Mesures rejouées sur `best/` : statique 20/20, 14,08 s, 0 choc ; banc 50/50, 16,22 s, 0,12 choc/course (6 chocs, max 1).
+
+- **A (banc 50/50, < 1 choc/course)** : **atteint**. 50/50 finis, 0,12 choc/course (v2_b : 0,16).
+- **B (statique < 14,12 s, 0 choc, 20/20)** : **atteint**, de justesse : 14,08 s, 0 choc, 20/20 (4 pas de simulation sous le professeur à 14,12 s).
+
+Réserves : le gain sur B est de 0,04 s et dépend de la graine (`ft_d`, même réglage : 14,26 s, banc 0,48 ; `ft_a` S-23 : 14,12 s, non strict). Le résultat n'a été obtenu que pour une graine sur deux ; la robustesse (eps) n'est pas mesurée. Plus d'itération PPO prévue.

@@ -1,25 +1,26 @@
-# État du meilleur modèle (S-19)
+# État du meilleur modèle (S-24)
 
 ## Modèle
-`data/models/best/best.zip` (+ `best_vecnormalize.pkl`, `best.json`), gitignoré : `ppo_v2_b` (S-18),
-imitation BC + 8 tours DAgger sur le professeur heuristique, observation v2 (`obs_version: 2`, détectée
-automatiquement par `scripts/eval.py`). Commandes et comparatif : `docs/IMITATION_V2.md` (« Candidats n°2 »).
+`data/models/best/best.zip` (+ `best_vecnormalize.pkl`, `best.json`), gitignoré : `ppo_v2_ft_c` (S-26),
+affinage PPO + imitation auxiliaire de `ppo_v2_b` (lr 3e-5, wall-penalty -100, 3 M de pas, graine 3),
+observation v2 (`obs_version: 2`). Commandes et comparatif : `docs/PPO_V2.md`.
 
-Ancien best (`ppo_s5_a`, physique obsolète : 19,48 s / 22 chocs statique, 43,16 chocs au banc) archivé tel
-quel dans `data/models/best_s5a_v1/`. Plus anciens : `best_t65` (voir `data/models/`).
+Ancien best `ppo_v2_b` (S-18 : statique 14,16 s / 0 choc, banc 0,16 choc/course) archivé tel quel dans
+`data/models/best_v2b/`. Plus anciens : `best_s5a_v1`, `best_t65` (voir `data/models/`).
 
 ## Promotion
-Règle : statique 20/20 finis et 0 choc, banc 50/50 finis avec moins de chocs que l'ancien best. `ppo_v2_b` :
-statique 20/20, 0 choc ; banc 50/50, 8 chocs au total (0,16/course) contre 43,16 : **promu**.
+Règle (S-23) : statique 20/20 et 0 choc, puis chocs du banc, puis temps statique. `ppo_v2_ft_c` : statique
+20/20, 0 choc, 14,08 s (contre 14,16 s) ; banc 50/50, 6 chocs (0,12/course) contre 8 (0,16) : **strictement
+meilleur, promu**. Réserve : gain faible (0,04 s, 2 chocs sur 50 courses) et dépendant de la graine
+(`ft_d`, même réglage, graine 4 : 14,26 s, banc 0,48).
 
 ## Reproduction
-Entraînement (~3 min 18 s) :
+Entraînement (~15 min, 3 400 pas/s ; `--init` = l'ancien best, aujourd'hui `data/models/best_v2b/best.zip`) :
 ```
-SDL_VIDEODRIVER=dummy .venv/bin/python scripts/imitate.py --obs-version 2 --mix-static --laps 3 \
-  --episodes 60 --epochs 8 --lr 2e-4 --wall-penalty -50 --hit-weight 10 \
-  --dagger 8 --dagger-episodes 16 --dagger-eps 0 0.05 --seed 1801 --out data/checkpoints/ppo_v2_b
+SDL_VIDEODRIVER=dummy .venv/bin/python scripts/ppo_finetune.py --init data/models/best_v2b/best.zip --timesteps 3000000 \
+  --n-envs 4 --lr 3e-5 --wall-penalty -100 --seed 3 --max-minutes 28 --out data/checkpoints/ppo_v2_ft_c
 ```
-Évaluation (relancée le 2026-11-07 23:45, mêmes chiffres que `best.json`) :
+Évaluation (rejouée le 2026-11-08 19:46 sur `best/`, mêmes chiffres que `best.json`) :
 ```
 SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/best.zip --static --laps 3 --episodes 20 --seed 0
 SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/best.zip --bench --laps 3
@@ -28,12 +29,13 @@ SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/models/best/
 ## Mesures
 | mesure | résultat |
 |---|---|
-| statique, 20 ép., laps 3, seed 0 | 20/20, 14,16 s, 0 choc |
-| banc, 50 pistes, laps 3 | 50/50, 16,47 s, 0,16 choc/course (max 3, 6 pistes, 8 chocs) |
+| statique, 20 ép., laps 3, seed 0 | 20/20, 14,08 s, 0 choc |
+| banc, 50 pistes, laps 3 | 50/50, 16,22 s, 0,12 choc/course (max 1, 6 pistes, 6 chocs) |
 
-Pistes fautives du banc : 6, 21, 22, 25, 38 (1 choc) et 39 (3 chocs). Professeur : 14,12 s statique, 16,75 s banc, 0 choc.
+Pistes fautives du banc (indice dans `wall_hits_by_seed`) : 4, 6, 12, 20, 21, 39 (1 choc chacune). Professeur : 14,12 s statique, 16,75 s banc, 0 choc.
 
 ## Limites
-- Pas encore 0 choc au banc ; statique 14,16 s contre 14,12 s pour le professeur.
+- Pas encore 0 choc au banc (6 pistes sur 50) ; critère A (< 1 choc/course) atteint, voir `docs/PPO_V2.md`.
+- Gain de 0,04 s sur le professeur dépendant de la graine, statique déterministe.
 - Robustesse (eps) non mesurée pour ce modèle.
 - Effet de bord : l'env réécrit `replays/personal_best.json`.
