@@ -1,7 +1,7 @@
 """Gros entraînement par renforcement pur (PPO, depuis zéro) sur les circuits longs aléatoires.
 
-Pas de professeur : récompense = progression le long de la piste - pénalité de temps (+ petite pénalité
-par choc, les exploits sont permis). Observation v2. Une « génération » est sauvée tous les --gen-steps pas
+Pas de professeur : récompense = progression le long de la piste - pénalité de temps - pénalité nette
+par pas en contact avec un mur (frotter les murs ne paie pas ; les autres exploits sont permis). Observation v2. Une « génération » est sauvée tous les --gen-steps pas
 dans --out-dir (gen_001.zip + _vecnormalize.pkl), pour suivre les progrès et faire la vidéo d'évolution.
 
 Usage : .venv/bin/python scripts/train_long.py --minutes 180
@@ -36,7 +36,8 @@ def main(argv=None):
     p.add_argument("--gen-steps", type=int, default=3_000_000)
     p.add_argument("--early", type=int, nargs="*", default=[20_000, 50_000, 100_000, 200_000, 400_000, 800_000, 1_500_000],
                    help="générations rapprochées au début (pour voir l'IA partir de zéro)")
-    p.add_argument("--wall-penalty", type=float, default=-0.5)
+    p.add_argument("--wall-penalty", type=float, default=-2.5,
+                   help="par pas en contact avec un mur (un tour rapporte ~+100) : il apprend à ne pas frotter")
     p.add_argument("--lr", type=float, default=3e-4)
     p.add_argument("--ent", type=float, default=0.01)
     p.add_argument("--seed", type=int, default=7)
