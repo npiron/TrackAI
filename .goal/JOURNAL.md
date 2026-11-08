@@ -373,3 +373,8 @@
 - Inbox S-23 : levier accepté (ft_a 14,12 s égal au professeur, banc 0,18 ; ft_b banc 0,48). Une dernière itération PPO : S-26 (lr 3e-5, wall-penalty -100, 3 M de pas, graines 3 et 4), ready, priorité 1. Message déplacé en done.
 - S-24 (promotion/verdict) dépend désormais de S-26 ; après S-26 plus d'itération PPO : plateau documenté si B reste manqué, étape 4 (professeur optimisé) à envisager alors.
 - Critère inchangé, pas de GOAL_REACHED.
+
+## 2026-11-08 19:30 · reviewer · S-23 approuvée
+- Tests rapides : 72 passed, 1 skipped. Replay de ft_a : statique 14,12 s / 0 choc / 20/20 ; banc 16,47 s / 0,18 choc, identiques au doc.
+- metrics.json : 175 entrées, 4 entrées ft_a/ft_b présentes sans doublon (mes deux rejeux retirés).
+- Tableau et conclusion honnêtes : A+B non atteint, levier proposé dans l'inbox. `scripts/watch_best.py` (modif non liée) laissé hors du commit.
