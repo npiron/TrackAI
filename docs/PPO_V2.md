@@ -44,3 +44,29 @@ SDL_VIDEODRIVER=dummy .venv/bin/python scripts/eval.py --model data/checkpoints/
 
 **Conclusion** : le critère A+B n'est pas atteint. ft_a gagne 0,04 s au statique sur v2_b (au niveau du professeur, 14,12 s, pas strictement en dessous : B exige < 14,12 s), mais ne bat pas v2_b sur les chocs du banc (0,18 contre 0,16, différence de 1 choc sur 50 courses, non significative). ft_b dégrade le banc (0,48, sous la limite d'1 choc/course mais nettement pire) : un lr plus fort détériore la robustesse sans gain de temps.
 Levier proposé pour un dernier tour (via inbox) : lr 3e-5 comme ft_a mais `--wall-penalty -100` et `--timesteps 3000000` (~16 min), pour pousser les chocs du banc sous 0,16 ; le temps statique semble plafonné au professeur, donc B strict paraît hors d'atteinte par ce chemin.
+
+## S-26 : dernière itération (wall-penalty -100, 3 M de pas)
+
+Même lr 3e-5 que ft_a, pénalité de choc doublée, 3 M de pas (~15 min chacun en parallèle, ~3 400 pas/s), graines 3 et 4.
+
+```
+SDL_VIDEODRIVER=dummy .venv/bin/python scripts/ppo_finetune.py --init data/models/best/best.zip --timesteps 3000000 \
+  --n-envs 4 --lr 3e-5 --wall-penalty -100 --seed 3 --max-minutes 28 --out data/checkpoints/ppo_v2_ft_c
+SDL_VIDEODRIVER=dummy .venv/bin/python scripts/ppo_finetune.py --init data/models/best/best.zip --timesteps 3000000 \
+  --n-envs 4 --lr 3e-5 --wall-penalty -100 --seed 4 --max-minutes 28 --out data/checkpoints/ppo_v2_ft_d
+```
+
+Mesure : mêmes commandes `eval.py` que S-23 avec `X` = `c` ou `d`.
+
+| Modèle | Statique temps | Statique chocs | Statique finis | Banc temps | Banc chocs moy. / total | Banc pistes fautives |
+|---|---|---|---|---|---|---|
+| v2_b (`best/`) | 14,16 s | 0 | 20/20 | 16,47 s | 0,16 / 8 | 6/50 |
+| ft_a (lr 3e-5, graine 1) | 14,12 s | 0 | 20/20 | 16,47 s | 0,18 / 9 | 6/50 |
+| ft_c (wp -100, graine 3) | **14,08 s** | 0 | 20/20 | 16,22 s | **0,12 / 6** | 6/50 |
+| ft_d (wp -100, graine 4) | 14,26 s | 0 | 20/20 | 16,42 s | 0,48 / 24 | 8/50 |
+
+(Banc : 50/50 finis pour tous.)
+
+**Meilleur de S-23 + S-26 : ft_c** (règle de S-23 : statique 20/20 et 0 choc, puis banc 50/50 avec le moins de chocs, puis temps). Il passe strictement sous 14,12 s (14,08 s, soit 4 pas de simulation de moins que le professeur) et améliore aussi le banc (0,12 contre 0,16 pour v2_b, 16,22 s contre 16,47 s).
+
+**Réserves** : ft_d, même réglage avec une autre graine, est plus lent (14,26 s) et son banc est à 0,48 : le résultat dépend de la graine. Le gain de ft_c sur 14,12 s est de 0,04 s (une seule graine favorable, statique déterministe), donc faible. Aucune autre itération PPO n'est prévue : ft_c est le candidat pour S-24 (promotion). Si S-24 juge le gain non significatif, c'est le verdict de plateau.

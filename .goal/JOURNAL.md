@@ -378,3 +378,13 @@
 - Tests rapides : 72 passed, 1 skipped. Replay de ft_a : statique 14,12 s / 0 choc / 20/20 ; banc 16,47 s / 0,18 choc, identiques au doc.
 - metrics.json : 175 entrées, 4 entrées ft_a/ft_b présentes sans doublon (mes deux rejeux retirés).
 - Tableau et conclusion honnêtes : A+B non atteint, levier proposé dans l'inbox. `scripts/watch_best.py` (modif non liée) laissé hors du commit.
+
+## 2026-11-08 19:44 · dev · S-26 Dernière itération PPO
+- ft_c et ft_d (lr 3e-5, wall-penalty -100, 3 M de pas, graines 3 et 4), ~15 min chacun en parallèle.
+- ft_c : statique 14,08 s / 0 choc (sous 14,12 s strict), banc 0,12 choc/course ; ft_d : 14,26 s, banc 0,48.
+- Doc PPO_V2.md complétée, meilleur = ft_c ; gain faible et dépendant de la graine, plus d itération PPO.
+
+## 2026-11-08 19:46 · reviewer · S-26 approuvée
+- Rejoué ft_c/ft_d : statique 14,08 s / 0 choc (c), 14,26 s / 0 choc (d) ; banc c 0,12 (6 chocs), d 0,48 — identique au doc et à metrics.json.
+- Tests rapides : 72 passed, 1 skipped. Doublons de metrics.json créés par mon rejeu retirés (4 entrées, sans doublon).
+- Verdict : ft_c < 14,12 s strict, gain de 0,04 s dépendant de la graine ; plus d'itération PPO. scripts/watch_best.py (S-25) exclu du commit.
