@@ -261,7 +261,7 @@ def play(laps, long_tracks=False, seed=None):
             audio.silence()   # moteur coupé, mais le flux continue (fanfare d'arrivée)
         # --- dessin ---
         nxt = next((i for i, v in enumerate(env.cp_visited) if not v), None)
-        draw_track(screen, track, checkpoints=nxt)
+        draw_track(screen, track, checkpoints=nxt, visited=env.cp_visited)
         if bot and countdown <= 0:
             f = bot["frames"][min(int(round(env.t * FPS)), len(bot["frames"]) - 1)]
             ghost_layer.fill((0, 0, 0, 0))

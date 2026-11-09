@@ -8,8 +8,10 @@ from src.game.track import Track
 from src.game.car import Car
 from src.utils.math_utils import vec
 
-def draw_track(screen, track: Track, checkpoints=None):
-    """checkpoints : None = masqués (piste peinte), "all" = tous, un entier = seulement cette porte (la prochaine)."""
+def draw_track(screen, track: Track, checkpoints=None, visited=None):
+    """checkpoints : None = masqués (piste peinte), "all" = tous (style debug), un entier = la prochaine porte.
+    visited (liste de booléens) : toutes les portes restantes sont dessinées, la prochaine en évidence,
+    celles déjà passées disparaissent."""
     # Procédural (Surface pré-rendue)
     if getattr(track, 'spline_points', None) is not None and len(track.spline_points):
         if track.visual_surface is None:
@@ -29,7 +31,10 @@ def draw_track(screen, track: Track, checkpoints=None):
     painted = getattr(track, 'visual_surface', None) is not None
     # Checkpoints : deux piliers de part et d'autre de la route (arche vue de dessus) + trait discret
     for i, (cx, cy, angle_or_orient) in enumerate(track.checkpoints):
-        if painted and checkpoints != "all" and checkpoints != i:
+        if visited is not None:
+            if visited[i]:
+                continue
+        elif painted and checkpoints != "all" and checkpoints != i:
             continue
         if isinstance(angle_or_orient, str):
             angle = math.pi / 2 if angle_or_orient == 'V' else 0
@@ -45,8 +50,8 @@ def draw_track(screen, track: Track, checkpoints=None):
                 for p in (p1, p2):
                     pygame.draw.circle(screen, (20, 30, 45), (int(p[0]), int(p[1])), 8)
                     pygame.draw.circle(screen, (70, 160, 235), (int(p[0]), int(p[1])), 6)
-            else:  # la prochaine porte seulement
-                _draw_gate(screen, cx, cy, c, s_, half_w)
+            else:
+                _draw_gate(screen, cx, cy, c, s_, half_w, active=(i == checkpoints))
         else:
             half_w = 50
             pygame.draw.line(screen, COLOR_CHECKPOINT, (cx - c * half_w, cy - s_ * half_w),
@@ -227,11 +232,14 @@ def draw_lidar(screen, car: Car, readings: List[float]):
 GATE_LIGHT = (90, 220, 255)
 
 
-def _draw_gate(screen, cx, cy, c, s_, half_w):
+def _draw_gate(screen, cx, cy, c, s_, half_w, active=True):
     """Porte de checkpoint vue de dessus : bande lumineuse rayée en travers de la route, qui pulse
     doucement, et deux balises sombres à feu cyan de part et d'autre (arche de Trackmania vue du ciel)."""
     import pygame.gfxdraw
     pulse = 0.5 + 0.5 * math.sin(pygame.time.get_ticks() / 260.0)
+    dim = 1.0 if active else 0.4      # portes suivantes : plus discrètes et sans pulsation
+    if not active:
+        pulse = 0.2
     ax, ay = c, s_            # en travers de la route
     tx, ty = -s_, c           # le long de la route
     inner = half_w - 6
@@ -240,13 +248,14 @@ def _draw_gate(screen, cx, cy, c, s_, half_w):
         quad = [(cx - ax * inner - tx * w, cy - ay * inner - ty * w), (cx + ax * inner - tx * w, cy + ay * inner - ty * w),
                 (cx + ax * inner + tx * w, cy + ay * inner + ty * w), (cx - ax * inner + tx * w, cy - ay * inner + ty * w)]
         pygame.gfxdraw.filled_polygon(screen, [(round(x), round(y)) for x, y in quad],
-                                      (*GATE_LIGHT, int(al * (0.6 + 0.4 * pulse))))
+                                      (*GATE_LIGHT, int(al * (0.6 + 0.4 * pulse) * dim)))
     # bande rayée : segments alternés cyan / blanc, semi-transparents
     n = 8
     for i in range(n):
         u0 = -inner + 2 * inner * i / n
         u1 = -inner + 2 * inner * (i + 1) / n
-        col = (*GATE_LIGHT, int(110 + 70 * pulse)) if i % 2 == 0 else (235, 250, 255, int(80 + 50 * pulse))
+        col = ((*GATE_LIGHT, int((110 + 70 * pulse) * dim)) if i % 2 == 0
+               else (235, 250, 255, int((80 + 50 * pulse) * dim)))
         quad = [(cx + ax * u0 - tx * 4, cy + ay * u0 - ty * 4), (cx + ax * u1 - tx * 4, cy + ay * u1 - ty * 4),
                 (cx + ax * u1 + tx * 4, cy + ay * u1 + ty * 4), (cx + ax * u0 + tx * 4, cy + ay * u0 + ty * 4)]
         pygame.gfxdraw.filled_polygon(screen, [(round(x), round(y)) for x, y in quad], col)
@@ -254,7 +263,8 @@ def _draw_gate(screen, cx, cy, c, s_, half_w):
     for side in (-4.5, 4.5):
         a_ = (cx - ax * inner + tx * side, cy - ay * inner + ty * side)
         b_ = (cx + ax * inner + tx * side, cy + ay * inner + ty * side)
-        pygame.draw.aaline(screen, (*GATE_LIGHT,), a_, b_)
+        if active:
+            pygame.draw.aaline(screen, (*GATE_LIGHT,), a_, b_)
     # balises : bloc sombre arrondi, feu cyan qui pulse
     for sign in (-1, 1):
         px, py = cx + ax * sign * (half_w + 2), cy + ay * sign * (half_w + 2)
@@ -264,9 +274,11 @@ def _draw_gate(screen, cx, cy, c, s_, half_w):
         pygame.gfxdraw.filled_polygon(screen, pts, (28, 31, 40))
         pygame.gfxdraw.aapolygon(screen, pts, (70, 76, 92))
         r = 3 + int(round(pulse))
-        pygame.gfxdraw.filled_circle(screen, round(px), round(py), r + 3, (*GATE_LIGHT, int(60 * pulse)))
-        pygame.gfxdraw.filled_circle(screen, round(px), round(py), r, GATE_LIGHT)
-        pygame.gfxdraw.aacircle(screen, round(px), round(py), r, GATE_LIGHT)
+        light = GATE_LIGHT if active else (60, 110, 130)
+        if active:
+            pygame.gfxdraw.filled_circle(screen, round(px), round(py), r + 3, (*GATE_LIGHT, int(60 * pulse)))
+        pygame.gfxdraw.filled_circle(screen, round(px), round(py), r, light)
+        pygame.gfxdraw.aacircle(screen, round(px), round(py), r, light)
 
 
 def fmt_time(t: float) -> str:

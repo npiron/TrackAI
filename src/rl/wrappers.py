@@ -532,7 +532,8 @@ class GymTimeAttack(gym.Env):
                 # We can't really quit here without killing the env process
                 pass
 
-        draw_track(screen, track, checkpoints=next((i for i, v in enumerate(env.cp_visited) if not v), None))
+        draw_track(screen, track, checkpoints=next((i for i, v in enumerate(env.cp_visited) if not v), None),
+                   visited=env.cp_visited)
         
         # Highlight checkpoints based on visited status
         # Visited = Green, Unvisited = Gold
