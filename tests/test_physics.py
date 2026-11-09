@@ -159,15 +159,14 @@ def test_variant_1_unchanged_by_default():
     assert e.track.half_width == 60.0
 
 
-# --- Loi de choc des murs versionnée (v1 historique, v2 : le mur coûte vraiment) ---
+# --- Loi de choc des murs : toucher un mur coûte vraiment de la vitesse ---
 
-def _wall_hit_loss(phys, deg):
+def _wall_hit_loss(deg):
     """Perte de vitesse au premier contact avec un mur droit, abordé à `deg` degrés."""
     from src.game.env import TimeAttackEnv
     from src.game.track import build_track
-    from src.core.constants import MAX_SPEED
     wall_y, v = 400.0, 0.9 * MAX_SPEED
-    e = TimeAttackEnv(build_track(), procedural=False, physics=phys)
+    e = TimeAttackEnv(build_track(), procedural=False)
     e.reset()
     e.track.inside_track = lambda p: p[1] < wall_y
     e.track.hits_wall = lambda p: False
@@ -185,15 +184,8 @@ def _wall_hit_loss(phys, deg):
     raise AssertionError("pas de contact")
 
 
-def test_wall_law_v1_unchanged_and_v2_costlier():
-    assert _wall_hit_loss("v1", 10) < 0.12           # v1 : frôler ne coûte presque rien
-    assert 0.15 <= _wall_hit_loss("v2", 10) <= 0.30  # v2 : un frôlement coûte 15 à 30 %
-    assert _wall_hit_loss("v2", 90) >= 0.8           # choc de face : presque tout
-    for deg in (3, 10, 20, 45):
-        assert _wall_hit_loss("v2", deg) > _wall_hit_loss("v1", deg)
-
-
-def test_unknown_physics_rejected():
-    from src.game.env import TimeAttackEnv
-    with pytest.raises(ValueError):
-        TimeAttackEnv(procedural=True, physics="v9")
+def test_wall_law_graze_costs_and_head_on_stops():
+    assert 0.15 <= _wall_hit_loss(3) <= 0.30   # même un frôlement coûte 15 à 30 %
+    assert 0.15 <= _wall_hit_loss(10) <= 0.30
+    assert _wall_hit_loss(90) >= 0.8           # choc de face : presque tout
+    assert _wall_hit_loss(10) < _wall_hit_loss(45) < _wall_hit_loss(90)

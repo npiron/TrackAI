@@ -38,13 +38,9 @@ class TimeAttackEnv:
     OBS_V2_SIZE = 35
 
     def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1, obs_version: int = 1,
-                 track_variant: int = 1, physics: Optional[str] = None):
+                 track_variant: int = 1):
         if obs_version not in (1, 2):
             raise ValueError("obs_version doit valoir 1 ou 2")
-        self.physics = physics or PHYSICS_VERSION
-        if self.physics not in WALL_PHYSICS:
-            raise ValueError(f"physics doit valoir l'un de {tuple(WALL_PHYSICS)}")
-        self.wall_physics = WALL_PHYSICS[self.physics]
         self.obs_version = obs_version
         self.track_variant = int(track_variant)  # 1 : tracé historique, 2 : circuits longs (src/game/track.py)
         self._arc_cache = None
@@ -135,9 +131,8 @@ class TimeAttackEnv:
             norm_v = float(np.linalg.norm(car.vel))
             v_t = float(car.vel @ tangent)
             impact = math.sqrt(max(0.0, 1.0 - (v_t / norm_v) ** 2)) if norm_v > 1e-6 else 0.0
-            wp = self.wall_physics
-            first = self._frames_since_wall > wp["gap"]
-            keep = 1.0 - (wp["hit"] if first else wp["rub"]) - wp["impact"] * impact * impact
+            first = self._frames_since_wall > WALL_CONTACT_GAP
+            keep = 1.0 - (WALL_HIT_LOSS if first else WALL_RUB_LOSS) - WALL_IMPACT_LOSS * impact * impact
             self._frames_since_wall = 0
             car.vel = tangent * v_t * max(0.0, keep) + inward * norm_v * impact * WALL_BOUNCE
             # le choc remet en partie la caisse dans l'axe du mur (comme dans Trackmania) ;

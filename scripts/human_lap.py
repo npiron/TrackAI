@@ -53,7 +53,7 @@ def record(total, lap_times, laps, path=HUMAN_BEST):
     return True
 
 
-def play(laps, long_tracks=False, physics=None):
+def play(laps, long_tracks=False):
     import pygame
     from src.core.constants import FPS, W, H
     from src.game.rendering import draw_track, draw_car, fmt_time
@@ -64,9 +64,7 @@ def play(laps, long_tracks=False, physics=None):
     from src.game.track import generate_procedural_track
     new_track = lambda: generate_procedural_track(variant=2) if long_tracks else build_track()
     track = new_track()
-    from src.core.constants import PHYSICS_VERSION, WALL_PHYSICS
-    physics = physics or PHYSICS_VERSION
-    env = TimeAttackEnv(track, procedural=False, laps=laps, physics=physics)
+    env = TimeAttackEnv(track, procedural=False, laps=laps)
     env.reset()
     msg = ""
     running = True
@@ -80,13 +78,7 @@ def play(laps, long_tracks=False, physics=None):
                 msg = ""
             if long_tracks and ev.type == pygame.KEYDOWN and ev.key == pygame.K_n:  # nouveau circuit
                 track = new_track()
-                env = TimeAttackEnv(track, procedural=False, laps=laps, physics=physics)
-                env.reset()
-                msg = ""
-            if ev.type == pygame.KEYDOWN and ev.key == pygame.K_p:  # P : change de loi de choc des murs
-                names = list(WALL_PHYSICS)
-                physics = names[(names.index(physics) + 1) % len(names)]
-                env = TimeAttackEnv(track, procedural=False, laps=laps, physics=physics)
+                env = TimeAttackEnv(track, procedural=False, laps=laps)
                 env.reset()
                 msg = ""
         k = pygame.key.get_pressed()
@@ -105,7 +97,7 @@ def play(laps, long_tracks=False, physics=None):
                     msg = "ECHEC - R pour recommencer"
         draw_track(screen, track)
         draw_car(screen, env.car)
-        hint = (f"  murs {physics} (P)") + ("  N nouveau circuit" if long_tracks else "")
+        hint = "  N nouveau circuit" if long_tracks else ""
         txt = f"Tour {min(env.lap_count + 1, laps)}/{laps}  {fmt_time(env.t)}  " + \
               " ".join(fmt_time(t) for t in env.lap_times) + "  " + msg + hint
         screen.blit(font.render(txt, True, (235, 235, 245)), (14, 14))
@@ -117,6 +109,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--laps", type=int, default=1)
     ap.add_argument("--long", action="store_true", help="circuits longs aléatoires (N : nouveau circuit) ; pas de record")
-    ap.add_argument("--physics", default=None, help="loi de choc des murs (v1, v2) ; P en jeu pour basculer")
     a = ap.parse_args()
-    play(a.laps, a.long, a.physics)
+    play(a.laps, a.long)

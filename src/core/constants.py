@@ -35,20 +35,13 @@ DRIFT_SCRUB = 0.003         # perte de vitesse par frame et par radian de glisse
 DRIFT_STEER_IN = 0.3        # braquage mini pour lancer un drift (coup de frein)
 DRIFT_STEER_OUT = 0.15      # le drift tient tant qu'on braque au-delà
 
-# Murs : on glisse le long du mur, la perte dépend de l'angle d'impact
-WALL_GRAZE_LOSS = 0.04      # perte minimale en frôlant
-WALL_IMPACT_LOSS = 0.6      # perte supplémentaire, × sin²(angle d'impact)
+# Murs : on glisse le long du mur ; toucher un mur coûte vraiment de la vitesse
+WALL_HIT_LOSS = 0.15        # perte au premier contact (frôlement)
+WALL_RUB_LOSS = 0.04        # perte par frame tant que le contact continue
+WALL_CONTACT_GAP = 10       # un contact à moins de 10 frames du précédent prolonge le même contact
+WALL_IMPACT_LOSS = 0.85     # perte en plus, × sin²(angle d'impact) : de face, presque tout
 WALL_BOUNCE = 0.15          # petite part de vitesse renvoyée vers la piste
 WALL_ALIGN = 0.5            # part du cap réalignée sur le mur, × sin(angle d'impact)
-
-# Lois de choc versionnées. hit : perte au premier contact ; rub : perte par frame tant que le contact
-# continue (contact à moins de `gap` frames du précédent) ; impact : perte en plus × sin²(angle d'impact).
-# v1 : murs presque gratuits en frôlement (4 %), le mur servait de rail. v2 : le mur coûte vraiment.
-WALL_PHYSICS = {
-    "v1": {"hit": WALL_GRAZE_LOSS, "rub": WALL_GRAZE_LOSS, "impact": WALL_IMPACT_LOSS, "gap": 0},
-    "v2": {"hit": 0.15, "rub": WALL_GRAZE_LOSS, "impact": 0.85, "gap": 10},
-}
-PHYSICS_VERSION = "v1"
 
 # Track config
 TRACK_WIDTH = 90
