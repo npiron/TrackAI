@@ -37,7 +37,7 @@ def draw_track(screen, track: Track, checkpoints=None):
             angle = angle_or_orient
         c, s_ = math.cos(angle), math.sin(angle)
         if painted:
-            half_w = getattr(track, 'half_width', 60) + 2
+            half_w = getattr(track, 'half_width', 60) + 10
             p1 = (cx - c * half_w, cy - s_ * half_w)
             p2 = (cx + c * half_w, cy + s_ * half_w)
             if checkpoints == "all":

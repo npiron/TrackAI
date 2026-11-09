@@ -77,10 +77,15 @@ def _band(surface, sp, nrm, arc, i0, length, side, r_in, r_out, block, colors, s
         pygame.draw.polygon(surface, col, [tuple(q) for q in quad])
 
 
+VISUAL_MARGIN = 8  # px ajoutés de chaque côté de la route dessinée
+
+
 def paint_track(track) -> pygame.Surface:
     """Peint à 2x puis réduit : bords lisses, sans escaliers."""
     k = 2
-    R = float(getattr(track, 'half_width', 60)) * k
+    # la collision se fait au centre de la voiture : on peint l'asphalte un peu plus large que la zone
+    # roulable (de ~la demi-largeur de la monoplace) pour que la carrosserie touche le muret au moment du choc
+    R = (float(getattr(track, 'half_width', 60)) + VISUAL_MARGIN) * k
     rng = np.random.default_rng(track.seed or 0)
     sp = np.asarray(track.spline_points, dtype=float) * k
     n = len(sp)
