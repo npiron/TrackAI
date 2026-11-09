@@ -96,7 +96,8 @@ def main():
             records = json.load(f)
     except (OSError, ValueError):
         records = {}
-    chrono = {"pb": None, "gen": None, "seen_laps": 0, "splits": [], "seen_cps": 0, "popups": []}
+    chrono = {"pb": None, "gen": None, "seen_laps": 0, "splits": [], "seen_cps": 0, "popups": [],
+              "session_best": None, "session_splits": []}
     fonts = {}
 
     def track_key():
@@ -115,6 +116,10 @@ def main():
                     r["lap"], r["lap_gen"] = round(lt, 3), chrono["gen"]
         chrono["seen_laps"] = len(ta.lap_times)
         key = track_key()
+        if len(ta.lap_times) >= a.laps:
+            total = sum(ta.lap_times)
+            if chrono["session_best"] is None or total < chrono["session_best"]:
+                chrono["session_best"], chrono["session_splits"] = total, list(chrono["splits"])
         if key and len(ta.lap_times) >= a.laps:
             r = records.setdefault(key, {})
             total = sum(ta.lap_times)
@@ -136,7 +141,8 @@ def main():
         t = ta.t
         chrono["splits"].append(t)
         idx = len(chrono["splits"]) - 1
-        ref = records.get(track_key(), {}).get("splits", [])
+        # référence : le record (s'il a ses temps intermédiaires), sinon la meilleure course vue dans cette session
+        ref = records.get(track_key(), {}).get("splits") or chrono["session_splits"]
         if sum(ta.cp_visited) == 0 and ta.lap_count > 0:       # ligne d'arrivée : on vient de finir un tour
             x, y = ta.track.finish_pos[:2]
         else:
