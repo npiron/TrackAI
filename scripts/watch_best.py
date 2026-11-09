@@ -92,7 +92,7 @@ def main():
             records = json.load(f)
     except (OSError, ValueError):
         records = {}
-    chrono = {"pb": None, "gen": None, "seen_laps": 0}
+    chrono = {"pb": None, "gen": None, "seen_laps": 0, "splits": [], "seen_cps": 0, "popups": []}
     fonts = {}
 
     def track_key():
@@ -116,9 +116,51 @@ def main():
             total = sum(ta.lap_times)
             if r.get("total") is None or total < r["total"]:
                 r["total"], r["total_gen"] = round(total, 3), chrono["gen"]
+                r["splits"] = [round(x, 3) for x in chrono["splits"]]   # temps intermédiaires du record
         if key:
             with open(rec_path, "w") as f:
                 json.dump(records, f, indent=1)
+
+    def check_splits():
+        """À chaque porte (ou ligne d'arrivée) franchie : temps intermédiaire + écart au record, au-dessus du portail."""
+        ta = env.ta
+        n_cp = len(ta.cp_visited)
+        passed = sum(ta.cp_visited) + ta.lap_count * n_cp
+        if passed <= chrono["seen_cps"]:
+            return
+        chrono["seen_cps"] = passed
+        t = ta.t
+        chrono["splits"].append(t)
+        idx = len(chrono["splits"]) - 1
+        ref = records.get(track_key(), {}).get("splits", [])
+        if sum(ta.cp_visited) == 0 and ta.lap_count > 0:       # ligne d'arrivée : on vient de finir un tour
+            x, y = ta.track.finish_pos[:2]
+        else:
+            last = max(i for i, v in enumerate(ta.cp_visited) if v)
+            x, y = ta.track.checkpoints[last][:2]
+        delta = (t - ref[idx]) if idx < len(ref) else None
+        chrono["popups"].append([x, y, t, delta, pygame.time.get_ticks()])
+
+    def draw_splits(screen):
+        now = pygame.time.get_ticks()
+        chrono["popups"] = [p for p in chrono["popups"] if now - p[4] < 2500]
+        for x, y, t, delta, t0 in chrono["popups"]:
+            age = (now - t0) / 2500
+            rise = 18 * age
+            lines = [(fmt_time(t), (255, 255, 255))]
+            if delta is not None:
+                lines.append((f"{'+' if delta > 0 else '−'}{abs(delta):.2f}",
+                              (240, 90, 80) if delta > 0 else (90, 220, 130)))
+            imgs = [fonts["mid"].render(txt, True, col) for txt, col in lines]
+            w = max(i.get_width() for i in imgs) + 16
+            h = sum(i.get_height() for i in imgs) + 8
+            box = pygame.Surface((w, h), pygame.SRCALPHA)
+            pygame.draw.rect(box, (12, 14, 20, int(190 * (1 - age * 0.6))), box.get_rect(), border_radius=10)
+            yy = 4
+            for im in imgs:
+                box.blit(im, ((w - im.get_width()) // 2, yy))
+                yy += im.get_height()
+            screen.blit(box, (x - w / 2, y - 70 - rise - h / 2))
 
     def draw_chrono(screen):
         if not fonts:
@@ -160,9 +202,11 @@ def main():
         nonlocal font
         if not a.no_keys:
             draw_keys(screen, state["action"], env.ta.car, MAX_SPEED)
+        check_splits()
         if len(env.ta.lap_times) > chrono["seen_laps"]:
             on_new_laps()
         draw_chrono(screen)
+        draw_splits(screen)
         if label["text"]:
             font = font or pygame.font.SysFont("Avenir Next Condensed", 34, bold=True, italic=True)
             img = font.render(label["text"], True, (255, 255, 255))
@@ -225,7 +269,7 @@ def main():
             pygame.event.pump()
             clock.tick(50)
         sound["contacts"], sound["cps"] = 0, 0
-        chrono["seen_laps"] = 0
+        chrono["seen_laps"], chrono["seen_cps"], chrono["splits"] = 0, 0, []
     if audio is not None:
         audio.close()
     pygame.quit()

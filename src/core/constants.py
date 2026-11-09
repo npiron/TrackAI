@@ -57,7 +57,8 @@ TRACK_WIDTH = 90
 TRACK_OUTER_MARGIN = 40
 TRACK_INNER_MARGIN = TRACK_OUTER_MARGIN + TRACK_WIDTH
 
-CHECKPOINT_RADIUS = 100
+CHECKPOINT_RADIUS = 100  # fenêtre de franchissement d'une porte (px)
+CAR_NOSE = 20            # du centre au pare-chocs avant (px)
 FINISH_RADIUS = 100  # fenêtre après la ligne d'arrivée où le franchissement est compté (px)
 
 # Fonts

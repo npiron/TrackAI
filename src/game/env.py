@@ -258,10 +258,41 @@ class TimeAttackEnv:
             # All visited
             return
 
-        cx, cy, _ = self.track.checkpoints[next_cp_idx]
-        dist = np.linalg.norm(self.car.pos - vec(cx, cy))
-        if dist < CHECKPOINT_RADIUS:
+        # la porte est franchie quand le pare-chocs avant touche sa ligne (et pas à 100 px avant)
+        cx, cy, ang = self.track.checkpoints[next_cp_idx]
+        if isinstance(ang, str):  # anciens circuits fixes : porte horizontale/verticale
+            ang = math.pi / 2 if ang == 'V' else 0.0
+        tx, ty = self._cp_direction(next_cp_idx, cx, cy, ang)
+        rel = self.car.pos - vec(cx, cy)
+        along = float(rel[0] * tx + rel[1] * ty)
+        across = float(rel[0] * math.cos(ang) + rel[1] * math.sin(ang))
+        half = getattr(self.track, "half_width", 60.0) + 10.0
+        nose = CAR_NOSE * max(0.0, math.cos(self.car.heading - math.atan2(ty, tx)))
+        if -CHECKPOINT_RADIUS < along + nose and along + nose >= 0.0 and abs(across) <= half:
             self.cp_visited[next_cp_idx] = True
+
+    def _cp_direction(self, i, cx, cy, ang):
+        """Sens de la course au niveau de la porte i (perpendiculaire à la porte, orienté comme la piste)."""
+        cache = getattr(self, "_cp_dir_cache", None)
+        if cache is None or cache[0] is not self.track:
+            cache = (self.track, {})
+            self._cp_dir_cache = cache
+        if i not in cache[1]:
+            tx, ty = -math.sin(ang), math.cos(ang)
+            sp = getattr(self.track, "spline_points", None)
+            if sp is not None and len(sp) > 2:
+                sp = np.asarray(sp)
+                j = int(np.argmin(np.sum((sp - np.array([cx, cy])) ** 2, axis=1)))
+                d = sp[(j + 1) % len(sp)] - sp[j]
+                if d[0] * tx + d[1] * ty < 0:
+                    tx, ty = -tx, -ty
+            else:
+                # sans tracé : on s'oriente vers la porte suivante (ou l'arrivée)
+                nxt = self.track.checkpoints[i + 1][:2] if i + 1 < len(self.track.checkpoints) else self.track.finish_pos[:2]
+                if (nxt[0] - cx) * tx + (nxt[1] - cy) * ty < 0:
+                    tx, ty = -tx, -ty
+            cache[1][i] = (tx, ty)
+        return cache[1][i]
 
     def _check_finish(self) -> bool:
         if not all(self.cp_visited):
