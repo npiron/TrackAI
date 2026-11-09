@@ -67,7 +67,7 @@ class CarAudio:
             "fanfare": 0.3 * np.concatenate(fan),
         }
         self.voices = []                      # effets en cours : [échantillons, position, gain]
-        self._phase = np.zeros((3, len(self.PARTIALS)))   # sifflement : centre, gauche, droite
+        self._phase = np.zeros((1, len(self.PARTIALS)))   # sifflement (mono)
         self._low_phase = np.zeros(2)                        # couche grave de puissance
         self._air_lp = 0.0
         self._skid_lp = 0.0
@@ -174,7 +174,7 @@ class CarAudio:
             self.ch.play(snd)
             self._keep = [snd]
 
-    DETUNE = (1.0, 0.997, 1.003)   # sifflement au centre, à peine désaccordé à gauche et à droite
+    DETUNE = (1.0,)                # une seule voix : son mono
 
     def _render(self):
         n = int(SR * self.CHUNK)
@@ -183,7 +183,7 @@ class CarAudio:
         f, whine, air, skid, load, low_f = (p0[i] + (p1[i] - p0[i]) * k for i in range(6))
         self._prev = self._target.copy()
 
-        # moteur : 3 voix légèrement désaccordées (centre, gauche, droite) -> son large, pas « petite voiture »
+        # moteur (mono)
         voices = []
         for vi, det in enumerate(self.DETUNE):
             m = np.zeros(n)
@@ -197,8 +197,8 @@ class CarAudio:
         drive = 1.0 + 0.8 * load                          # légère saturation sous charge
         sat = [np.tanh(drive * m / 1.6) / np.tanh(drive) for m in voices]
         center = sat[0] * whine * 0.5          # sifflement aigu nettement en retrait
-        left = center * 0.85 + sat[1] * whine * 0.5 * 0.2   # stéréo discrète
-        right = center * 0.85 + sat[2] * whine * 0.5 * 0.2
+        left = center * 0.95                    # mono : même son à gauche et à droite
+        right = left.copy()
         # couche grave de puissance (fondamentale + octave), au centre
         lows = np.zeros(n)
         for j, (mult, gain) in enumerate(((1.0, 1.0), (2.0, 0.7))):   # octave : audible même sur petits haut-parleurs
@@ -209,10 +209,10 @@ class CarAudio:
         left = left + lows
         right = right + lows
 
-        # souffle d'air (un peu différent à gauche et à droite)
+        # souffle d'air
         noise, self._air_lp = _one_pole(self.rng.standard_normal(n), 0.08, self._air_lp)
         left = left + air * noise * 1.6
-        right = right + air * (0.8 * noise + 0.2 * np.roll(noise, 157)) * 1.6
+        right = right + air * noise * 1.6
         # pneus : crissement = bruit filtré en bande (~0,5-2 kHz) + léger sifflement qui ondule vers 950 Hz
         white = self.rng.standard_normal(n)
         hi, self._skid_lp = _one_pole(white, 0.45, self._skid_lp)
