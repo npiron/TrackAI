@@ -515,15 +515,17 @@ class GymTimeAttack(gym.Env):
         info["wall_contacts"] = int(self.ta.wall_contacts)
 
     def render(self):
+        side = getattr(self, "sidebar", 0)   # panneau d'infos à gauche du circuit (px), 0 = aucun
         if self.screen is None:
             pygame.init()
-            self.screen = pygame.display.set_mode((W, H))
-            pygame.display.set_caption("Trackmania Clone - Training Preview")
+            self.screen = pygame.display.set_mode((W + side, H))
+            pygame.display.set_caption("TrackAI")
             self.clock = pygame.time.Clock()
             self.font = pygame.font.SysFont("Menlo", FONT_SIZE)
+            self.world = pygame.Surface((W, H)) if side else None
 
-        # Draw content
-        screen = self.screen
+        # Draw content : le circuit sur sa propre surface, le panneau à gauche
+        screen = self.world if side else self.screen
         track = self.ta.track
         env = self.ta
         
@@ -544,6 +546,10 @@ class GymTimeAttack(gym.Env):
         # Draw LIDAR if available
         if hasattr(env, 'lidar_dist'):
             draw_lidar(screen, env.car, env.lidar_dist)
+        if side:
+            self.screen.fill((18, 20, 26), pygame.Rect(0, 0, side, H))
+            self.screen.blit(screen, (side, 0))
+            screen = self.screen
         if getattr(self, 'overlay', None):
             self.overlay(screen)  # dessin en plus (ex. touches du bot dans watch_best.py)
         

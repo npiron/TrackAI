@@ -30,6 +30,8 @@ def main():
     p.add_argument("--same-tracks", action="store_true", help="toujours la même série de circuits (pour comparer des modèles)")
     p.add_argument("--no-keys", action="store_true", help="ne pas afficher les touches du bot")
     p.add_argument("--track-seed", type=int, default=None, help="toujours ce circuit (son numéro)")
+    p.add_argument("--screenshot", default=None, help="enregistre la fenêtre après --shot-at décisions puis quitte")
+    p.add_argument("--shot-at", type=int, default=400)
     p.add_argument("--mute", action="store_true", help="sans le son (M pour couper/remettre en cours de route)")
     p.add_argument("--follow", default=None, metavar="DOSSIER",
                    help="suivre un entraînement en cours : recharge la dernière génération de DOSSIER avant chaque course")
@@ -55,6 +57,8 @@ def main():
     env = GymTimeAttack(render_mode="human", procedural=a.random or a.long, laps=a.laps,
                         track_variant=2 if a.long else 1,
                         obs_version=detect_obs_version(model))
+    SIDE = 400
+    env.sidebar = SIDE        # panneau d'infos à gauche : chronos et touches n'empiètent plus sur le circuit
     clock = pygame.time.Clock()
     import math
     from src.game.audio import CarAudio
@@ -139,13 +143,14 @@ def main():
             last = max(i for i, v in enumerate(ta.cp_visited) if v)
             x, y = ta.track.checkpoints[last][:2]
         delta = (t - ref[idx]) if idx < len(ref) else None
-        chrono["popups"].append([x, y, t, delta, pygame.time.get_ticks()])
+        chrono["popups"] = [p for p in chrono["popups"] if (p[0], p[1]) != (x, y)]   # remplace l'ancien sur cette porte
+        chrono["popups"].append([x, y, t, delta, t])
 
     def draw_splits(screen):
-        now = pygame.time.get_ticks()
-        chrono["popups"] = [p for p in chrono["popups"] if now - p[4] < 2500]
+        now = env.ta.t                                   # temps de jeu : même rendu à toute vitesse
+        chrono["popups"] = [p for p in chrono["popups"] if 0 <= now - p[4] < 2.0]
         for x, y, t, delta, t0 in chrono["popups"]:
-            age = (now - t0) / 2500
+            age = (now - t0) / 2.0
             rise = 18 * age
             lines = [(fmt_time(t), (255, 255, 255))]
             if delta is not None:
@@ -160,7 +165,7 @@ def main():
             for im in imgs:
                 box.blit(im, ((w - im.get_width()) // 2, yy))
                 yy += im.get_height()
-            screen.blit(box, (x - w / 2, y - 70 - rise - h / 2))
+            screen.blit(box, (SIDE + x - w / 2, y - 70 - rise - h / 2))
 
     def draw_chrono(screen):
         if not fonts:
@@ -173,10 +178,11 @@ def main():
         cur_t = ta.t - ta._lap_start_t if ta.lap_count < a.laps else 0.0
         rows = len(ta.lap_times)
         h = 150 + 22 * rows
-        box = pygame.Surface((300, h), pygame.SRCALPHA)
-        pygame.draw.rect(box, (12, 14, 20, 180), box.get_rect(), border_radius=14)
-        screen.blit(box, (14, 12))
-        blit = lambda f, txt, col, pos: screen.blit(fonts[f].render(txt, True, col), pos)
+        oy = 70                                 # sous le numéro de génération
+        box = pygame.Surface((SIDE - 28, h), pygame.SRCALPHA)
+        pygame.draw.rect(box, (30, 33, 42, 255), box.get_rect(), border_radius=14)
+        screen.blit(box, (14, 12 + oy))
+        blit = lambda f, txt, col, pos: screen.blit(fonts[f].render(txt, True, col), (pos[0], pos[1] + oy))
         title = f"Circuit #{ta.track.seed}"
         blit("small", f"{title}   ·   tour {cur_lap}/{a.laps}", (190, 196, 210), (30, 22))
         blit("big", fmt_time(cur_t), (255, 255, 255), (28, 40))
@@ -213,7 +219,7 @@ def main():
             box = pygame.Surface((img.get_width() + 28, img.get_height() + 14), pygame.SRCALPHA)
             pygame.draw.rect(box, (12, 14, 20, 180), box.get_rect(), border_radius=12)
             box.blit(img, (14, 7))
-            screen.blit(box, (screen.get_width() - box.get_width() - 14, 12))
+            screen.blit(box, (14, 12))   # en haut du panneau
     env.overlay = overlay
 
     def gen_label(path):
@@ -249,6 +255,14 @@ def main():
             state["action"] = action
             obs, _, term, trunc, info = env.step(action)  # dessine la frame
             done = term or trunc
+            shots = state.get("n", 0) + 1
+            state["n"] = shots
+            if a.screenshot and shots == a.shot_at:
+                pygame.image.save(pygame.display.get_surface(), a.screenshot)
+                if audio is not None:
+                    audio.close()
+                pygame.quit()
+                return
             play_audio(action)
             for event in pygame.event.get(pygame.KEYDOWN):
                 if event.key == pygame.K_ESCAPE:
