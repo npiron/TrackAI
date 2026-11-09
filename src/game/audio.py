@@ -40,10 +40,14 @@ class CarAudio:
         self.ok = False
         self.muted = False
         try:
-            pygame.mixer.init(SR, -16, 2, 512)
+            pygame.mixer.init(SR, -16, 2, 1024)   # tampon plus grand : pas de trou entre les morceaux
         except pygame.error:
             return
         pygame.mixer.set_num_channels(10)
+        pygame.mixer.set_reserved(8)       # canaux 0-7 réservés : aucun effet ne peut prendre celui du moteur
+        self._fx_ch = {name: pygame.mixer.Channel(2 + i)
+                       for i, name in enumerate(("hit", "beep", "go", "chime", "fanfare"))}
+        self._keep = []                    # références aux morceaux du moteur en cours/en attente
         rng = np.random.default_rng(1)
         self.rng = rng
         self.motor_ch = pygame.mixer.Channel(0)
@@ -73,12 +77,13 @@ class CarAudio:
     def play(self, name, volume=1.0):
         if self.ok and not self.muted:
             snd = getattr(self, name)
-            snd.set_volume(volume)
-            snd.play()
+            ch = self._fx_ch[name]          # chaque effet a son canal : il ne coupe ni le moteur ni les autres
+            ch.set_volume(volume)
+            ch.play(snd)
 
     # Sifflement : fondamentale + harmoniques légèrement désaccordées (moteur + onduleur + pignons)
     PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.25))
-    CHUNK = 0.04  # s
+    CHUNK = 0.06  # s
 
     def _motor_chunk(self, f1, a1, w1):
         """Un morceau de son, en interpolant depuis l'état précédent (aucun saut de hauteur ni de volume)."""
@@ -102,7 +107,8 @@ class CarAudio:
             y += 0.08 * (noise[t] - y)
             lp[t] = y
         self._lp = y
-        out += air * lp * 2.2
+        out += air * lp * 1.6
+        out *= 0.8   # marge : moteur + pneus + effets ensemble ne saturent pas
         self._prev = (f1, a1, w1)
         return _sound(out)
 
@@ -121,8 +127,10 @@ class CarAudio:
             snd = self._motor_chunk(freq, whine, air)
             if self.motor_ch.get_busy():
                 self.motor_ch.queue(snd)
+                self._keep = self._keep[-1:] + [snd]   # garder vivants le morceau joué et celui en attente
             else:
                 self.motor_ch.play(snd)
+                self._keep = [snd]
         screech = 0.0
         if speed_frac > 0.15:
             screech = max(0.0, min(1.0, (slip_deg - 8.0) / 22.0))
