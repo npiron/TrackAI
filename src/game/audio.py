@@ -196,16 +196,16 @@ class CarAudio:
             voices.append(m)
         drive = 1.0 + 0.8 * load                          # légère saturation sous charge
         sat = [np.tanh(drive * m / 1.6) / np.tanh(drive) for m in voices]
-        center = sat[0] * whine
-        left = center * 0.6 + sat[1] * whine * 0.55
-        right = center * 0.6 + sat[2] * whine * 0.55
+        center = sat[0] * whine * 0.5          # sifflement aigu nettement en retrait
+        left = center * 0.6 + sat[1] * whine * 0.5 * 0.55
+        right = center * 0.6 + sat[2] * whine * 0.5 * 0.55
         # couche grave de puissance (fondamentale + octave), au centre
         lows = np.zeros(n)
-        for j, (mult, gain) in enumerate(((1.0, 1.0), (2.0, 0.4))):
+        for j, (mult, gain) in enumerate(((1.0, 1.0), (2.0, 0.7))):   # octave : audible même sur petits haut-parleurs
             ph = self._low_phase[j] + np.cumsum(2 * math.pi * low_f * mult / SR)
             lows += gain * np.sin(ph)
             self._low_phase[j] = ph[-1] % (2 * math.pi)
-        lows *= whine * (0.55 + 0.35 * load) * 0.6
+        lows *= whine * (0.55 + 0.35 * load) * 1.3   # le grave porte le son
         left = left + lows
         right = right + lows
 
