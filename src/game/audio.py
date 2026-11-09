@@ -98,7 +98,7 @@ class CarAudio:
         whine = 0.65 * (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)   # moteur un peu en retrait
         if not running:
             whine = 0.035
-        air = 0.18 * v * v
+        air = 0.18 * max(0.0, (v - 0.55) / 0.45) ** 2   # le souffle d'air ne vient qu'à haute vitesse
         skid = 0.0
         if v > 0.15:
             skid = max(0.0, min(1.0, (slip_deg - 8.0) / 22.0))
