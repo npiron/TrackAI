@@ -29,20 +29,62 @@ def main():
     p.add_argument("--long", action="store_true", help="circuits longs aléatoires (tracé variante 2)")
     p.add_argument("--same-tracks", action="store_true", help="toujours la même série de circuits (pour comparer des modèles)")
     p.add_argument("--no-keys", action="store_true", help="ne pas afficher les touches du bot")
+    p.add_argument("--follow", default=None, metavar="DOSSIER",
+                   help="suivre un entraînement en cours : recharge la dernière génération de DOSSIER avant chaque course")
     a = p.parse_args()
 
+    import glob
+    import re
+
+    def latest_gen():
+        gens = sorted(glob.glob(os.path.join(a.follow, "gen_*.zip")))
+        return gens[-1] if gens else None
+
+    current = None
+    if a.follow:
+        a.episodes = 10**9
+        pygame.init()
+        while latest_gen() is None:  # l'entraînement n'a pas encore sauvé de génération
+            print("En attente de la première génération dans", a.follow, flush=True)
+            pygame.time.wait(5000)
+        current = latest_gen()
+        a.model = current
     model, vn = _load_model(a.model)
     env = GymTimeAttack(render_mode="human", procedural=a.random or a.long, laps=a.laps,
                         track_variant=2 if a.long else 1,
                         obs_version=detect_obs_version(model))
     clock = pygame.time.Clock()
     state = {"action": 0}
-    if not a.no_keys:
-        env.overlay = lambda screen: draw_keys(screen, state["action"], env.ta.car.speed, MAX_SPEED)
+    label = {"text": ""}
+    font = None
+
+    def overlay(screen):
+        nonlocal font
+        if not a.no_keys:
+            draw_keys(screen, state["action"], env.ta.car.speed, MAX_SPEED)
+        if label["text"]:
+            font = font or pygame.font.SysFont("Avenir Next Condensed", 34, bold=True, italic=True)
+            img = font.render(label["text"], True, (255, 255, 255))
+            box = pygame.Surface((img.get_width() + 28, img.get_height() + 14), pygame.SRCALPHA)
+            pygame.draw.rect(box, (12, 14, 20, 180), box.get_rect(), border_radius=12)
+            box.blit(img, (14, 7))
+            screen.blit(box, (screen.get_width() - box.get_width() - 14, 12))
+    env.overlay = overlay
+
+    def gen_label(path):
+        m = re.search(r"gen_(\d+)", os.path.basename(path))
+        return f"Génération {int(m.group(1))}  (en direct)" if m else ""
+    if a.follow:
+        label["text"] = gen_label(current)
     import random as _random
     rng = _random.Random(None if not a.same_tracks else 12345)
 
     for ep in range(1, a.episodes + 1):
+        if a.follow and latest_gen() != current:
+            current = latest_gen()
+            pygame.time.wait(1000)  # laisse l'entraînement finir d'écrire les fichiers
+            model, vn = _load_model(current)
+            label["text"] = gen_label(current)
         if (a.random or a.long) and not a.same_tracks:
             obs, _ = env.reset(options={"track_seed": rng.randrange(1000, 10**9)})  # un nouveau circuit à chaque lancement
         else:
