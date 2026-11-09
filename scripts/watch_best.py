@@ -29,6 +29,7 @@ def main():
     p.add_argument("--long", action="store_true", help="circuits longs aléatoires (tracé variante 2)")
     p.add_argument("--same-tracks", action="store_true", help="toujours la même série de circuits (pour comparer des modèles)")
     p.add_argument("--no-keys", action="store_true", help="ne pas afficher les touches du bot")
+    p.add_argument("--mute", action="store_true", help="sans le son (M pour couper/remettre en cours de route)")
     p.add_argument("--follow", default=None, metavar="DOSSIER",
                    help="suivre un entraînement en cours : recharge la dernière génération de DOSSIER avant chaque course")
     a = p.parse_args()
@@ -54,6 +55,30 @@ def main():
                         track_variant=2 if a.long else 1,
                         obs_version=detect_obs_version(model))
     clock = pygame.time.Clock()
+    import math
+    from src.game.audio import CarAudio
+    audio = None if a.mute else CarAudio()
+    sound = {"contacts": 0, "cps": 0}
+
+    def play_audio(action):
+        """Son de la voiture du bot : moteur, pneus, chocs, carillon aux checkpoints."""
+        if audio is None:
+            return
+        ta = env.ta
+        c = ta.car
+        v = math.hypot(c.vel[0], c.vel[1])
+        slip = 0.0
+        if v > 1.0:
+            slip = abs(math.degrees((math.atan2(c.vel[1], c.vel[0]) - c.heading + math.pi) % (2 * math.pi) - math.pi))
+            slip = min(slip, 180 - slip) if c.speed < 0 else slip
+        audio.update(v / MAX_SPEED, action in (1, 5, 6), slip, c.is_drifting, action in (2, 7, 8) and c.speed > 0.5)
+        if ta.wall_contacts > sound["contacts"]:
+            sound["contacts"] = ta.wall_contacts
+            audio.play("hit", min(1.0, 0.25 + v / MAX_SPEED))
+        cps = sum(ta.cp_visited) + ta.lap_count * len(ta.cp_visited)
+        if cps > sound["cps"]:
+            audio.play("chime")
+        sound["cps"] = cps
     state = {"action": 0}
     label = {"text": ""}
     font = None
@@ -98,14 +123,24 @@ def main():
             state["action"] = action
             obs, _, term, trunc, info = env.step(action)  # dessine la frame
             done = term or trunc
+            play_audio(action)
             for event in pygame.event.get(pygame.KEYDOWN):
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     return
+                if event.key == pygame.K_m and audio is not None:
+                    audio.toggle_mute()
             clock.tick(FPS * a.speed / env.action_repeat)  # une décision = action_repeat images
         status = "terminé" if info.get("is_success") else "échec"
         print(f"Course {ep} : {status}, {info.get('laps_done', 0)} tour(s), {env.ta.t:.2f} s")
-        pygame.time.wait(1500)
+        if audio is not None and info.get("is_success"):
+            audio.play("fanfare")
+        for _ in range(75):           # pause de 1,5 s ; le son continue (fanfare), moteur coupé
+            if audio is not None:
+                audio.silence()
+            pygame.event.pump()
+            clock.tick(50)
+        sound["contacts"], sound["cps"] = 0, 0
     pygame.quit()
 
 
