@@ -42,14 +42,17 @@ def main(argv=None):
     p.add_argument("--gen-steps", type=int, default=3_000_000)
     p.add_argument("--early", type=int, nargs="*", default=[20_000, 50_000, 100_000, 200_000, 400_000, 800_000, 1_500_000],
                    help="générations rapprochées au début (pour voir l'IA partir de zéro)")
-    p.add_argument("--wall-penalty", type=float, default=-2.5,
-                   help="par pas en contact avec un mur (un tour rapporte ~+100) : il apprend à ne pas frotter")
+    p.add_argument("--wall-penalty", type=float, default=0.0,
+                   help="par pas en contact avec un mur (un tour rapporte ~+100). 0 : c'est la physique qui punit les murs")
     p.add_argument("--lr", type=float, default=3e-4)
     p.add_argument("--laps", type=int, default=1)
     p.add_argument("--time-penalty", type=float, default=None, help="par pas (défaut du wrapper : 0.01)")
     p.add_argument("--ent", type=float, default=0.01)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--init", default=None)
+    p.add_argument("--clip", type=float, default=None, help="clip_range PPO (reprise : 0.1 conseillé)")
+    p.add_argument("--fresh-reward-scale", action="store_true",
+                   help="reprise : remet à zéro l'échelle des récompenses (VecNormalize) et la mémoire d'Adam")
     p.add_argument("--out-dir", default="data/checkpoints/long")
     a = p.parse_args(argv)
 
@@ -64,8 +67,18 @@ def main(argv=None):
                                       for i in range(a.n_envs)]))
     if a.init:
         venv = VecNormalize.load(a.init[:-4] + "_vecnormalize.pkl", venv)
-        model = PPO.load(a.init, env=venv, device="cpu", custom_objects=dict(learning_rate=a.lr, lr_schedule=lambda _: a.lr))
-        gen0 = int(os.path.basename(a.init)[4:7])
+        over = dict(learning_rate=a.lr, lr_schedule=lambda _: a.lr, ent_coef=a.ent)
+        if a.clip is not None:
+            over["clip_range"] = lambda _: a.clip
+        model = PPO.load(a.init, env=venv, device="cpu", custom_objects=over)
+        if a.fresh_reward_scale:
+            from stable_baselines3.common.running_mean_std import RunningMeanStd
+            venv.ret_rms = RunningMeanStd(shape=())
+            model.policy.optimizer.state.clear()
+        try:
+            gen0 = int(os.path.basename(a.init)[4:7])
+        except ValueError:
+            gen0 = 0
     else:
         venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_obs=10.0, gamma=0.995)
         model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed, learning_rate=a.lr,
@@ -73,12 +86,15 @@ def main(argv=None):
                     gae_lambda=0.95, clip_range=0.2, ent_coef=a.ent,
                     policy_kwargs=dict(net_arch=dict(pi=[256, 256], vf=[256, 256])))
         gen0 = 0
+    import json
+    with open(os.path.join(a.out_dir, "config.json"), "w") as f:
+        json.dump(vars(a), f, indent=1)
     log_path = os.path.join(a.out_dir, "progress.csv")
     new_log = not os.path.exists(log_path)
 
     class Cb(BaseCallback):
         def _on_training_start(self):
-            self.t0, self.gen = time.time(), gen0
+            self.t0, self.gen, self.ts0 = time.time(), gen0, self.num_timesteps
             self.marks = [m for m in a.early if m > self.num_timesteps] if a.init is None else []
             self.next_save = self.marks.pop(0) if self.marks else self.num_timesteps + a.gen_steps
             self.laps, self.prog, self.hits = [], [], []
@@ -118,7 +134,7 @@ def main(argv=None):
                 self.model.save(base)
                 self.training_env.save(base + "_vecnormalize.pkl")
                 dt = time.time() - self.t0
-                row = [self.gen, self.num_timesteps, round(dt / 60, 1), round(self.num_timesteps / max(dt, 1)),
+                row = [self.gen, self.num_timesteps, round(dt / 60, 1), round((self.num_timesteps - self.ts0) / max(dt, 1)),
                        len(self.laps), round(float(np.mean(self.laps)), 3) if self.laps else 0,
                        round(float(np.mean(self.prog)), 2) if self.prog else 0,
                        round(float(np.mean(self.hits)), 1) if self.hits else 0]
