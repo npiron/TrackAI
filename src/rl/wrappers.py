@@ -530,7 +530,8 @@ class GymTimeAttack(gym.Env):
         env = self.ta
         
         # Process events to keep window responsive
-        for event in pygame.event.get():
+        # on ne lit que la fermeture : les touches (Échap, M pour le son...) restent pour le script qui affiche
+        for event in pygame.event.get(pygame.QUIT):
             if event.type == pygame.QUIT:
                 # We can't really quit here without killing the env process
                 pass
