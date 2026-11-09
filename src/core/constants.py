@@ -35,6 +35,8 @@ DRIFT_MAX_SLIP = 1.1        # rad (~63°) : au-delà l'adhérence revient (pas d
 DRIFT_SCRUB = 0.0025        # perte de vitesse par frame et par radian de glisse
 DRIFT_STEER_IN = 0.22       # braquage mini pour lancer un drift (coup de frein)
 DRIFT_STEER_OUT = 0.15      # le drift tient tant qu'on braque au-delà
+DRIFT_AUTO_STEER = 0.85     # sans frein : braquer presque à fond...
+DRIFT_AUTO_SPEED = 0.7      # ... au-dessus de 70 % de la vitesse max fait décrocher l'arrière
 
 # Murs : on glisse le long du mur ; toucher un mur coûte vraiment de la vitesse
 WALL_HIT_LOSS = 0.15        # perte au premier contact (frôlement)

@@ -14,7 +14,7 @@ import math
 import numpy as np
 
 from src.core.constants import (
-    ACCEL, BRAKE, COAST_FRICTION, DRIFT_GRIP, DRIFT_MIN_SPEED, DRIFT_SCRUB, DRIFT_STEER_IN, DRIFT_TURN_SPEED,
+    ACCEL, BRAKE, COAST_FRICTION, DRIFT_GRIP, DRIFT_MIN_SPEED, DRIFT_SCRUB, DRIFT_STEER_IN, DRIFT_TURN_SPEED, DRIFT_AUTO_STEER, DRIFT_AUTO_SPEED,
     DRIFT_MAX_SLIP, DRIFT_STEER_OUT, DRIFT_YAW_BOOST,
     FRICTION, LATERAL_GRIP, MAX_SPEED, REVERSE_ACCEL, REVERSE_MAX, STEER_CURVATURE,
     STEER_SPEED, STEER_SPEED_SENS, TURN_SPEED, YAW_RESPONSE,
@@ -53,6 +53,8 @@ def drive(vel, heading, steering, angular_velocity, drifting, steer, accel, brak
     speed = math.hypot(v_long, v_lat)
     if brake > 0 and abs(steering) > DRIFT_STEER_IN and v_long > DRIFT_MIN_SPEED:
         drifting = True
+    elif abs(steering) > DRIFT_AUTO_STEER and v_long > DRIFT_AUTO_SPEED * MAX_SPEED:
+        drifting = True   # gros coup de volant à haute vitesse : l'arrière décroche
     elif drifting and (abs(steering) < DRIFT_STEER_OUT or speed < DRIFT_MIN_SPEED * 0.5):
         drifting = False
 
