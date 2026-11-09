@@ -88,10 +88,10 @@ def test_rotation_grows_with_speed_then_steering_softens():
         e = _free()
         while e.car.speed < v:
             e.step((0.0, 1.0, 0.0))
-        for _ in range(100):
-            e.step((1.0, 1.0 if e.car.speed < v else 0.0, 0.0))
+        for _ in range(100):  # 80 % de volant : virage en adhérence (à fond, l'arrière décroche)
+            e.step((0.8, 1.0 if e.car.speed < v else 0.0, 0.0))
         h = e.car.heading
-        e.step((1.0, 1.0 if e.car.speed < v else 0.0, 0.0))
+        e.step((0.8, 1.0 if e.car.speed < v else 0.0, 0.0))
         return (e.car.heading - h), e.car.speed
     (w_slow, v_slow), (w_fast, v_fast) = yaw(0.15 * MAX_SPEED), yaw(0.95 * MAX_SPEED)
     assert 0 < w_slow
@@ -103,14 +103,29 @@ def test_brake_while_steering_starts_drift():
     while e.car.speed < 0.9 * MAX_SPEED:
         e.step((0.0, 1.0, 0.0))
     for _ in range(10):
-        e.step((1.0, 1.0, 0.0))
-    assert not e.car.is_drifting
+        e.step((0.8, 1.0, 0.0))
+    assert not e.car.is_drifting       # braquage modéré sans frein : adhérence
     for _ in range(3):
         e.step((1.0, 0.0, 1.0))
     assert e.car.is_drifting
     for _ in range(20):
         e.step((0.0, 1.0, 0.0))
     assert not e.car.is_drifting       # volant droit : le drift s'arrête
+
+
+def test_full_lock_at_high_speed_drifts_without_brake():
+    e = _free()
+    while e.car.speed < 0.9 * MAX_SPEED:
+        e.step((0.0, 1.0, 0.0))
+    for _ in range(10):
+        e.step((1.0, 1.0, 0.0))
+    assert e.car.is_drifting           # gros coup de volant à haute vitesse : l'arrière décroche
+    slow = _free()
+    while slow.car.speed < 0.5 * MAX_SPEED:
+        slow.step((0.0, 1.0, 0.0))
+    for _ in range(10):
+        slow.step((1.0, 0.0, 0.0))
+    assert not slow.car.is_drifting    # à vitesse moyenne, ça tient
 
 
 def test_grazing_wall_keeps_more_speed_than_head_on():
