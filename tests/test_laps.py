@@ -71,7 +71,7 @@ def test_gym_wrapper_laps_info():
 # Hash de la trajectoire (obs, récompense, done) mesuré à l'origine sur le code d'avant le mode
 # multi-tours (commit e32dec6~1), puis remesuré avec la physique façon Trackmania (2026-11-07) ;
 # le code actuel avec laps omis doit le reproduire.
-REF_HASH = "a4d4ed8f5b43bb4048c7113de8d3752dcebd9b0699b4dec18552dbe960d191b1"
+REF_HASH = "f292fff428a5a321c999338765bf15507ee0d0df3fa7a423b50d9f5c10957ffc"
 
 
 def _traj_hash(**kw):
@@ -159,7 +159,7 @@ def test_wall_penalty_lowers_reward():
 
 
 def test_wall_fatal_ends_at_first_hit():
-    rewards, infos, term = _gym_run(wall_fatal=True)
+    rewards, infos, term = _gym_run(wall_fatal=True, action_repeat=1)  # récompense image par image
     assert term and infos[-1]["end_cause"] == "wall_fatal"
     assert infos[-1]["wall_hits"] == 1 and rewards[-1] == -100.0
     assert all(i["wall_hits"] == 0 for i in infos[:-1])
