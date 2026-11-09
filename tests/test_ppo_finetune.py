@@ -14,7 +14,7 @@ def _tiny_v2_model(tmp_path):
 
 def test_finetune_smoke_and_aux_coef(tmp_path):
     from scripts import ppo_finetune
-    init = BEST if os.path.exists(BEST) else _tiny_v2_model(tmp_path)
+    init = _tiny_v2_model(tmp_path)  # indépendant des modèles sauvés (la taille d'observation évolue)
     out = str(tmp_path / "ft")
     model = ppo_finetune.main(["--init", init, "--timesteps", "1000", "--n-envs", "1", "--aux-episodes", "2",
                                "--laps", "1", "--out", out])

@@ -253,7 +253,7 @@ class TestObservationV2:
             obs, _, term, trunc, _ = g.step(int(rng.integers(0, 9)))
             assert obs.shape == (n,) and np.all(np.isfinite(obs))
             assert -1.0 <= obs[9] <= 1.0
-            assert np.all((obs[26:] >= 0.0) & (obs[26:] <= 1.0))
+            assert np.all((obs[-9:] >= 0.0) & (obs[-9:] <= 1.0))   # lidars
             if term or trunc:
                 g.reset()
 
@@ -269,11 +269,12 @@ class TestObservationV2:
         env.car.pos = np.array([500.0, 300.0])
         env.car.heading = 0.0
         obs = env._obs()
-        for k in range(5):
+        n_pts = len(env.V2_POINT_DISTANCES)
+        for k in range(n_pts):
             dn, s, c = obs[10 + 3 * k: 13 + 3 * k]
             assert abs(s) < 1e-3 and c > 0.999
             assert dn > 0
-        assert abs(obs[25]) < 1e-3
+        assert abs(obs[10 + 3 * n_pts]) < 1e-3   # courbure nulle
 
     def test_v1_preserved_in_v2_and_obs_v1(self):
         from src.game.env import TimeAttackEnv

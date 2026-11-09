@@ -96,8 +96,12 @@ def bot_run(seed, laps, long_tracks, model_path=BOT_MODEL):
     from scripts.eval import Pilot, _load_model, detect_obs_version
     from src.rl.wrappers import GymTimeAttack
     model, vn = _load_model(model_path)
+    try:
+        obs_version = detect_obs_version(model)
+    except ValueError:
+        return None   # modèle d'une ancienne version de l'observation : pas de fantôme
     env = GymTimeAttack(render_mode=None, procedural=long_tracks, laps=laps, track_variant=2,
-                        obs_version=detect_obs_version(model), action_repeat=1)  # trajectoire image par image
+                        obs_version=obs_version, action_repeat=1)  # trajectoire image par image
     pilot = Pilot(model, vn)
     obs, _ = env.reset(options={"track_seed": seed} if long_tracks else None)
     frames, splits, done, info = [], [], False, {}

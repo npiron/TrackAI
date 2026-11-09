@@ -20,22 +20,22 @@ class TimeAttackEnv:
              lidar_1, lidar_2, lidar_3, lidar_4, lidar_5]
       action = (steer, accel, brake) in [-1..1], [0..1], [0..1]
 
-    obs_version=2 : 35 floats (v1 inchangée par défaut) :
+    obs_version=2 : 44 floats (v1 inchangée par défaut) :
       0-8   : identiques à v1 (speed_n, local_vx, local_vy, ang_vel, prev_steer,
               target_dist, target_dir_x, target_dir_y, on_track)
       9     : car.steering (position réelle du volant, [-1, 1])
-      10-24 : 5 points de la ligne centrale à venir (espacés de V2_POINT_SPACING px d'arc,
-              à partir de l'indice de spline le plus proche), 3 valeurs chacun dans le repère
-              de la voiture : distance normalisée [0,1], sin, cos de l'angle (cos>0 : devant, sin>0 : à droite)
-      25    : courbure à venir (changement de cap moyen entre points, / (pi/4), clip [-1, 1], >0 : à droite)
-      26-34 : 9 lidars (-pi/2 à pi/2 par pas de pi/8), portée V2_RAY_LENGTH px, normalisés [0,1]
+      10-33 : 8 points de la ligne centrale à venir, à V2_POINT_DISTANCES px d'arc (serrés près de la
+              voiture, jusqu'à 560 px : la distance de freinage depuis la vitesse max), 3 valeurs chacun
+              dans le repère de la voiture : distance normalisée [0,1], sin, cos de l'angle
+              (cos>0 : devant, sin>0 : à droite)
+      34    : courbure à venir (changement de cap moyen entre points, / (pi/4), clip [-1, 1], >0 : à droite)
+      35-43 : 9 lidars (-pi/2 à pi/2 par pas de pi/8), portée V2_RAY_LENGTH px, normalisés [0,1]
     ta.obs_v1() renvoie toujours l'observation v1 courante (pour le professeur heuristique).
     """
-    V2_POINT_SPACING = 40.0
-    V2_N_POINTS = 5
-    V2_RAY_LENGTH = 300.0
+    V2_POINT_DISTANCES = (30.0, 60.0, 100.0, 150.0, 220.0, 300.0, 420.0, 560.0)
+    V2_RAY_LENGTH = 400.0
     V2_LIDAR_ANGLES = [-math.pi / 2 + i * math.pi / 8 for i in range(9)]
-    OBS_V2_SIZE = 35
+    OBS_V2_SIZE = 10 + 3 * len(V2_POINT_DISTANCES) + 1 + 9
 
     def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1, obs_version: int = 1,
                  track_variant: int = 1):
@@ -299,8 +299,8 @@ class TimeAttackEnv:
         h = self.car.heading
         ch, sh = math.cos(h), math.sin(h)
         pts = []
-        for k in range(1, self.V2_N_POINTS + 1):
-            target = (cum[i0] + k * self.V2_POINT_SPACING) % total
+        for dist_ahead in self.V2_POINT_DISTANCES:
+            target = (cum[i0] + dist_ahead) % total
             j = int(np.searchsorted(cum[:-1], target, side="right") - 1) % n
             pts.append(sp[j])
         pts = np.array(pts, dtype=np.float64)
@@ -310,7 +310,7 @@ class TimeAttackEnv:
             lx = dx * ch + dy * sh
             ly = -dx * sh + dy * ch
             d = math.hypot(lx, ly)
-            dn = min(1.0, d / (self.V2_N_POINTS * self.V2_POINT_SPACING * 1.25))
+            dn = min(1.0, d / (self.V2_POINT_DISTANCES[-1] * 1.25))
             ang = math.atan2(ly, lx)
             feats += [dn, math.sin(ang), math.cos(ang)]
         chain = np.vstack([sp[i0][None, :], pts])
