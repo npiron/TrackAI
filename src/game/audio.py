@@ -1,8 +1,10 @@
-"""Sons du jeu, synthétisés en code (aucun fichier audio) : moteur électrique, pneus, chocs, bips.
+"""Sons du jeu, synthétisés en code (aucun fichier audio), mixés comme sur une console.
 
-Le moteur est celui d'une monoplace électrique (type Formula E) : un sifflement de turbine qui monte
-continûment avec la vitesse (un seul rapport), plus le souffle de l'air. Il est généré en continu par
-petits morceaux (~40 ms), phase continue, pour que la hauteur glisse sans palier ni clic.
+Tout passe par un seul flux (un seul canal pygame) rendu par morceaux de 60 ms :
+  sources    : moteur électrique (sifflement continu qui suit la vitesse, un seul rapport, + souffle d'air),
+               pneus (frottement sourd en glisse/freinage), effets ponctuels (choc, bips, carillon, fanfare)
+  bus master : EQ (coupe-bas 70 Hz, adoucissement des aigus) -> compresseur -> limiteur doux
+Rien ne peut donc couper un autre son ni saturer la sortie.
 """
 import math
 
@@ -12,22 +14,6 @@ import pygame
 SR = 22050
 
 
-def _sound(wave, volume=1.0):
-    w = np.clip(wave * volume, -1.0, 1.0)
-    pcm = (w * 32000).astype(np.int16)
-    return pygame.sndarray.make_sound(np.column_stack([pcm, pcm]).copy(order="C"))
-
-
-def _filtered_noise(n, rng, smooth, tones=()):
-    """Bruit adouci (passe-bas par moyenne glissante) : un frottement sourd, pas un sifflement."""
-    x = rng.standard_normal(n)
-    x = np.convolve(x, np.ones(smooth) / smooth, mode="same")
-    t = np.arange(n) / SR
-    for f, a in tones:
-        x += a * np.sin(2 * math.pi * f * t) * (0.6 + 0.4 * np.sin(2 * math.pi * 7 * t))
-    return x / np.max(np.abs(x))
-
-
 def _tone(freqs, dur, decay=6.0):
     t = np.arange(int(dur * SR)) / SR
     w = sum(np.sin(2 * math.pi * f * t) for f in freqs) / len(freqs)
@@ -35,113 +21,159 @@ def _tone(freqs, dur, decay=6.0):
     return w * env
 
 
+def _one_pole(x, a, state):
+    """Filtre passe-bas d'ordre 1 (y += a * (x - y)) ; renvoie (sortie, nouvel état)."""
+    y = np.empty_like(x)
+    s = state
+    for i in range(len(x)):
+        s += a * (x[i] - s)
+        y[i] = s
+    return y, s
+
+
 class CarAudio:
+    CHUNK = 0.06            # s par morceau rendu
+    # sifflement : fondamentale + harmoniques légèrement désaccordées (moteur, onduleur, pignons)
+    PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.25))
+    # bus master
+    COMP_THRESHOLD = 0.35   # niveau RMS au-delà duquel on compresse
+    COMP_RATIO = 3.0
+    CEILING = 0.89          # limiteur : ~ -1 dBFS
+
     def __init__(self):
         self.ok = False
         self.muted = False
         try:
-            pygame.mixer.init(SR, -16, 2, 1024)   # tampon plus grand : pas de trou entre les morceaux
+            pygame.mixer.init(SR, -16, 2, 1024)
         except pygame.error:
             return
-        pygame.mixer.set_num_channels(10)
-        pygame.mixer.set_reserved(8)       # canaux 0-7 réservés : aucun effet ne peut prendre celui du moteur
-        self._fx_ch = {name: pygame.mixer.Channel(2 + i)
-                       for i, name in enumerate(("hit", "beep", "go", "chime", "fanfare"))}
-        self._keep = []                    # références aux morceaux du moteur en cours/en attente
-        rng = np.random.default_rng(1)
-        self.rng = rng
-        self.motor_ch = pygame.mixer.Channel(0)
-        self._phase = np.zeros(4)          # phases continues des composantes du sifflement
-        self._lp = 0.0                     # état du filtre du souffle d'air
-        self._prev = (0.0, 0.0, 0.0)       # (fréquence, volume sifflement, volume air) du morceau précédent
-        self.skid = _sound(_filtered_noise(SR, rng, 9, ((420, 0.25), (610, 0.15))), 0.45)
-        self.skid_ch = pygame.mixer.Channel(1)
-        self.skid_ch.play(self.skid, loops=-1)
-        self.skid_ch.set_volume(0.0)
+        pygame.mixer.set_num_channels(4)
+        pygame.mixer.set_reserved(1)
+        self.ch = pygame.mixer.Channel(0)
+        self.rng = np.random.default_rng(1)
         t = np.arange(int(0.22 * SR)) / SR
-        thud = (rng.standard_normal(len(t)) * np.exp(-28 * t) * 0.8
+        thud = (self.rng.standard_normal(len(t)) * np.exp(-28 * t) * 0.8
                 + np.sin(2 * math.pi * 70 * t) * np.exp(-14 * t))
-        self.hit = _sound(thud / np.max(np.abs(thud)), 0.9)
-        self.beep = _sound(_tone([440], 0.16, 12), 0.3)
-        self.go = _sound(_tone([587, 880], 0.4, 6), 0.3)
-        self.chime = _sound(np.concatenate([_tone([659], 0.08, 20), _tone([988], 0.22, 10)]), 0.22)
         fan = [_tone([f, f * 1.5], 0.15, 8) for f in (392, 494, 587)] + [_tone([784, 988, 1175], 0.8, 3.5)]
-        self.fanfare = _sound(np.concatenate(fan), 0.28)
+        self.samples = {
+            "hit": 0.8 * thud / np.max(np.abs(thud)),
+            "beep": 0.35 * _tone([440], 0.16, 12),
+            "go": 0.35 * _tone([587, 880], 0.4, 6),
+            "chime": 0.25 * np.concatenate([_tone([659], 0.08, 20), _tone([988], 0.22, 10)]),
+            "fanfare": 0.3 * np.concatenate(fan),
+        }
+        self.voices = []                      # effets en cours : [échantillons, position, gain]
+        self._phase = np.zeros(len(self.PARTIALS))
+        self._air_lp = 0.0
+        self._skid_lp = 0.0
+        self._hp_lp = 0.0                     # état du coupe-bas (passe-bas soustrait)
+        self._smooth_lp = 0.0                 # état de l'adoucissement des aigus
+        self._comp_gain = 1.0
+        self._prev = np.zeros(4)              # (fréquence, sifflement, air, pneus) du morceau précédent
+        self._target = np.zeros(4)
+        self._keep = []
         self.ok = True
 
+    # --- interface du jeu ---
     def toggle_mute(self):
         self.muted = not self.muted
         if self.ok and self.muted:
-            self.silence()
+            self.ch.stop()
+            self.voices.clear()
 
     def play(self, name, volume=1.0):
         if self.ok and not self.muted:
-            snd = getattr(self, name)
-            ch = self._fx_ch[name]          # chaque effet a son canal : il ne coupe ni le moteur ni les autres
-            ch.set_volume(volume)
-            ch.play(snd)
-
-    # Sifflement : fondamentale + harmoniques légèrement désaccordées (moteur + onduleur + pignons)
-    PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.25))
-    CHUNK = 0.06  # s
-
-    def _motor_chunk(self, f1, a1, w1):
-        """Un morceau de son, en interpolant depuis l'état précédent (aucun saut de hauteur ni de volume)."""
-        n = int(SR * self.CHUNK)
-        f0, a0, w0 = self._prev
-        k = np.linspace(0.0, 1.0, n, endpoint=False)
-        f = f0 + (f1 - f0) * k
-        amp = a0 + (a1 - a0) * k
-        air = w0 + (w1 - w0) * k
-        out = np.zeros(n)
-        for idx, (mult, gain) in enumerate(self.PARTIALS):
-            ph = self._phase[idx] + np.cumsum(2 * math.pi * f * mult / SR)
-            out += gain * np.sin(ph)
-            self._phase[idx] = ph[-1] % (2 * math.pi)
-        out *= amp / 1.6
-        # souffle de l'air : bruit adouci (filtre passe-bas d'ordre 1)
-        noise = self.rng.standard_normal(n)
-        lp = np.empty(n)
-        y = self._lp
-        for t in range(n):
-            y += 0.08 * (noise[t] - y)
-            lp[t] = y
-        self._lp = y
-        out += air * lp * 1.6
-        out *= 0.8   # marge : moteur + pneus + effets ensemble ne saturent pas
-        self._prev = (f1, a1, w1)
-        return _sound(out)
+            self.voices.append([self.samples[name], 0, float(volume)])
+            self._feed()
 
     def update(self, speed_frac, throttle, slip_deg, drifting, braking, running=True):
         """À appeler à chaque image. speed_frac : vitesse réelle / vitesse max."""
         if not self.ok or self.muted:
             return
         v = max(0.0, min(1.1, speed_frac))
-        # un seul rapport : la hauteur suit directement la vitesse (doux en bas, chante en haut)
-        freq = 70.0 + 330.0 * v
-        whine = (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)   # moins fort au lever de pied (récupération)
+        freq = 70.0 + 330.0 * v                       # un seul rapport : la hauteur suit la vitesse
+        whine = (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)
         if not running:
             whine = 0.05
         air = 0.18 * v * v
-        if self.motor_ch.get_queue() is None:
-            snd = self._motor_chunk(freq, whine, air)
-            if self.motor_ch.get_busy():
-                self.motor_ch.queue(snd)
-                self._keep = self._keep[-1:] + [snd]   # garder vivants le morceau joué et celui en attente
-            else:
-                self.motor_ch.play(snd)
-                self._keep = [snd]
-        screech = 0.0
-        if speed_frac > 0.15:
-            screech = max(0.0, min(1.0, (slip_deg - 8.0) / 22.0))
+        skid = 0.0
+        if v > 0.15:
+            skid = max(0.0, min(1.0, (slip_deg - 8.0) / 22.0))
             if drifting:
-                screech = max(screech, 0.55)
+                skid = max(skid, 0.55)
             if braking:
-                screech = max(screech, 0.35)
-        self.skid_ch.set_volume(screech * 0.4 * min(1.0, speed_frac * 1.5))
+                skid = max(skid, 0.35)
+            skid *= 0.35 * min(1.0, v * 1.5)
+        self._target = np.array([freq, whine, air, skid])
+        self._feed()
 
     def silence(self):
+        """Coupe moteur et pneus (les effets, comme la fanfare d'arrivée, continuent)."""
         if self.ok:
-            self.motor_ch.stop()
-            self._prev = (0.0, 0.0, 0.0)
-            self.skid_ch.set_volume(0.0)
+            self._target = np.array([self._prev[0], 0.0, 0.0, 0.0])
+            self._feed()
+
+    # --- rendu ---
+    def _feed(self):
+        if self.ch.get_queue() is not None:
+            return
+        snd = self._render()
+        if self.ch.get_busy():
+            self.ch.queue(snd)
+            self._keep = self._keep[-1:] + [snd]   # garder vivants le morceau joué et celui en attente
+        else:
+            self.ch.play(snd)
+            self._keep = [snd]
+
+    def _render(self):
+        n = int(SR * self.CHUNK)
+        k = np.linspace(0.0, 1.0, n, endpoint=False)
+        f0, w0, a0, s0 = self._prev
+        f1, w1, a1, s1 = self._target
+        f = f0 + (f1 - f0) * k
+        whine = w0 + (w1 - w0) * k
+        air = a0 + (a1 - a0) * k
+        skid = s0 + (s1 - s0) * k
+        self._prev = self._target.copy()
+
+        # moteur : phases continues d'un morceau à l'autre
+        motor = np.zeros(n)
+        for idx, (mult, gain) in enumerate(self.PARTIALS):
+            ph = self._phase[idx] + np.cumsum(2 * math.pi * f * mult / SR)
+            motor += gain * np.sin(ph)
+            self._phase[idx] = ph[-1] % (2 * math.pi)
+        out = motor * whine / 1.6
+        noise, self._air_lp = _one_pole(self.rng.standard_normal(n), 0.08, self._air_lp)
+        out += air * noise * 1.6
+        rub, self._skid_lp = _one_pole(self.rng.standard_normal(n), 0.22, self._skid_lp)
+        out += skid * rub * 1.4
+
+        # effets ponctuels
+        alive = []
+        for v in self.voices:
+            data, pos, gain = v
+            m = min(n, len(data) - pos)
+            out[:m] += gain * data[pos:pos + m]
+            v[1] = pos + m
+            if v[1] < len(data):
+                alive.append(v)
+        self.voices = alive
+
+        # bus master : EQ
+        low, self._hp_lp = _one_pole(out, 2 * math.pi * 70 / SR, self._hp_lp)
+        out = out - low                                                  # coupe-bas 70 Hz
+        out, self._smooth_lp = _one_pole(out, 0.75, self._smooth_lp)    # adoucit le haut du spectre
+        # compresseur (gain lissé d'un morceau à l'autre : attaque rapide, relâchement lent)
+        rms = float(np.sqrt(np.mean(out * out))) + 1e-9
+        target = 1.0
+        if rms > self.COMP_THRESHOLD:
+            target = (self.COMP_THRESHOLD / rms) ** (1.0 - 1.0 / self.COMP_RATIO)
+        speed = 0.6 if target < self._comp_gain else 0.15
+        g1 = self._comp_gain + (target - self._comp_gain) * speed
+        out *= self._comp_gain + (g1 - self._comp_gain) * k
+        self._comp_gain = g1
+        # limiteur doux : jamais au-delà du plafond, sans écrêtage dur
+        out = self.CEILING * np.tanh(out / self.CEILING)
+
+        pcm = (out * 32767).astype(np.int16)
+        return pygame.sndarray.make_sound(np.column_stack([pcm, pcm]).copy(order="C"))

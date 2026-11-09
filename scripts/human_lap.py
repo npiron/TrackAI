@@ -257,6 +257,8 @@ def play(laps, long_tracks=False, seed=None):
         if not env.done:
             audio.update(v / MAX_SPEED, bool(up) and countdown <= 0, slip, c.is_drifting, bool(down) and c.speed > 0.5,
                          running=countdown <= 0)
+        else:
+            audio.silence()   # moteur coupé, mais le flux continue (fanfare d'arrivée)
         # --- dessin ---
         nxt = next((i for i, v in enumerate(env.cp_visited) if not v), None)
         draw_track(screen, track, checkpoints=nxt)
