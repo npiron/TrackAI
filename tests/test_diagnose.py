@@ -15,7 +15,7 @@ def test_summarize():
 
 
 def test_components_sum_to_reward():
-    env = GymTimeAttack(procedural=False, reward_mode="legacy")
+    env = GymTimeAttack(procedural=False, reward_mode="legacy", action_repeat=1)
     env.reset()
     for a in [1, 5, 6, 1, 3, 0, 2, 4] * 10:
         _, r, term, _, info = env.step(a)

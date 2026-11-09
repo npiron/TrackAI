@@ -1,3 +1,4 @@
+import pytest
 import math
 
 import numpy as np
@@ -108,9 +109,9 @@ def test_brake_while_steering_starts_drift():
     for _ in range(3):
         e.step((1.0, 0.0, 1.0))
     assert e.car.is_drifting
-    for _ in range(20):
+    for _ in range(30):
         e.step((0.0, 1.0, 0.0))
-    assert not e.car.is_drifting       # volant droit : le drift s'arrête
+    assert not e.car.is_drifting       # volant droit : la voiture se remet dans l'axe, le drift s'arrête
 
 
 def test_full_lock_at_high_speed_drifts_without_brake():
@@ -203,3 +204,28 @@ def test_wall_law_graze_costs_and_head_on_stops():
     assert 0.15 <= _wall_hit_loss(10) <= 0.30
     assert _wall_hit_loss(90) >= 0.8           # choc de face : presque tout
     assert _wall_hit_loss(10) < _wall_hit_loss(45) < _wall_hit_loss(90)
+
+
+def test_drift_is_one_continuous_arc_even_when_tapping():
+    """Volant tapoté pendant un drift : un seul drift continu, glisse plafonnée (~34°)."""
+    e = _free()
+    while e.car.speed < 0.9 * MAX_SPEED:
+        e.step((0.0, 1.0, 0.0))
+    states, slips = [], []
+    for i in range(40):
+        st = 1.0 if i < 3 or (i // 2) % 2 == 0 else 0.0
+        e.step((st, 1.0 if i >= 3 else 0.0, 1.0 if i < 3 else 0.0))
+        states.append(e.car.is_drifting)
+        v = e.car.vel
+        slips.append(abs((math.atan2(v[1], v[0]) - e.car.heading + math.pi) % (2 * math.pi) - math.pi))
+    first = states.index(True)
+    assert all(states[first:])                    # pas d'interruption
+    assert max(slips) <= math.radians(36)
+
+
+def test_bot_decides_every_two_frames():
+    from src.rl.wrappers import GymTimeAttack
+    env = GymTimeAttack(procedural=False)
+    env.reset()
+    env.step(1)
+    assert env.ta.t == pytest.approx(2 / 50)

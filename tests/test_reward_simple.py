@@ -14,7 +14,7 @@ def test_invalid_reward_mode():
 
 
 def test_simple_lap_sum_and_wall():
-    env = GymTimeAttack(procedural=False, laps=1, reward_mode="simple", wall_penalty=-5.0)
+    env = GymTimeAttack(procedural=False, laps=1, reward_mode="simple", wall_penalty=-5.0, action_repeat=1)
     env.reset()
     k_prog = 100.0 / float(env.ta._arc_lengths()[-1])
     length = float(env.ta._arc_lengths()[-1])

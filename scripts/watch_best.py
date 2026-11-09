@@ -102,7 +102,7 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     return
-            clock.tick(FPS * a.speed)
+            clock.tick(FPS * a.speed / env.action_repeat)  # une décision = action_repeat images
         status = "terminé" if info.get("is_success") else "échec"
         print(f"Course {ep} : {status}, {info.get('laps_done', 0)} tour(s), {env.ta.t:.2f} s")
         pygame.time.wait(1500)

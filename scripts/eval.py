@@ -46,6 +46,28 @@ def _load_model(path):
     return model, stats
 
 
+class Pilot:
+    """Conduit un modèle image par image en ne décidant que toutes les BOT_DECISION_FRAMES images
+    (mêmes touches entre deux décisions), comme pendant l'entraînement. Pour les scripts qui pilotent
+    un env avec action_repeat=1 (fantôme, vidéos)."""
+
+    def __init__(self, model, vn, every=None):
+        from src.core.constants import BOT_DECISION_FRAMES
+        self.model, self.vn = model, vn
+        self.every = every or BOT_DECISION_FRAMES
+        self.k, self.action = 0, 0
+
+    def act(self, obs):
+        if self.k % self.every == 0:
+            o = obs
+            if self.vn is not None:
+                o = np.clip((obs - self.vn.obs_rms.mean) / np.sqrt(self.vn.obs_rms.var + self.vn.epsilon),
+                            -self.vn.clip_obs, self.vn.clip_obs)
+            self.action = int(self.model.predict(o, deterministic=True)[0])
+        self.k += 1
+        return self.action
+
+
 def detect_obs_version(model, forced=None):
     """obs_version d'après la forme d'observation du modèle (14 -> 1, taille v2 -> 2) ; `forced` prioritaire.
     Sans modèle (random/heuristic) : `forced` ou 1."""

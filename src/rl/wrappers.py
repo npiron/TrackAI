@@ -4,7 +4,7 @@ import numpy as np
 import pygame
 import os
 
-from src.core.constants import W, H, FONT_SIZE, MAX_SPEED
+from src.core.constants import W, H, FONT_SIZE, MAX_SPEED, BOT_DECISION_FRAMES
 from src.game.env import TimeAttackEnv
 from src.game.track import build_track
 from src.game.rendering import draw_track, draw_car, draw_ghost, draw_lidar
@@ -35,13 +35,15 @@ class GymTimeAttack(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
-                 reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY):
+                 reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY,
+                 action_repeat=BOT_DECISION_FRAMES):
         super().__init__()
         if reward_mode not in REWARD_MODES:
             raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
         # reward_mode "simple" : k_prog * Δprogression - time_penalty + wall_penalty * nouveaux chocs (+ bonus de fin de l'env).
         # k_prog=None : SIMPLE_LAP_REWARD / longueur de la ligne centrale (un tour ≈ +SIMPLE_LAP_REWARD).
         self.reward_mode = reward_mode
+        self.action_repeat = max(1, int(action_repeat))  # images jouées par décision du bot
         self._k_prog_arg = k_prog
         self.time_penalty = float(time_penalty)
         # Options d'entraînement (défaut : désactivées). wall_penalty : récompense ajoutée par choc (négative = pénalité).
@@ -154,6 +156,18 @@ class GymTimeAttack(gym.Env):
         return obs, {}
 
     def step(self, action):
+        """Une décision du bot = action_repeat images avec les mêmes touches (récompenses additionnées)."""
+        total = 0.0
+        for _ in range(self.action_repeat):
+            obs, r, term, trunc, info = self._step_frame(action)
+            total += r
+            if term or trunc:
+                break
+        if self.render_mode == "human":
+            self.render()
+        return obs, total, term, trunc, info
+
+    def _step_frame(self, action):
         self.step_counter += 1
         self.episode_steps += 1
         
@@ -450,9 +464,6 @@ class GymTimeAttack(gym.Env):
             "env": float(reward),
         }
 
-        if self.render_mode == "human":
-            self.render()
-
         info["checkpoints_reached"] = current_cp_count
         info["is_success"] = bool(done and self.ta.lap_count >= self.laps)
         info["lap_time"] = self.ta.t if info["is_success"] else 0.0
@@ -489,8 +500,6 @@ class GymTimeAttack(gym.Env):
         for k, v in info["reward_components"].items():
             self._ep_components[k] = self._ep_components.get(k, 0.0) + v
         info["ep_reward_components"] = dict(self._ep_components)
-        if self.render_mode == "human":
-            self.render()
         info["checkpoints_reached"] = sum(self.ta.cp_visited)
         info["is_success"] = bool(done and self.ta.lap_count >= self.laps)
         info["lap_time"] = self.ta.t if info["is_success"] else 0.0

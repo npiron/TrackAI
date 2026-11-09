@@ -53,16 +53,15 @@ class Runner:
         ov = detect_obs_version(self.model)
         proc = variant == 2 or seed is not None
         self.env = GymTimeAttack(render_mode=None, procedural=proc, laps=laps, obs_version=ov,
-                                 track_variant=variant)
+                                 track_variant=variant, action_repeat=1)  # une image vidéo = une image de jeu
+        from scripts.eval import Pilot
+        self.pilot = Pilot(self.model, self.vn)
         self.obs, _ = self.env.reset(options={"track_seed": seed} if proc else None)
         self.label, self.color, self.laps = label, color, laps
         self.done, self.result, self.hits = False, None, 0
 
     def act(self, o):
-        if self.vn is not None:
-            o = np.clip((o - self.vn.obs_rms.mean) / np.sqrt(self.vn.obs_rms.var + self.vn.epsilon),
-                        -self.vn.clip_obs, self.vn.clip_obs)
-        return int(self.model.predict(o, deterministic=True)[0])
+        return self.pilot.act(o)
 
     def step(self):
         if self.done:

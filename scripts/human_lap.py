@@ -93,18 +93,18 @@ def bot_run(seed, laps, long_tracks, model_path=BOT_MODEL):
     import contextlib
     import io
     import numpy as np
-    from scripts.eval import _load_model, detect_obs_version
+    from scripts.eval import Pilot, _load_model, detect_obs_version
     from src.rl.wrappers import GymTimeAttack
     model, vn = _load_model(model_path)
     env = GymTimeAttack(render_mode=None, procedural=long_tracks, laps=laps, track_variant=2,
-                        obs_version=detect_obs_version(model))
+                        obs_version=detect_obs_version(model), action_repeat=1)  # trajectoire image par image
+    pilot = Pilot(model, vn)
     obs, _ = env.reset(options={"track_seed": seed} if long_tracks else None)
     frames, splits, done, info = [], [], False, {}
     with contextlib.redirect_stdout(io.StringIO()):
         while not done:
-            o = np.clip((obs - vn.obs_rms.mean) / np.sqrt(vn.obs_rms.var + vn.epsilon), -10, 10)
             n0 = sum(env.ta.cp_visited) + env.ta.lap_count * len(env.ta.cp_visited)
-            obs, _, t, tr, info = env.step(int(model.predict(o, deterministic=True)[0]))
+            obs, _, t, tr, info = env.step(pilot.act(obs))
             c = env.ta.car
             frames.append((float(c.pos[0]), float(c.pos[1]), float(c.heading), float(c.steering), float(c.speed)))
             if sum(env.ta.cp_visited) + env.ta.lap_count * len(env.ta.cp_visited) > n0:
