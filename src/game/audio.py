@@ -92,9 +92,9 @@ class CarAudio:
             return
         v = max(0.0, min(1.1, speed_frac))
         freq = 160.0 + 300.0 * v                      # un seul rapport : la hauteur suit la vitesse
-        whine = (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)
+        whine = 0.65 * (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)   # moteur un peu en retrait
         if not running:
-            whine = 0.05
+            whine = 0.035
         air = 0.18 * v * v
         skid = 0.0
         if v > 0.15:
