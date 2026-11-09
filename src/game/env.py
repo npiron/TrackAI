@@ -267,9 +267,13 @@ class TimeAttackEnv:
         if not all(self.cp_visited):
             return False
         
-        fx, fy = self.track.finish_pos[:2]
-        dist = np.linalg.norm(self.car.pos - vec(fx, fy))
-        return dist < FINISH_RADIUS
+        # la voiture doit franchir la ligne (son centre passe sur le damier), pas seulement s'en approcher
+        fx, fy, fang = self.track.finish_pos
+        rel = self.car.pos - vec(fx, fy)
+        along = float(rel[0] * math.sin(fang) - rel[1] * math.cos(fang))   # sens de la course
+        across = float(rel[0] * math.cos(fang) + rel[1] * math.sin(fang))  # en travers de la route
+        half = getattr(self.track, "half_width", 60.0) + 10.0
+        return 0.0 <= along < FINISH_RADIUS and abs(across) <= half
 
     def obs_v1(self):
         """Observation v1 (14 valeurs) courante, quelle que soit obs_version."""

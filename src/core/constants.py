@@ -58,7 +58,7 @@ TRACK_OUTER_MARGIN = 40
 TRACK_INNER_MARGIN = TRACK_OUTER_MARGIN + TRACK_WIDTH
 
 CHECKPOINT_RADIUS = 100
-FINISH_RADIUS = 100
+FINISH_RADIUS = 100  # fenêtre après la ligne d'arrivée où le franchissement est compté (px)
 
 # Fonts
 FONT_SIZE = 24
