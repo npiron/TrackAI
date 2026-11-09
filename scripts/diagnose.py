@@ -46,7 +46,7 @@ def summarize_episode(speeds, positions, cp_idx, acc, info, stop_thr=1.0):
 def run(model_path, episodes, seed, procedural, laps):
     from scripts.eval import _load_model
     from src.rl.wrappers import GymTimeAttack
-    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps)
+    env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps, reward_mode="legacy")
     model, vn = _load_model(model_path)
     out = []
     for k in range(episodes):

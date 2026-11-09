@@ -35,7 +35,7 @@ class GymTimeAttack(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
-                 reward_mode="legacy", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY):
+                 reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY):
         super().__init__()
         if reward_mode not in REWARD_MODES:
             raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
@@ -127,6 +127,7 @@ class GymTimeAttack(gym.Env):
         
         self._last_progress = -dist
         self._simple_s = self._centerline_s()
+        self._ep_components = {}
         self._last_lap_count = 0
         self._last_speed = 0.0
         self._last_cp_count = 0
@@ -170,6 +171,7 @@ class GymTimeAttack(gym.Env):
             }
             self._add_lap_info(info)
             info["end_cause"] = "timeout"
+            info["ep_reward_components"] = dict(self._ep_components)
             # Limite de temps = troncature, pas un échec : SB3 bootstrappe la valeur
             return obs, 0.0, False, True, info
         if self.step_counter % 60 == 0:
@@ -227,6 +229,8 @@ class GymTimeAttack(gym.Env):
             }
             self._add_lap_info(info)
             info["end_cause"] = "wall_stuck"
+            self._ep_components["env"] = self._ep_components.get("env", 0.0) - 100.0
+            info["ep_reward_components"] = dict(self._ep_components)
             return obs, -100.0, True, False, info  # Stuck penalty
         
         if self.wall_fatal and new_hits > 0:
@@ -482,6 +486,9 @@ class GymTimeAttack(gym.Env):
             "progress": float(progress), "time_penalty": float(-self.time_penalty),
             "wall": float(wall), "env": float(reward),
         }
+        for k, v in info["reward_components"].items():
+            self._ep_components[k] = self._ep_components.get(k, 0.0) + v
+        info["ep_reward_components"] = dict(self._ep_components)
         if self.render_mode == "human":
             self.render()
         info["checkpoints_reached"] = sum(self.ta.cp_visited)

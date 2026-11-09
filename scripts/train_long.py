@@ -19,6 +19,11 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 import numpy as np
 
 
+# Indicateurs de stabilité PPO suivis par génération (entropie, écart à l'ancienne politique, critique)
+TRAIN_KEYS = ("train/entropy_loss", "train/approx_kl", "train/clip_fraction", "train/value_loss",
+              "train/explained_variance")
+
+
 def make_env(rank, seed, wall_penalty, laps=1, time_penalty=None):
     def _f():
         from src.rl.wrappers import GymTimeAttack
@@ -77,15 +82,32 @@ def main(argv=None):
             self.marks = [m for m in a.early if m > self.num_timesteps] if a.init is None else []
             self.next_save = self.marks.pop(0) if self.marks else self.num_timesteps + a.gen_steps
             self.laps, self.prog, self.hits = [], [], []
+            self.comps, self.train_stats = [], []
+            stats_path = os.path.join(a.out_dir, "train_stats.csv")
+            new_stats = not os.path.exists(stats_path)
+            self.fs = open(stats_path, "a", newline="")
+            self.ws = csv.writer(self.fs)
+            if new_stats:
+                self.ws.writerow(["gen", "timesteps", "ep_reward", "r_progress", "r_time", "r_wall", "r_env",
+                                  "contacts_moy"] + [k.split("/")[1] for k in TRAIN_KEYS])
             self.f = open(log_path, "a", newline="")
             self.w = csv.writer(self.f)
             if new_log:
                 self.w.writerow(["gen", "timesteps", "minutes", "pas_s", "episodes", "taux_tour_fini",
                                  "checkpoints_moy", "chocs_moy"])
 
+        def _on_rollout_start(self):
+            # valeurs de la dernière mise à jour PPO (enregistrées par train(), pas encore effacées)
+            vals = self.model.logger.name_to_value
+            if all(k in vals for k in TRAIN_KEYS):
+                self.train_stats.append([float(vals[k]) for k in TRAIN_KEYS])
+
         def _on_step(self):
             for info in self.locals["infos"]:
                 if "episode" in info:
+                    c = info.get("ep_reward_components", {})
+                    self.comps.append([info["episode"]["r"], c.get("progress", 0.0), c.get("time_penalty", 0.0),
+                                       c.get("wall", 0.0), c.get("env", 0.0), info.get("wall_contacts", 0)])
                     self.laps.append(1.0 if info.get("laps_done", 0) >= a.laps else 0.0)
                     self.prog.append(info.get("checkpoints_reached", 0))
                     self.hits.append(info.get("wall_hits", 0))
@@ -103,7 +125,13 @@ def main(argv=None):
                 self.w.writerow(row)
                 self.f.flush()
                 print("génération", row, flush=True)
+                cm = np.mean(self.comps, axis=0) if self.comps else np.zeros(6)
+                ts = np.mean(self.train_stats, axis=0) if self.train_stats else np.full(len(TRAIN_KEYS), np.nan)
+                self.ws.writerow([self.gen, self.num_timesteps] + [round(float(x), 3) for x in cm]
+                                 + [round(float(x), 5) for x in ts])
+                self.fs.flush()
                 self.laps, self.prog, self.hits = [], [], []
+                self.comps, self.train_stats = [], []
             return time.time() - self.t0 < a.minutes * 60
 
     model.learn(total_timesteps=10**10, callback=Cb(), reset_num_timesteps=a.init is None)
