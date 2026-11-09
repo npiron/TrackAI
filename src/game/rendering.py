@@ -262,6 +262,9 @@ def draw_keys(screen, action, speed=None, max_speed=None, font=None):
                "left": [(c[0] - s, c[1]), (c[0] + s // 2, c[1] - s), (c[0] + s // 2, c[1] + s)],
                "right": [(c[0] + s, c[1]), (c[0] - s // 2, c[1] - s), (c[0] - s // 2, c[1] + s)]}[name]
         pygame.draw.polygon(screen, (20, 22, 28) if on else (150, 156, 170), tri)
+    if speed is not None and not isinstance(speed, (int, float)):  # une voiture : vitesse réelle (|vel|)
+        car = speed
+        speed = math.copysign(math.hypot(car.vel[0], car.vel[1]), car.speed)
     if speed is not None and max_speed:
         font = font or pygame.font.SysFont("Avenir Next,Helvetica Neue,Arial", 20, bold=True)
         x0 = cx + k // 2 + gap + k + 20

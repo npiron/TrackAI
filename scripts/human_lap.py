@@ -263,7 +263,7 @@ def play(laps, long_tracks=False, seed=None):
         act = {(0, 0): 0, (0, 1): 1, (0, 2): 2, (-1, 0): 3, (1, 0): 4, (-1, 1): 5, (1, 1): 6, (-1, 2): 7, (1, 2): 8}
         sx = (1 if right else 0) - (1 if left else 0)
         pedal = 1 if up else (2 if down else 0)
-        draw_keys(screen, act.get((sx, pedal), 0), env.car.speed, MAX_SPEED)
+        draw_keys(screen, act.get((sx, pedal), 0), env.car, MAX_SPEED)
         hints = "Entrée : dernier checkpoint    R : recommencer" + ("    N : nouveau circuit" if long_tracks else "") + "    Échap : quitter"
         text(small, hints, (220, 224, 232), (W - 16, H - 14), "bottomright")
         # compte à rebours

@@ -61,7 +61,7 @@ def main():
     def overlay(screen):
         nonlocal font
         if not a.no_keys:
-            draw_keys(screen, state["action"], env.ta.car.speed, MAX_SPEED)
+            draw_keys(screen, state["action"], env.ta.car, MAX_SPEED)
         if label["text"]:
             font = font or pygame.font.SysFont("Avenir Next Condensed", 34, bold=True, italic=True)
             img = font.render(label["text"], True, (255, 255, 255))
