@@ -36,7 +36,7 @@ class GymTimeAttack(gym.Env):
 
     def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
                  reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY,
-                 action_repeat=BOT_DECISION_FRAMES):
+                 action_repeat=BOT_DECISION_FRAMES, track_seed=None):
         super().__init__()
         if reward_mode not in REWARD_MODES:
             raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
@@ -44,6 +44,7 @@ class GymTimeAttack(gym.Env):
         # k_prog=None : SIMPLE_LAP_REWARD / longueur de la ligne centrale (un tour ≈ +SIMPLE_LAP_REWARD).
         self.reward_mode = reward_mode
         self.action_repeat = max(1, int(action_repeat))  # images jouées par décision du bot
+        self.fixed_track_seed = track_seed   # circuit imposé (entraînement sur un seul circuit)
         self._k_prog_arg = k_prog
         self.time_penalty = float(time_penalty)
         # Options d'entraînement (défaut : désactivées). wall_penalty : récompense ajoutée par choc (négative = pénalité).
@@ -116,7 +117,7 @@ class GymTimeAttack(gym.Env):
             print(f"Error loading rewards config: {e}")
 
     def reset(self, seed=None, options=None):
-        track_seed = (options or {}).get("track_seed")
+        track_seed = (options or {}).get("track_seed", self.fixed_track_seed)
         # This regenerates the track if procedural (track_seed fixes it)
         obs = self.ta.reset() if track_seed is None else self.ta.reset(track_seed=track_seed)
         

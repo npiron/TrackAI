@@ -24,12 +24,12 @@ TRAIN_KEYS = ("train/entropy_loss", "train/approx_kl", "train/clip_fraction", "t
               "train/explained_variance")
 
 
-def make_env(rank, seed, wall_penalty, laps=1, time_penalty=None):
+def make_env(rank, seed, wall_penalty, laps=1, time_penalty=None, track_seed=None):
     def _f():
         from src.rl.wrappers import GymTimeAttack
         kw = {} if time_penalty is None else {"time_penalty": time_penalty}
         env = GymTimeAttack(render_mode=None, procedural=True, laps=laps, obs_version=2, track_variant=2,
-                            reward_mode="simple", wall_penalty=wall_penalty, **kw)
+                            reward_mode="simple", wall_penalty=wall_penalty, track_seed=track_seed, **kw)
         env.reset(seed=seed + rank)
         return env
     return _f
@@ -50,6 +50,7 @@ def main(argv=None):
     p.add_argument("--ent", type=float, default=0.01)
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--init", default=None)
+    p.add_argument("--track-seed", type=int, default=None, help="s'entraîner sur un seul circuit (son numéro)")
     p.add_argument("--clip", type=float, default=None, help="clip_range PPO (reprise : 0.1 conseillé)")
     p.add_argument("--fresh-reward-scale", action="store_true",
                    help="reprise : remet à zéro l'échelle des récompenses (VecNormalize) et la mémoire d'Adam")
@@ -63,7 +64,7 @@ def main(argv=None):
     from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor, VecNormalize
 
     os.makedirs(a.out_dir, exist_ok=True)
-    venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty, a.laps, a.time_penalty)
+    venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty, a.laps, a.time_penalty, a.track_seed)
                                       for i in range(a.n_envs)]))
     if a.init:
         venv = VecNormalize.load(a.init[:-4] + "_vecnormalize.pkl", venv)

@@ -29,6 +29,7 @@ def main():
     p.add_argument("--long", action="store_true", help="circuits longs aléatoires (tracé variante 2)")
     p.add_argument("--same-tracks", action="store_true", help="toujours la même série de circuits (pour comparer des modèles)")
     p.add_argument("--no-keys", action="store_true", help="ne pas afficher les touches du bot")
+    p.add_argument("--track-seed", type=int, default=None, help="toujours ce circuit (son numéro)")
     p.add_argument("--mute", action="store_true", help="sans le son (M pour couper/remettre en cours de route)")
     p.add_argument("--follow", default=None, metavar="DOSSIER",
                    help="suivre un entraînement en cours : recharge la dernière génération de DOSSIER avant chaque course")
@@ -110,7 +111,9 @@ def main():
             pygame.time.wait(1000)  # laisse l'entraînement finir d'écrire les fichiers
             model, vn = _load_model(current)
             label["text"] = gen_label(current)
-        if (a.random or a.long) and not a.same_tracks:
+        if a.track_seed is not None:
+            obs, _ = env.reset(options={"track_seed": a.track_seed})
+        elif (a.random or a.long) and not a.same_tracks:
             obs, _ = env.reset(options={"track_seed": rng.randrange(1000, 10**9)})  # un nouveau circuit à chaque lancement
         else:
             obs, _ = env.reset()
