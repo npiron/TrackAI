@@ -45,11 +45,8 @@ def draw_track(screen, track: Track, checkpoints=None):
                 for p in (p1, p2):
                     pygame.draw.circle(screen, (20, 30, 45), (int(p[0]), int(p[1])), 8)
                     pygame.draw.circle(screen, (70, 160, 235), (int(p[0]), int(p[1])), 6)
-            else:  # la prochaine porte seulement : fine ligne claire et deux balises
-                pygame.draw.line(screen, (255, 255, 255), p1, p2, width=2)
-                for p in (p1, p2):
-                    pygame.draw.circle(screen, (25, 28, 36), (int(p[0]), int(p[1])), 6)
-                    pygame.draw.circle(screen, (255, 210, 60), (int(p[0]), int(p[1])), 4)
+            else:  # la prochaine porte seulement
+                _draw_gate(screen, cx, cy, c, s_, half_w)
         else:
             half_w = 50
             pygame.draw.line(screen, COLOR_CHECKPOINT, (cx - c * half_w, cy - s_ * half_w),
@@ -226,6 +223,51 @@ def draw_lidar(screen, car: Car, readings: List[float]):
         
         pygame.draw.line(screen, color, (cx, cy), (end_x, end_y), 1)
         pygame.draw.circle(screen, color, (int(end_x), int(end_y)), 3)
+
+GATE_LIGHT = (90, 220, 255)
+
+
+def _draw_gate(screen, cx, cy, c, s_, half_w):
+    """Porte de checkpoint vue de dessus : bande lumineuse rayée en travers de la route, qui pulse
+    doucement, et deux balises sombres à feu cyan de part et d'autre (arche de Trackmania vue du ciel)."""
+    import pygame.gfxdraw
+    pulse = 0.5 + 0.5 * math.sin(pygame.time.get_ticks() / 260.0)
+    ax, ay = c, s_            # en travers de la route
+    tx, ty = -s_, c           # le long de la route
+    inner = half_w - 6
+    # halo doux sous la bande
+    for w, al in ((13, 22), (8, 35)):
+        quad = [(cx - ax * inner - tx * w, cy - ay * inner - ty * w), (cx + ax * inner - tx * w, cy + ay * inner - ty * w),
+                (cx + ax * inner + tx * w, cy + ay * inner + ty * w), (cx - ax * inner + tx * w, cy - ay * inner + ty * w)]
+        pygame.gfxdraw.filled_polygon(screen, [(round(x), round(y)) for x, y in quad],
+                                      (*GATE_LIGHT, int(al * (0.6 + 0.4 * pulse))))
+    # bande rayée : segments alternés cyan / blanc, semi-transparents
+    n = 8
+    for i in range(n):
+        u0 = -inner + 2 * inner * i / n
+        u1 = -inner + 2 * inner * (i + 1) / n
+        col = (*GATE_LIGHT, int(110 + 70 * pulse)) if i % 2 == 0 else (235, 250, 255, int(80 + 50 * pulse))
+        quad = [(cx + ax * u0 - tx * 4, cy + ay * u0 - ty * 4), (cx + ax * u1 - tx * 4, cy + ay * u1 - ty * 4),
+                (cx + ax * u1 + tx * 4, cy + ay * u1 + ty * 4), (cx + ax * u0 + tx * 4, cy + ay * u0 + ty * 4)]
+        pygame.gfxdraw.filled_polygon(screen, [(round(x), round(y)) for x, y in quad], col)
+    # liseré fin et net de chaque côté de la bande
+    for side in (-4.5, 4.5):
+        a_ = (cx - ax * inner + tx * side, cy - ay * inner + ty * side)
+        b_ = (cx + ax * inner + tx * side, cy + ay * inner + ty * side)
+        pygame.draw.aaline(screen, (*GATE_LIGHT,), a_, b_)
+    # balises : bloc sombre arrondi, feu cyan qui pulse
+    for sign in (-1, 1):
+        px, py = cx + ax * sign * (half_w + 2), cy + ay * sign * (half_w + 2)
+        body = [(px + tx * dx + ax * dy, py + ty * dx + ay * dy) for dx, dy in ((-9, -5), (9, -5), (9, 5), (-9, 5))]
+        pts = [(round(x), round(y)) for x, y in body]
+        pygame.gfxdraw.filled_polygon(screen, [(x + 2, y + 3) for x, y in pts], (0, 0, 0, 70))   # ombre
+        pygame.gfxdraw.filled_polygon(screen, pts, (28, 31, 40))
+        pygame.gfxdraw.aapolygon(screen, pts, (70, 76, 92))
+        r = 3 + int(round(pulse))
+        pygame.gfxdraw.filled_circle(screen, round(px), round(py), r + 3, (*GATE_LIGHT, int(60 * pulse)))
+        pygame.gfxdraw.filled_circle(screen, round(px), round(py), r, GATE_LIGHT)
+        pygame.gfxdraw.aacircle(screen, round(px), round(py), r, GATE_LIGHT)
+
 
 def fmt_time(t: float) -> str:
     m = int(t // 60)
