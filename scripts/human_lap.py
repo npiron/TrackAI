@@ -139,6 +139,10 @@ def play(laps, long_tracks=False, seed=None):
     small = pygame.font.SysFont("Avenir Next,Helvetica Neue", 16)
     huge = pygame.font.SysFont("Avenir Next Condensed", 150, bold=True, italic=True)
     ghost_layer = pygame.Surface((W, H), pygame.SRCALPHA)
+    import math
+    from src.game.audio import CarAudio
+    audio = CarAudio()
+    last_count, contacts_seen = None, 0
 
     def text(font, s, color, pos, anchor="topleft", shadow=True):
         img = font.render(s, True, color)
@@ -165,8 +169,9 @@ def play(laps, long_tracks=False, seed=None):
         restart()
 
     def restart():
-        nonlocal env, start_t, snap, splits, msg, delta, medal
+        nonlocal env, start_t, snap, splits, msg, delta, medal, last_count, contacts_seen
         env = TimeAttackEnv(track, procedural=False, laps=laps)
+        last_count, contacts_seen = None, 0
         env.reset()
         start_t = pygame.time.get_ticks()
         snap = None
@@ -196,6 +201,8 @@ def play(laps, long_tracks=False, seed=None):
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT or (ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE):
                 running = False
+            elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_m:
+                audio.toggle_mute()
             elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_r:
                 restart()
             elif ev.type == pygame.KEYDOWN and ev.key in (pygame.K_RETURN, pygame.K_BACKSPACE) and not env.done:
@@ -209,6 +216,10 @@ def play(laps, long_tracks=False, seed=None):
         left = k[pygame.K_LEFT] or k[pygame.K_a] or k[pygame.K_q]
         right = k[pygame.K_RIGHT] or k[pygame.K_d]
         countdown = COUNTDOWN - (pygame.time.get_ticks() - start_t) / 1000.0
+        count = int(countdown / COUNTDOWN * 3) + 1 if countdown > 0 else 0
+        if count != last_count:
+            audio.play("beep" if count > 0 else "go")
+            last_count = count
         if countdown <= 0 and not env.done:
             n_cp = len(env.cp_visited)
             n0 = sum(env.cp_visited) + env.lap_count * n_cp
@@ -216,11 +227,17 @@ def play(laps, long_tracks=False, seed=None):
             if sum(env.cp_visited) + env.lap_count * n_cp > n0 and not env.done:
                 splits.append(env.t)
                 snap = car_state()
+                audio.play("chime")
                 ref = best["splits"] if best else (bot["splits"] if bot else [])
                 if len(ref) >= len(splits) and env.t > 1.0:  # pas d'écart pour la porte collée au départ
                     delta = (env.t - ref[len(splits) - 1], pygame.time.get_ticks())
+            if env.wall_contacts > contacts_seen:   # nouveau choc : volume selon la vitesse
+                contacts_seen = env.wall_contacts
+                audio.play("hit", min(1.0, 0.25 + math.hypot(*env.car.vel) / MAX_SPEED))
             if env.done:
+                audio.silence()
                 if env.lap_count >= laps:
+                    audio.play("fanfare")
                     rec = _save_record(key, env.t, splits)
                     if not long_tracks:
                         record(env.t, env.lap_times, laps)
@@ -231,6 +248,15 @@ def play(laps, long_tracks=False, seed=None):
                 else:
                     msg = "Échec"
 
+        c = env.car
+        v = math.hypot(c.vel[0], c.vel[1])
+        slip = 0.0
+        if v > 1.0:
+            slip = abs(math.degrees((math.atan2(c.vel[1], c.vel[0]) - c.heading + math.pi) % (2 * math.pi) - math.pi))
+            slip = min(slip, 180 - slip) if c.speed < 0 else slip
+        if not env.done:
+            audio.update(v / MAX_SPEED, bool(up) and countdown <= 0, slip, c.is_drifting, bool(down) and c.speed > 0.5,
+                         running=countdown <= 0)
         # --- dessin ---
         nxt = next((i for i, v in enumerate(env.cp_visited) if not v), None)
         draw_track(screen, track, checkpoints=nxt)
@@ -264,7 +290,7 @@ def play(laps, long_tracks=False, seed=None):
         sx = (1 if right else 0) - (1 if left else 0)
         pedal = 1 if up else (2 if down else 0)
         draw_keys(screen, act.get((sx, pedal), 0), env.car, MAX_SPEED)
-        hints = "Entrée : dernier checkpoint    R : recommencer" + ("    N : nouveau circuit" if long_tracks else "") + "    Échap : quitter"
+        hints = "Entrée : dernier checkpoint    R : recommencer    M : son" + ("    N : nouveau circuit" if long_tracks else "") + "    Échap : quitter"
         text(small, hints, (220, 224, 232), (W - 16, H - 14), "bottomright")
         # compte à rebours
         if countdown > 0:
