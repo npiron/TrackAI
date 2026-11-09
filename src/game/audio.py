@@ -154,7 +154,7 @@ class CarAudio:
                 skid = max(skid, 0.35)
             skid *= 0.2 * min(1.0, v * 1.5)   # crissement présent mais discret
         load = 1.0 if (throttle and running) else 0.0
-        low_f = 55.0 + 45.0 * v              # la couche grave suit la vitesse, sans les rapports
+        low_f = freq * 0.25                  # la couche grave suit le sifflement (2 octaves dessous), rapports compris
         self._target = np.array([freq, whine, air, skid, load, low_f])
 
     def silence(self):
