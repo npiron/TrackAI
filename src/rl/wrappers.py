@@ -170,7 +170,8 @@ class GymTimeAttack(gym.Env):
             }
             self._add_lap_info(info)
             info["end_cause"] = "timeout"
-            return obs, -50.0, True, False, info  # Penalty for timeout
+            # Limite de temps = troncature, pas un échec : SB3 bootstrappe la valeur
+            return obs, 0.0, False, True, info
         if self.step_counter % 60 == 0:
             self._load_config()
 

@@ -163,3 +163,13 @@ def test_wall_fatal_ends_at_first_hit():
     assert term and infos[-1]["end_cause"] == "wall_fatal"
     assert infos[-1]["wall_hits"] == 1 and rewards[-1] == -100.0
     assert all(i["wall_hits"] == 0 for i in infos[:-1])
+
+
+def test_timeout_is_truncation_not_termination():
+    from src.rl.wrappers import GymTimeAttack
+    env = GymTimeAttack(render_mode=None)
+    env.reset(seed=0)
+    env.episode_steps = 2000 * env.laps - 1
+    _, r, term, trunc, info = env.step(0)
+    assert info["end_cause"] == "timeout"
+    assert trunc is True and term is False and r == 0.0
