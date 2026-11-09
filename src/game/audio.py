@@ -9,7 +9,7 @@ import numpy as np
 import pygame
 
 SR = 22050
-ENGINE_BANDS = 14
+ENGINE_BANDS = 20
 GEARS = 5
 
 
@@ -26,7 +26,7 @@ def _engine_loop(f0, rng):
     t = np.arange(n) / SR
     ph = 2 * math.pi * f0 * t
     w = np.zeros(n)
-    for h, a in ((1, 1.0), (2, 0.5), (3, 0.22), (4, 0.1)):   # peu d'harmoniques : grave et rond
+    for h, a in ((1, 1.0), (2, 0.6), (3, 0.35), (4, 0.18), (5, 0.08)):   # timbre de F1 : haut perché, un peu métallique
         w += a * np.sin(h * ph + h * 0.7)
     w *= 0.75 + 0.25 * np.sin(ph / 2) ** 2          # pulsations d'allumage
     noise = rng.standard_normal(n)
@@ -62,7 +62,7 @@ class CarAudio:
             return
         pygame.mixer.set_num_channels(ENGINE_BANDS + 8)
         rng = np.random.default_rng(1)
-        self.freqs = np.geomspace(32.0, 140.0, ENGINE_BANDS)
+        self.freqs = np.geomspace(90.0, 420.0, ENGINE_BANDS)   # F1 : ça monte haut dans les tours
         self.engine = [_sound(_engine_loop(f, rng), 0.55) for f in self.freqs]
         self.eng_ch = [pygame.mixer.Channel(i) for i in range(ENGINE_BANDS)]
         for ch, snd in zip(self.eng_ch, self.engine):
