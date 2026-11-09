@@ -15,6 +15,15 @@ GRASS_B = (66, 124, 56)
 SHADOW = (40, 78, 36)
 ASPHALT = (74, 76, 82)
 ASPHALT_EDGE = (62, 64, 70)
+# Styles de route : couleur, bord, grain, gravillons (densité, éclaircissement), zone de gomme au centre
+ROAD_STYLES = {
+    "actuel": dict(base=(74, 76, 82), edge=(62, 64, 70), grain=7, speckle=0.0, speck_light=0, rubber=0),
+    "clair": dict(base=(96, 98, 104), edge=(82, 84, 90), grain=8, speckle=0.035, speck_light=38, rubber=0),
+    "piste": dict(base=(92, 93, 97), edge=(78, 79, 84), grain=8, speckle=0.03, speck_light=34, rubber=14),
+}
+ROAD_STYLE = "clair"
+VERGE = (92, 156, 74)        # bas-côté : pelouse rase plus claire le long du muret
+VERGE_WIDTH = 14             # px
 WALL_WHITE = (226, 228, 230)
 WALL_RED = (200, 46, 46)
 KERB_RED = (214, 52, 48)
@@ -80,7 +89,7 @@ def _band(surface, sp, nrm, arc, i0, length, side, r_in, r_out, block, colors, s
 VISUAL_MARGIN = 8  # px ajoutés de chaque côté de la route dessinée
 
 
-def paint_track(track) -> pygame.Surface:
+def paint_track(track, road_style=None) -> pygame.Surface:
     """Peint à 2x puis réduit : bords lisses, sans escaliers."""
     k = 2
     # la collision se fait au centre de la voiture : on peint l'asphalte un peu plus large que la zone
@@ -95,22 +104,46 @@ def paint_track(track) -> pygame.Surface:
     _, nrm = _normals(sp)
     arc = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(sp, axis=0), axis=1))])
 
+    # bas-côté : bande de pelouse rase, plus claire, juste derrière le muret
+    verge = pygame.Surface(big.get_size(), pygame.SRCALPHA)
+    for p in pts[::2]:
+        pygame.draw.circle(verge, VERGE, p, int(R + (6 + VERGE_WIDTH) * k))
+    va = pygame.surfarray.pixels_alpha(verge)
+    vrgb = pygame.surfarray.pixels3d(verge)
+    vmask = va > 0
+    vgrain = rng.integers(-5, 6, size=va.shape)
+    for ch_i in range(3):
+        ch = vrgb[..., ch_i].astype(np.int16)
+        ch[vmask] += vgrain[vmask]
+        vrgb[..., ch_i] = np.clip(ch, 0, 255).astype(np.uint8)
+    del va, vrgb
+    big.blit(verge, (0, 0))
+
     # ombre portée et muret blanc (juste hors piste : c'est le mur physique)
     for p in pts[::2]:
         pygame.draw.circle(big, SHADOW, (p[0] + 3 * k, p[1] + 4 * k), int(R + 9 * k))
     for p in pts[::2]:
         pygame.draw.circle(big, WALL_WHITE, p, int(R + 6 * k))
 
-    # asphalte grainé
+    # asphalte : grain, gravillons clairs, zone de gomme plus sombre au milieu (là où roulent les pneus)
+    st = ROAD_STYLES[road_style or ROAD_STYLE]
     road = pygame.Surface(big.get_size(), pygame.SRCALPHA)
     for p in pts[::2]:
-        pygame.draw.circle(road, ASPHALT_EDGE, p, int(R))
+        pygame.draw.circle(road, st["edge"], p, int(R))
     for p in pts[::2]:
-        pygame.draw.circle(road, ASPHALT, p, int(R - 6 * k))
+        pygame.draw.circle(road, st["base"], p, int(R - 6 * k))
+    if st["rubber"]:
+        rub = pygame.Surface(big.get_size(), pygame.SRCALPHA)
+        for p in pts[::2]:
+            pygame.draw.circle(rub, (0, 0, 0, st["rubber"]), p, int(R * 0.55))
+        road.blit(rub, (0, 0))
     alpha = pygame.surfarray.pixels_alpha(road)
     rgb = pygame.surfarray.pixels3d(road)
-    grain = rng.integers(-7, 8, size=alpha.shape)
+    g = st["grain"]
+    grain = rng.integers(-g, g + 1, size=alpha.shape)
     mask = alpha > 0
+    if st["speckle"]:
+        grain = grain + (rng.random(alpha.shape) < st["speckle"]) * st["speck_light"]
     for ch_i in range(3):
         ch = rgb[..., ch_i].astype(np.int16)
         ch[mask] += grain[mask]
