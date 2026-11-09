@@ -1,7 +1,7 @@
 """Sons du jeu, synthétisés en code (aucun fichier audio), mixés comme sur une console.
 
 Tout passe par un seul flux (un seul canal pygame) rendu par morceaux de 60 ms :
-  sources    : moteur électrique (sifflement continu qui suit la vitesse, un seul rapport, + souffle d'air),
+  sources    : moteur électrique (sifflement qui monte dans chacun des 5 rapports, + souffle d'air),
                pneus (frottement sourd en glisse/freinage), effets ponctuels (choc, bips, carillon, fanfare)
   bus master : EQ (coupe-bas 70 Hz, adoucissement des aigus) -> compresseur -> limiteur doux
 Rien ne peut donc couper un autre son ni saturer la sortie.
@@ -36,6 +36,7 @@ def _one_pole(x, a, state):
 
 class CarAudio:
     CHUNK = 0.08            # s par morceau rendu
+    GEARS = 5
     # sifflement : fondamentale + harmoniques légèrement désaccordées (moteur, onduleur, pignons)
     PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.08))
     # bus master
@@ -75,6 +76,8 @@ class CarAudio:
         self._hp_lp = 0.0                     # état du coupe-bas (passe-bas soustrait)
         self._smooth_lp = 0.0                 # état de l'adoucissement des aigus
         self._comp_gain = 1.0
+        self._gear = 0
+        self._shift_dip = 0                   # images restantes du creux de volume au changement de rapport
         self._prev = np.zeros(4)              # (fréquence, sifflement, air, pneus) du morceau précédent
         self._target = np.zeros(4)
         self._keep = []
@@ -125,8 +128,18 @@ class CarAudio:
         if not self.ok or self.muted:
             return
         v = max(0.0, min(1.1, speed_frac))
-        freq = 160.0 + 300.0 * v                      # un seul rapport : la hauteur suit la vitesse
+        # rapports : le sifflement monte dans chaque rapport puis redescend au passage du suivant
+        x = min(v, 0.999) * self.GEARS
+        gear = int(x)
+        freq = 170.0 + 30.0 * gear + 250.0 * (x - gear)
+        if gear != self._gear:
+            if gear > self._gear and throttle:
+                self._shift_dip = 3          # petit creux de volume : on « entend » passer le rapport
+            self._gear = gear
         whine = 0.65 * (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)   # moteur un peu en retrait
+        if self._shift_dip > 0:
+            whine *= 0.45
+            self._shift_dip -= 1
         if not running:
             whine = 0.035
         air = 0.18 * max(0.0, (v - 0.55) / 0.45) ** 2   # le souffle d'air ne vient qu'à haute vitesse
