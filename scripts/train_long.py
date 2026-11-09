@@ -52,6 +52,10 @@ def main(argv=None):
     p.add_argument("--init", default=None)
     p.add_argument("--track-seed", type=int, default=None, help="s'entraîner sur un seul circuit (son numéro)")
     p.add_argument("--clip", type=float, default=None, help="clip_range PPO (reprise : 0.1 conseillé)")
+    p.add_argument("--n-steps", type=int, default=None,
+                   help="pas par environnement entre deux mises à jour (lot = n_envs x n_steps) ; défaut 4096/n_envs")
+    p.add_argument("--lr-decay", type=float, default=None, metavar="FIN",
+                   help="le pas d'apprentissage baisse linéairement au fil des --minutes jusqu'à FIN x --lr (ex. 0.2)")
     p.add_argument("--fresh-reward-scale", action="store_true",
                    help="reprise : remet à zéro l'échelle des récompenses (VecNormalize) et la mémoire d'Adam")
     p.add_argument("--out-dir", default="data/checkpoints/long")
@@ -72,6 +76,13 @@ def main(argv=None):
         if a.clip is not None:
             over["clip_range"] = lambda _: a.clip
         model = PPO.load(a.init, env=venv, device="cpu", custom_objects=over)
+        if a.n_steps:   # lots plus gros : nouveau tampon d'expérience (les poids du réseau sont gardés)
+            from stable_baselines3.common.buffers import RolloutBuffer
+            model.n_steps = a.n_steps
+            model.batch_size = min(4096, a.n_steps * a.n_envs)
+            model.rollout_buffer = RolloutBuffer(a.n_steps, model.observation_space, model.action_space,
+                                                 device=model.device, gae_lambda=model.gae_lambda,
+                                                 gamma=model.gamma, n_envs=a.n_envs)
         if a.fresh_reward_scale:
             from stable_baselines3.common.running_mean_std import RunningMeanStd
             venv.ret_rms = RunningMeanStd(shape=())
@@ -83,7 +94,7 @@ def main(argv=None):
     else:
         venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_obs=10.0, gamma=0.995)
         model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed, learning_rate=a.lr,
-                    n_steps=max(64, 4096 // a.n_envs), batch_size=1024, n_epochs=4, gamma=0.995,
+                    n_steps=a.n_steps or max(64, 4096 // a.n_envs), batch_size=1024, n_epochs=4, gamma=0.995,
                     gae_lambda=0.95, clip_range=0.2, ent_coef=a.ent,
                     policy_kwargs=dict(net_arch=dict(pi=[256, 256], vf=[256, 256])))
         gen0 = 0
@@ -112,6 +123,12 @@ def main(argv=None):
             if new_log:
                 self.w.writerow(["gen", "timesteps", "minutes", "pas_s", "episodes", "taux_tour_fini",
                                  "checkpoints_moy", "chocs_moy"])
+
+        def _on_rollout_end(self):
+            if a.lr_decay is not None:   # pas d'apprentissage : décroissance linéaire avec le temps écoulé
+                frac = min(1.0, (time.time() - self.t0) / (a.minutes * 60))
+                lr_now = a.lr * (1.0 - (1.0 - a.lr_decay) * frac)
+                self.model.lr_schedule = lambda _: lr_now
 
         def _on_rollout_start(self):
             # valeurs de la dernière mise à jour PPO (enregistrées par train(), pas encore effacées)
