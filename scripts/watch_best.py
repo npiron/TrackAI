@@ -83,11 +83,86 @@ def main():
     state = {"action": 0}
     label = {"text": ""}
     font = None
+    # --- chronos : tour en cours, tours faits, PB (génération affichée), WR (tous temps, sur ce circuit) ---
+    import json
+    from src.game.rendering import fmt_time
+    rec_path = os.path.join("data", "bot_records.json")
+    try:
+        with open(rec_path) as f:
+            records = json.load(f)
+    except (OSError, ValueError):
+        records = {}
+    chrono = {"pb": None, "gen": None, "seen_laps": 0}
+    fonts = {}
+
+    def track_key():
+        return f"{env.ta.track.seed}-{a.laps}"   # chaque circuit (numéro + nombre de tours) a son propre WR
+
+    def on_new_laps():
+        """Met à jour PB et WR quand un tour vient d'être bouclé."""
+        ta = env.ta
+        for lt in ta.lap_times[chrono["seen_laps"]:]:
+            if chrono["pb"] is None or lt < chrono["pb"]:
+                chrono["pb"] = lt
+            key = track_key()
+            if key:
+                r = records.setdefault(key, {})
+                if r.get("lap") is None or lt < r["lap"]:
+                    r["lap"], r["lap_gen"] = round(lt, 3), chrono["gen"]
+        chrono["seen_laps"] = len(ta.lap_times)
+        key = track_key()
+        if key and len(ta.lap_times) >= a.laps:
+            r = records.setdefault(key, {})
+            total = sum(ta.lap_times)
+            if r.get("total") is None or total < r["total"]:
+                r["total"], r["total_gen"] = round(total, 3), chrono["gen"]
+        if key:
+            with open(rec_path, "w") as f:
+                json.dump(records, f, indent=1)
+
+    def draw_chrono(screen):
+        if not fonts:
+            fonts["big"] = pygame.font.SysFont("Avenir Next Condensed", 40, bold=True, italic=True)
+            fonts["mid"] = pygame.font.SysFont("Avenir Next Condensed", 24, bold=True, italic=True)
+            fonts["small"] = pygame.font.SysFont("Avenir Next,Helvetica Neue", 16)
+        ta = env.ta
+        r = records.get(track_key() or "", {})
+        cur_lap = min(ta.lap_count + 1, a.laps)
+        cur_t = ta.t - ta._lap_start_t if ta.lap_count < a.laps else 0.0
+        rows = len(ta.lap_times)
+        h = 150 + 22 * rows
+        box = pygame.Surface((300, h), pygame.SRCALPHA)
+        pygame.draw.rect(box, (12, 14, 20, 180), box.get_rect(), border_radius=14)
+        screen.blit(box, (14, 12))
+        blit = lambda f, txt, col, pos: screen.blit(fonts[f].render(txt, True, col), pos)
+        title = f"Circuit #{ta.track.seed}"
+        blit("small", f"{title}   ·   tour {cur_lap}/{a.laps}", (190, 196, 210), (30, 22))
+        blit("big", fmt_time(cur_t), (255, 255, 255), (28, 40))
+        y = 92
+        best_all = r.get("lap")
+        for i, lt in enumerate(ta.lap_times):
+            col = (225, 228, 236)
+            if best_all is not None and lt <= best_all + 1e-9:
+                col = (200, 120, 255)            # violet : record absolu
+            elif chrono["pb"] is not None and lt <= chrono["pb"] + 1e-9:
+                col = (90, 220, 130)             # vert : meilleur tour de cette génération
+            blit("small", f"T{i + 1}   {fmt_time(lt)}", col, (30, y))
+            y += 22
+        pb = fmt_time(chrono["pb"]) if chrono["pb"] is not None else "—"
+        wr = f"{fmt_time(r['lap'])}  (gén. {r.get('lap_gen')})" if r.get("lap") is not None else "—"
+        blit("small", f"PB tour  {pb}", (90, 220, 130), (30, y + 4))
+        blit("small", f"WR tour  {wr}", (200, 120, 255), (30, y + 26))
+        if a.laps > 1:
+            tot = f"{fmt_time(r['total'])}  (gén. {r.get('total_gen')})" if r.get("total") is not None else "—"
+            blit("small", f"Record {a.laps} tours  {tot}", (230, 200, 120), (30, y + 48))
 
     def overlay(screen):
         nonlocal font
         if not a.no_keys:
             draw_keys(screen, state["action"], env.ta.car, MAX_SPEED)
+        if len(env.ta.lap_times) > chrono["seen_laps"]:
+            on_new_laps()
+        draw_chrono(screen)
         if label["text"]:
             font = font or pygame.font.SysFont("Avenir Next Condensed", 34, bold=True, italic=True)
             img = font.render(label["text"], True, (255, 255, 255))
@@ -102,6 +177,8 @@ def main():
         return f"Génération {int(m.group(1))}  (en direct)" if m else ""
     if a.follow:
         label["text"] = gen_label(current)
+        m_ = re.search(r"gen_(\d+)", os.path.basename(current))
+        chrono["gen"] = int(m_.group(1)) if m_ else None
     import random as _random
     rng = _random.Random(None if not a.same_tracks else 12345)
 
@@ -111,6 +188,8 @@ def main():
             pygame.time.wait(1000)  # laisse l'entraînement finir d'écrire les fichiers
             model, vn = _load_model(current)
             label["text"] = gen_label(current)
+            m_ = re.search(r"gen_(\d+)", os.path.basename(current))
+            chrono["gen"], chrono["pb"] = (int(m_.group(1)) if m_ else None), None   # nouvelle génération : PB à zéro
         if a.track_seed is not None:
             obs, _ = env.reset(options={"track_seed": a.track_seed})
         elif (a.random or a.long) and not a.same_tracks:
@@ -146,6 +225,7 @@ def main():
             pygame.event.pump()
             clock.tick(50)
         sound["contacts"], sound["cps"] = 0, 0
+        chrono["seen_laps"] = 0
     if audio is not None:
         audio.close()
     pygame.quit()
