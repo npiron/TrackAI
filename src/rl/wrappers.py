@@ -35,7 +35,7 @@ class GymTimeAttack(gym.Env):
     metadata = {"render_modes": ["human"]}
 
     def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
-                 reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY):
+                 reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY, physics=None):
         super().__init__()
         if reward_mode not in REWARD_MODES:
             raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
@@ -52,9 +52,10 @@ class GymTimeAttack(gym.Env):
         # If procedural=True, track=None (auto-gen). If False, we need a static track.
         if procedural:
             self.ta = TimeAttackEnv(track=None, procedural=True, laps=self.laps, obs_version=obs_version,
-                                    track_variant=track_variant)
+                                    track_variant=track_variant, physics=physics)
         else:
-            self.ta = TimeAttackEnv(build_track(), procedural=False, laps=self.laps, obs_version=obs_version)
+            self.ta = TimeAttackEnv(build_track(), procedural=False, laps=self.laps, obs_version=obs_version,
+                                    physics=physics)
 
         # Obs: 14 floats (Pilot-Centric)
         # (obs_version=2 : 35 floats, voir TimeAttackEnv)

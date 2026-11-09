@@ -29,12 +29,13 @@ def main():
     p.add_argument("--long", action="store_true", help="circuits longs aléatoires (tracé variante 2)")
     p.add_argument("--same-tracks", action="store_true", help="toujours la même série de circuits (pour comparer des modèles)")
     p.add_argument("--no-keys", action="store_true", help="ne pas afficher les touches du bot")
+    p.add_argument("--physics", default=None, help="loi de choc des murs (v1, v2)")
     a = p.parse_args()
 
     model, vn = _load_model(a.model)
     env = GymTimeAttack(render_mode="human", procedural=a.random or a.long, laps=a.laps,
                         track_variant=2 if a.long else 1,
-                        obs_version=detect_obs_version(model))
+                        obs_version=detect_obs_version(model), physics=a.physics)
     clock = pygame.time.Clock()
     state = {"action": 0}
     if not a.no_keys:

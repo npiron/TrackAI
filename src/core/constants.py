@@ -41,6 +41,15 @@ WALL_IMPACT_LOSS = 0.6      # perte supplémentaire, × sin²(angle d'impact)
 WALL_BOUNCE = 0.15          # petite part de vitesse renvoyée vers la piste
 WALL_ALIGN = 0.5            # part du cap réalignée sur le mur, × sin(angle d'impact)
 
+# Lois de choc versionnées. hit : perte au premier contact ; rub : perte par frame tant que le contact
+# continue (contact à moins de `gap` frames du précédent) ; impact : perte en plus × sin²(angle d'impact).
+# v1 : murs presque gratuits en frôlement (4 %), le mur servait de rail. v2 : le mur coûte vraiment.
+WALL_PHYSICS = {
+    "v1": {"hit": WALL_GRAZE_LOSS, "rub": WALL_GRAZE_LOSS, "impact": WALL_IMPACT_LOSS, "gap": 0},
+    "v2": {"hit": 0.15, "rub": WALL_GRAZE_LOSS, "impact": 0.85, "gap": 10},
+}
+PHYSICS_VERSION = "v1"
+
 # Track config
 TRACK_WIDTH = 90
 TRACK_OUTER_MARGIN = 40
