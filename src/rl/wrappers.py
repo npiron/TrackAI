@@ -534,16 +534,7 @@ class GymTimeAttack(gym.Env):
 
         draw_track(screen, track, checkpoints=next((i for i, v in enumerate(env.cp_visited) if not v), None),
                    visited=env.cp_visited)
-        
-        # Highlight checkpoints based on visited status
-        # Visited = Green, Unvisited = Gold
-        for i, (cx, cy, angle) in enumerate(track.checkpoints):
-            visited = env.cp_visited[i]
-            color = (0, 255, 0) if visited else (255, 215, 0)  # Green or Gold
-            
-            # Draw checkpoint circle to show status
-            pygame.draw.circle(screen, color, (int(cx), int(cy)), 15, width=3)
-        
+
         if env.best_time is not None:
              draw_ghost(screen, env.best_ghost, color=(70, 160, 220))
         draw_ghost(screen, env.ghost[-400:], color=(90, 90, 120))
