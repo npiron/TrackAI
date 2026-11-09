@@ -3,7 +3,7 @@
 Tout passe par un seul flux (un seul canal pygame) rendu par morceaux de 60 ms :
   sources    : moteur électrique (sifflement qui monte dans chacun des 5 rapports, + souffle d'air),
                pneus (frottement sourd en glisse/freinage), effets ponctuels (choc, bips, carillon, fanfare)
-  bus master : EQ (coupe-bas 70 Hz, adoucissement des aigus) -> compresseur -> limiteur doux
+  bus master : EQ (coupe-bas 40 Hz, adoucissement des aigus) -> compresseur -> limiteur doux, en stéréo
 Rien ne peut donc couper un autre son ni saturer la sortie.
 """
 import atexit
@@ -67,19 +67,21 @@ class CarAudio:
             "fanfare": 0.3 * np.concatenate(fan),
         }
         self.voices = []                      # effets en cours : [échantillons, position, gain]
-        self._phase = np.zeros(len(self.PARTIALS))
+        self._phase = np.zeros((3, len(self.PARTIALS)))   # sifflement : centre, gauche, droite
+        self._low_phase = np.zeros(2)                        # couche grave de puissance
         self._air_lp = 0.0
         self._skid_lp = 0.0
         self._skid_lp2 = 0.0
         self._squeal_ph = 0.0
         self._squeal_t = 0.0
-        self._hp_lp = 0.0                     # état du coupe-bas (passe-bas soustrait)
-        self._smooth_lp = 0.0                 # état de l'adoucissement des aigus
+        self._hp_lp = np.zeros(2)             # état du coupe-bas (passe-bas soustrait), par canal
+        self._smooth_lp = np.zeros(2)         # état de l'adoucissement des aigus, par canal
         self._comp_gain = 1.0
         self._gear = 0
         self._shift_dip = 0                   # images restantes du creux de volume au changement de rapport
-        self._prev = np.zeros(4)              # (fréquence, sifflement, air, pneus) du morceau précédent
-        self._target = np.zeros(4)
+        # (fréquence, sifflement, air, pneus, charge, fréquence grave) du morceau précédent
+        self._prev = np.zeros(6)
+        self._target = np.zeros(6)
         self._keep = []
         self._lock = threading.Lock()
         self.ok = True
@@ -151,12 +153,14 @@ class CarAudio:
             if braking:
                 skid = max(skid, 0.35)
             skid *= 0.2 * min(1.0, v * 1.5)   # crissement présent mais discret
-        self._target = np.array([freq, whine, air, skid])
+        load = 1.0 if (throttle and running) else 0.0
+        low_f = 55.0 + 45.0 * v              # la couche grave suit la vitesse, sans les rapports
+        self._target = np.array([freq, whine, air, skid, load, low_f])
 
     def silence(self):
         """Coupe moteur et pneus (les effets, comme la fanfare d'arrivée, continuent)."""
         if self.ok:
-            self._target = np.array([self._prev[0], 0.0, 0.0, 0.0])
+            self._target = np.array([self._prev[0], 0.0, 0.0, 0.0, 0.0, self._prev[5]])
 
     # --- rendu ---
     def _feed(self):
@@ -170,26 +174,45 @@ class CarAudio:
             self.ch.play(snd)
             self._keep = [snd]
 
+    DETUNE = (1.0, 0.993, 1.007)   # sifflement au centre, un peu plus bas à gauche, plus haut à droite
+
     def _render(self):
         n = int(SR * self.CHUNK)
         k = np.linspace(0.0, 1.0, n, endpoint=False)
-        f0, w0, a0, s0 = self._prev
-        f1, w1, a1, s1 = self._target
-        f = f0 + (f1 - f0) * k
-        whine = w0 + (w1 - w0) * k
-        air = a0 + (a1 - a0) * k
-        skid = s0 + (s1 - s0) * k
+        p0, p1 = self._prev, self._target
+        f, whine, air, skid, load, low_f = (p0[i] + (p1[i] - p0[i]) * k for i in range(6))
         self._prev = self._target.copy()
 
-        # moteur : phases continues d'un morceau à l'autre
-        motor = np.zeros(n)
-        for idx, (mult, gain) in enumerate(self.PARTIALS):
-            ph = self._phase[idx] + np.cumsum(2 * math.pi * f * mult / SR)
-            motor += gain * np.sin(ph)
-            self._phase[idx] = ph[-1] % (2 * math.pi)
-        out = motor * whine / 1.6
+        # moteur : 3 voix légèrement désaccordées (centre, gauche, droite) -> son large, pas « petite voiture »
+        voices = []
+        for vi, det in enumerate(self.DETUNE):
+            m = np.zeros(n)
+            for idx, (mult, gain) in enumerate(self.PARTIALS):
+                if mult > 1.0:
+                    gain = gain * (0.7 + 0.8 * load)     # plus de mordant en accélération
+                ph = self._phase[vi, idx] + np.cumsum(2 * math.pi * f * det * mult / SR)
+                m += gain * np.sin(ph)
+                self._phase[vi, idx] = ph[-1] % (2 * math.pi)
+            voices.append(m)
+        drive = 1.0 + 0.8 * load                          # légère saturation sous charge
+        sat = [np.tanh(drive * m / 1.6) / np.tanh(drive) for m in voices]
+        center = sat[0] * whine
+        left = center * 0.6 + sat[1] * whine * 0.55
+        right = center * 0.6 + sat[2] * whine * 0.55
+        # couche grave de puissance (fondamentale + octave), au centre
+        lows = np.zeros(n)
+        for j, (mult, gain) in enumerate(((1.0, 1.0), (2.0, 0.4))):
+            ph = self._low_phase[j] + np.cumsum(2 * math.pi * low_f * mult / SR)
+            lows += gain * np.sin(ph)
+            self._low_phase[j] = ph[-1] % (2 * math.pi)
+        lows *= whine * (0.55 + 0.35 * load) * 0.6
+        left = left + lows
+        right = right + lows
+
+        # souffle d'air (un peu différent à gauche et à droite)
         noise, self._air_lp = _one_pole(self.rng.standard_normal(n), 0.08, self._air_lp)
-        out += air * noise * 1.6
+        left = left + air * noise * 1.6
+        right = right + air * np.roll(noise, 157) * 1.6
         # pneus : crissement = bruit filtré en bande (~0,5-2 kHz) + léger sifflement qui ondule vers 950 Hz
         white = self.rng.standard_normal(n)
         hi, self._skid_lp = _one_pole(white, 0.45, self._skid_lp)
@@ -200,34 +223,37 @@ class CarAudio:
         sq_ph = self._squeal_ph + np.cumsum(2 * math.pi * fq / SR)
         self._squeal_ph = sq_ph[-1] % (2 * math.pi)
         self._squeal_t = tt[-1] + 1.0 / SR
-        out += skid * (0.75 * band + 0.45 * np.sin(sq_ph))
+        tyre = skid * (0.75 * band + 0.45 * np.sin(sq_ph))
+        left = left + tyre
+        right = right + tyre
 
-        # effets ponctuels
+        # effets ponctuels (au centre)
+        fx = np.zeros(n)
         alive = []
         for v in self.voices:
             data, pos, gain = v
             m = min(n, len(data) - pos)
-            out[:m] += gain * data[pos:pos + m]
+            fx[:m] += gain * data[pos:pos + m]
             v[1] = pos + m
             if v[1] < len(data):
                 alive.append(v)
         self.voices = alive
+        chans = [left + fx, right + fx]
 
-        # bus master : EQ
-        low, self._hp_lp = _one_pole(out, 2 * math.pi * 70 / SR, self._hp_lp)
-        out = out - low                                                  # coupe-bas 70 Hz
-        out, self._smooth_lp = _one_pole(out, 0.75, self._smooth_lp)    # adoucit le haut du spectre
-        # compresseur (gain lissé d'un morceau à l'autre : attaque rapide, relâchement lent)
-        rms = float(np.sqrt(np.mean(out * out))) + 1e-9
+        # bus master : EQ par canal (coupe-bas 40 Hz pour garder la couche grave, aigus adoucis)
+        for c in range(2):
+            low, self._hp_lp[c] = _one_pole(chans[c], 2 * math.pi * 40 / SR, self._hp_lp[c])
+            chans[c], self._smooth_lp[c] = _one_pole(chans[c] - low, 0.75, self._smooth_lp[c])
+        # compresseur commun aux deux canaux (gain lissé : attaque rapide, relâchement lent)
+        rms = float(np.sqrt(np.mean(chans[0] ** 2 + chans[1] ** 2) / 2)) + 1e-9
         target = 1.0
         if rms > self.COMP_THRESHOLD:
             target = (self.COMP_THRESHOLD / rms) ** (1.0 - 1.0 / self.COMP_RATIO)
         speed = 0.6 if target < self._comp_gain else 0.15
         g1 = self._comp_gain + (target - self._comp_gain) * speed
-        out *= self._comp_gain + (g1 - self._comp_gain) * k
+        gain_ramp = self._comp_gain + (g1 - self._comp_gain) * k
         self._comp_gain = g1
         # limiteur doux : jamais au-delà du plafond, sans écrêtage dur
-        out = self.CEILING * np.tanh(out / self.CEILING)
-
-        pcm = (out * 32767).astype(np.int16)
-        return pygame.sndarray.make_sound(np.column_stack([pcm, pcm]).copy(order="C"))
+        out = [self.CEILING * np.tanh(ch * gain_ramp / self.CEILING) for ch in chans]
+        pcm = np.column_stack([(o * 32767).astype(np.int16) for o in out])
+        return pygame.sndarray.make_sound(pcm.copy(order="C"))
