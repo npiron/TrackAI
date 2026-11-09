@@ -28,11 +28,12 @@ REVERSE_MAX = 3.5
 
 # Drift : frein + braquage à vitesse élevée, l'adhérence chute tant qu'on braque
 DRIFT_GRIP = 0.03            # la glisse se résorbe lentement : on reste en travers
-DRIFT_MIN_SPEED = 4.5
-DRIFT_YAW_BOOST = 1.55      # la voiture pivote plus en drift
+DRIFT_MIN_SPEED = 3.8       # drift possible un peu plus tôt
+DRIFT_YAW_BOOST = 1.65      # la voiture pivote plus en drift
+DRIFT_TURN_SPEED = 0.165    # rotation max en drift (hors drift : TURN_SPEED)
 DRIFT_MAX_SLIP = 1.1        # rad (~63°) : au-delà l'adhérence revient (pas de tête-à-queue)
-DRIFT_SCRUB = 0.003         # perte de vitesse par frame et par radian de glisse
-DRIFT_STEER_IN = 0.3        # braquage mini pour lancer un drift (coup de frein)
+DRIFT_SCRUB = 0.0025        # perte de vitesse par frame et par radian de glisse
+DRIFT_STEER_IN = 0.22       # braquage mini pour lancer un drift (coup de frein)
 DRIFT_STEER_OUT = 0.15      # le drift tient tant qu'on braque au-delà
 
 # Murs : on glisse le long du mur ; toucher un mur coûte vraiment de la vitesse

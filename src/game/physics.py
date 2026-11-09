@@ -14,7 +14,7 @@ import math
 import numpy as np
 
 from src.core.constants import (
-    ACCEL, BRAKE, COAST_FRICTION, DRIFT_GRIP, DRIFT_MIN_SPEED, DRIFT_SCRUB, DRIFT_STEER_IN,
+    ACCEL, BRAKE, COAST_FRICTION, DRIFT_GRIP, DRIFT_MIN_SPEED, DRIFT_SCRUB, DRIFT_STEER_IN, DRIFT_TURN_SPEED,
     DRIFT_MAX_SLIP, DRIFT_STEER_OUT, DRIFT_YAW_BOOST,
     FRICTION, LATERAL_GRIP, MAX_SPEED, REVERSE_ACCEL, REVERSE_MAX, STEER_CURVATURE,
     STEER_SPEED, STEER_SPEED_SENS, TURN_SPEED, YAW_RESPONSE,
@@ -59,9 +59,11 @@ def drive(vel, heading, steering, angular_velocity, drifting, steer, accel, brak
     # 4. Rotation : modèle bicyclette
     sens = 1.0 - STEER_SPEED_SENS * min(abs(v_long) / MAX_SPEED, 1.0)
     target_av = v_long * steering * STEER_CURVATURE * sens
+    cap = TURN_SPEED
     if drifting:
         target_av *= DRIFT_YAW_BOOST
-    target_av = max(-TURN_SPEED, min(TURN_SPEED, target_av))
+        cap = DRIFT_TURN_SPEED
+    target_av = max(-cap, min(cap, target_av))
     angular_velocity += (target_av - angular_velocity) * YAW_RESPONSE
     heading += angular_velocity
 
