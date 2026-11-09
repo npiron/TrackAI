@@ -34,7 +34,7 @@ def _one_pole(x, a, state):
 class CarAudio:
     CHUNK = 0.06            # s par morceau rendu
     # sifflement : fondamentale + harmoniques légèrement désaccordées (moteur, onduleur, pignons)
-    PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.25))
+    PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.08))
     # bus master
     COMP_THRESHOLD = 0.35   # niveau RMS au-delà duquel on compresse
     COMP_RATIO = 3.0
@@ -91,7 +91,7 @@ class CarAudio:
         if not self.ok or self.muted:
             return
         v = max(0.0, min(1.1, speed_frac))
-        freq = 70.0 + 330.0 * v                       # un seul rapport : la hauteur suit la vitesse
+        freq = 160.0 + 300.0 * v                      # un seul rapport : la hauteur suit la vitesse
         whine = (0.10 + 0.32 * v) * (1.0 if throttle else 0.55)
         if not running:
             whine = 0.05
