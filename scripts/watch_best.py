@@ -126,6 +126,8 @@ def main():
             play_audio(action)
             for event in pygame.event.get(pygame.KEYDOWN):
                 if event.key == pygame.K_ESCAPE:
+                    if audio is not None:
+                        audio.close()
                     pygame.quit()
                     return
                 if event.key == pygame.K_m and audio is not None:
@@ -141,6 +143,8 @@ def main():
             pygame.event.pump()
             clock.tick(50)
         sound["contacts"], sound["cps"] = 0, 0
+    if audio is not None:
+        audio.close()
     pygame.quit()
 
 

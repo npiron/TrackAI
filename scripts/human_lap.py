@@ -318,6 +318,7 @@ def play(laps, long_tracks=False, seed=None):
             text(small, "R : rejouer" + ("    N : nouveau circuit" if long_tracks else ""), (190, 196, 210),
                  (box.centerx, box.bottom - 30), "midtop", False)
         pygame.display.flip()
+    audio.close()
     pygame.quit()
 
 

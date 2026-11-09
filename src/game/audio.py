@@ -6,7 +6,10 @@ Tout passe par un seul flux (un seul canal pygame) rendu par morceaux de 60 ms :
   bus master : EQ (coupe-bas 70 Hz, adoucissement des aigus) -> compresseur -> limiteur doux
 Rien ne peut donc couper un autre son ni saturer la sortie.
 """
+import atexit
 import math
+import threading
+import time
 
 import numpy as np
 import pygame
@@ -32,7 +35,7 @@ def _one_pole(x, a, state):
 
 
 class CarAudio:
-    CHUNK = 0.06            # s par morceau rendu
+    CHUNK = 0.08            # s par morceau rendu
     # sifflement : fondamentale + harmoniques légèrement désaccordées (moteur, onduleur, pignons)
     PARTIALS = ((1.0, 1.0), (2.0, 0.32), (3.02, 0.10), (0.5, 0.08))
     # bus master
@@ -75,19 +78,47 @@ class CarAudio:
         self._prev = np.zeros(4)              # (fréquence, sifflement, air, pneus) du morceau précédent
         self._target = np.zeros(4)
         self._keep = []
+        self._lock = threading.Lock()
         self.ok = True
+        # un fil dédié alimente le son en continu : il ne dépend plus du rythme de l'affichage
+        # (si l'image prend du retard, par exemple pendant un entraînement, le son ne crépite pas)
+        self._running = True
+        self._thread = threading.Thread(target=self._pump, daemon=True)
+        self._thread.start()
+        atexit.register(self.close)   # s'arrête avant que pygame ne se ferme
+
+    def _pump(self):
+        while self._running:
+            with self._lock:
+                if not self._running or not pygame.mixer.get_init():
+                    return
+                try:
+                    if not self.muted:
+                        self._feed()
+                except pygame.error:
+                    return   # mixer fermé (fin du jeu)
+            time.sleep(0.005)
+
+    def close(self):
+        """Arrête proprement le fil du son (à appeler avant pygame.quit, sinon fait à la sortie)."""
+        if getattr(self, "_running", False):
+            self._running = False
+            with self._lock:
+                pass
+            self._thread.join(timeout=1.0)
 
     # --- interface du jeu ---
     def toggle_mute(self):
         self.muted = not self.muted
         if self.ok and self.muted:
-            self.ch.stop()
-            self.voices.clear()
+            with self._lock:
+                self.ch.stop()
+                self.voices.clear()
 
     def play(self, name, volume=1.0):
         if self.ok and not self.muted:
-            self.voices.append([self.samples[name], 0, float(volume)])
-            self._feed()
+            with self._lock:
+                self.voices.append([self.samples[name], 0, float(volume)])
 
     def update(self, speed_frac, throttle, slip_deg, drifting, braking, running=True):
         """À appeler à chaque image. speed_frac : vitesse réelle / vitesse max."""
@@ -108,13 +139,11 @@ class CarAudio:
                 skid = max(skid, 0.35)
             skid *= 0.2 * min(1.0, v * 1.5)   # crissement présent mais discret
         self._target = np.array([freq, whine, air, skid])
-        self._feed()
 
     def silence(self):
         """Coupe moteur et pneus (les effets, comme la fanfare d'arrivée, continuent)."""
         if self.ok:
             self._target = np.array([self._prev[0], 0.0, 0.0, 0.0])
-            self._feed()
 
     # --- rendu ---
     def _feed(self):
