@@ -8,7 +8,8 @@ from src.game.track import Track
 from src.game.car import Car
 from src.utils.math_utils import vec
 
-def draw_track(screen, track: Track):
+def draw_track(screen, track: Track, checkpoints=None):
+    """checkpoints : None = masqués (piste peinte), "all" = tous, un entier = seulement cette porte (la prochaine)."""
     # Procédural (Surface pré-rendue)
     if getattr(track, 'spline_points', None) is not None and len(track.spline_points):
         if track.visual_surface is None:
@@ -27,7 +28,9 @@ def draw_track(screen, track: Track):
 
     painted = getattr(track, 'visual_surface', None) is not None
     # Checkpoints : deux piliers de part et d'autre de la route (arche vue de dessus) + trait discret
-    for cx, cy, angle_or_orient in track.checkpoints:
+    for i, (cx, cy, angle_or_orient) in enumerate(track.checkpoints):
+        if painted and checkpoints != "all" and checkpoints != i:
+            continue
         if isinstance(angle_or_orient, str):
             angle = math.pi / 2 if angle_or_orient == 'V' else 0
         else:
@@ -37,10 +40,16 @@ def draw_track(screen, track: Track):
             half_w = getattr(track, 'half_width', 60) + 2
             p1 = (cx - c * half_w, cy - s_ * half_w)
             p2 = (cx + c * half_w, cy + s_ * half_w)
-            pygame.draw.line(screen, (90, 170, 230), p1, p2, width=2)
-            for p in (p1, p2):
-                pygame.draw.circle(screen, (20, 30, 45), (int(p[0]), int(p[1])), 8)
-                pygame.draw.circle(screen, (70, 160, 235), (int(p[0]), int(p[1])), 6)
+            if checkpoints == "all":
+                pygame.draw.line(screen, (90, 170, 230), p1, p2, width=2)
+                for p in (p1, p2):
+                    pygame.draw.circle(screen, (20, 30, 45), (int(p[0]), int(p[1])), 8)
+                    pygame.draw.circle(screen, (70, 160, 235), (int(p[0]), int(p[1])), 6)
+            else:  # la prochaine porte seulement : fine ligne claire et deux balises
+                pygame.draw.line(screen, (255, 255, 255), p1, p2, width=2)
+                for p in (p1, p2):
+                    pygame.draw.circle(screen, (25, 28, 36), (int(p[0]), int(p[1])), 6)
+                    pygame.draw.circle(screen, (255, 210, 60), (int(p[0]), int(p[1])), 4)
         else:
             half_w = 50
             pygame.draw.line(screen, COLOR_CHECKPOINT, (cx - c * half_w, cy - s_ * half_w),

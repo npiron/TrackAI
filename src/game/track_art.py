@@ -120,12 +120,12 @@ def paint_track(track) -> pygame.Surface:
     # vibreurs : bandes continues dans les virages marqués, côté extérieur (et intérieur s'il est large)
     curv = _curvature(sp / k)
     for sign in (1.0, -1.0):
-        turning = (curv * sign) > 1 / 300
+        turning = (curv * sign) > 1 / 170   # seulement les vrais virages : les droites restent nues
         # on élargit un peu chaque virage pour que le vibreur commence avant et finisse après
         grown = turning.copy()
-        for sh in range(1, 25):
+        for sh in range(1, 10):
             grown |= np.roll(turning, sh) | np.roll(turning, -sh)
-        for i0, L in _runs(grown, 45):
+        for i0, L in _runs(grown, 30):
             outer = -sign
             _band(big, sp, nrm, arc, i0, L, outer, R - 9 * k, R, 12 * k, (KERB_RED, KERB_WHITE))
             _band(big, sp, nrm, arc, i0, L, -outer, R - 7 * k, R, 12 * k, (KERB_RED, KERB_WHITE))

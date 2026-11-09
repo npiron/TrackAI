@@ -69,3 +69,4 @@ data/human_best.json
 
 # Vidéos générées
 videos/
+data/human_tracks.json
