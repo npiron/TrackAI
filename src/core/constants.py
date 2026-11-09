@@ -6,10 +6,10 @@ W, H = 1400, 1000
 FPS = 50
 
 # Physics constants
-MAX_SPEED = 11.3  # vitesse terminale ACCEL*FRICTION/(1-FRICTION) = 11.0 px/frame (~550 px/s), à l'échelle des circuits
+MAX_SPEED = 12.7  # vitesse terminale ACCEL*FRICTION/(1-FRICTION) = 12.4 px/frame (~620 px/s), à l'échelle des circuits
 ACCEL = 0.122       # poussée douce : 50 % de la vitesse max en ~1,3 s, 90 % en ~4,2 s
 BRAKE = 0.16        # freinage progressif : de la vitesse max à l'arrêt en ~1,5 s
-FRICTION = 0.989    # traînée en accélération ; vitesse terminale = 0.122*0.989/0.011 = 11.0
+FRICTION = 0.9903   # traînée en accélération ; vitesse terminale = 0.122*0.9903/0.0097 = 12.4 (allonge en fond de rapport)
 COAST_FRICTION = 0.985  # roue libre : frein moteur net (-53 % par seconde), il faut tenir l'accélérateur
 TURN_SPEED = 0.14       # vitesse de rotation max (rad/frame), plafond de sécurité
 LATERAL_GRIP = 0.35     # part du glissement latéral rattrapée par frame (adhérence normale)
