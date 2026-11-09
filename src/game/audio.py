@@ -66,6 +66,9 @@ class CarAudio:
         self._phase = np.zeros(len(self.PARTIALS))
         self._air_lp = 0.0
         self._skid_lp = 0.0
+        self._skid_lp2 = 0.0
+        self._squeal_ph = 0.0
+        self._squeal_t = 0.0
         self._hp_lp = 0.0                     # état du coupe-bas (passe-bas soustrait)
         self._smooth_lp = 0.0                 # état de l'adoucissement des aigus
         self._comp_gain = 1.0
@@ -103,7 +106,7 @@ class CarAudio:
                 skid = max(skid, 0.55)
             if braking:
                 skid = max(skid, 0.35)
-            skid *= 0.35 * min(1.0, v * 1.5)
+            skid *= 0.2 * min(1.0, v * 1.5)   # crissement présent mais discret
         self._target = np.array([freq, whine, air, skid])
         self._feed()
 
@@ -145,8 +148,17 @@ class CarAudio:
         out = motor * whine / 1.6
         noise, self._air_lp = _one_pole(self.rng.standard_normal(n), 0.08, self._air_lp)
         out += air * noise * 1.6
-        rub, self._skid_lp = _one_pole(self.rng.standard_normal(n), 0.22, self._skid_lp)
-        out += skid * rub * 1.4
+        # pneus : crissement = bruit filtré en bande (~0,5-2 kHz) + léger sifflement qui ondule vers 950 Hz
+        white = self.rng.standard_normal(n)
+        hi, self._skid_lp = _one_pole(white, 0.45, self._skid_lp)
+        lo, self._skid_lp2 = _one_pole(white, 0.13, self._skid_lp2)
+        band = (hi - lo) * 2.2
+        tt = self._squeal_t + np.arange(n) / SR
+        fq = 950.0 + 60.0 * np.sin(2 * math.pi * 5.5 * tt) + 25.0 * np.sin(2 * math.pi * 13.0 * tt)
+        sq_ph = self._squeal_ph + np.cumsum(2 * math.pi * fq / SR)
+        self._squeal_ph = sq_ph[-1] % (2 * math.pi)
+        self._squeal_t = tt[-1] + 1.0 / SR
+        out += skid * (0.75 * band + 0.45 * np.sin(sq_ph))
 
         # effets ponctuels
         alive = []
