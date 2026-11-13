@@ -12,12 +12,23 @@ python3 -m venv .venv
 
 `manage.py` utilise automatiquement le Python de `.venv`.
 
+Moteur Rust (simulation, entraînement rapide, viewer) : il faut [Rust](https://rustup.rs) et maturin.
+
+```bash
+.venv/bin/pip install maturin
+cd sim-rs/py && VIRTUAL_ENV=../../.venv ../../.venv/bin/maturin develop --release   # module Python trackai_sim
+```
+
+Le viewer (`watch`, `play`) se compile tout seul au premier lancement (`cargo build --release -p trackai-viewer`).
+
 ## Commandes
 
 ```bash
-python3 manage.py play                      # conduire soi-même (circuits longs, 3 tours)
+python3 manage.py play                      # conduire soi-même (viewer Rust, 60-120 fps)
 python3 manage.py train --minutes 360 --live  # entraîner de zéro et suivre en direct
-python3 manage.py watch                     # regarder le meilleur bot
+python3 manage.py watch                     # regarder le bot du dernier entraînement (viewer Rust)
+python3 manage.py watch --hard              # ... sur les circuits où il se plante le plus
+python3 manage.py hard-tracks --model M.zip # classer les circuits durs (data/hard_tracks/)
 python3 manage.py watch --follow data/checkpoints/f1   # suivre un entraînement en cours
 python3 manage.py test                      # tests
 ```
@@ -47,3 +58,13 @@ tout nouvel entraînement utilise v3 et les 15 actions.
 - `scripts/` : entraînement, visualisation, évaluation, outils de diagnostic.
 - `data/checkpoints/` : générations des entraînements ; `data/models/` : meilleurs modèles.
 - `docs/` : rapports d'expériences passées.
+
+## Moteur Rust (`sim-rs/`)
+
+- `core/` : circuits, physique, murs, checkpoints, lidars, observations v1-v3 et récompense simple. Mêmes circuits
+  au bit près que `src/game/track.py` pour une même graine ; trajectoires identiques au Python à l'arrondi près.
+- `py/` : module Python `trackai_sim` (`Sim` : une voiture ; `VecSim` : N voitures en parallèle). `train_long.py`
+  l'utilise par défaut (`--engine rust`, ~15x plus rapide que `--engine python`).
+- `viewer/` : `trackai` (macroquad) : physique à 50 Hz, image à la fréquence de l'écran avec interpolation, bot
+  (réseau exporté par `scripts/export_policy.py`) ou conduite au clavier. Les anciennes fenêtres Pygame restent
+  disponibles : `manage.py watch-py` et `play-py`.

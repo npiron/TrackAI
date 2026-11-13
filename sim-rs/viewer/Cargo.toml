@@ -1,0 +1,15 @@
+[package]
+name = "trackai-viewer"
+version = "0.1.0"
+edition = "2021"
+description = "Viewer TrackAI : regarder le bot ou conduire, 60-120 fps"
+
+[[bin]]
+name = "trackai"
+path = "src/main.rs"
+
+[dependencies]
+trackai-core = { path = "../core" }
+macroquad = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

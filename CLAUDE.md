@@ -8,5 +8,8 @@
   `REF_HASH` dans `tests/test_laps.py` et vérifier `tests/test_physics.py`. Un modèle entraîné sur une
   ancienne physique n'est plus comparable.
 - `python3 manage.py test` doit passer avant de lancer un entraînement.
+- Moteur Rust `sim-rs/` (voir README) : toute règle du jeu changée dans `src/game/` doit l'être aussi dans
+  `sim-rs/core/src/` (et inversement). Après une modif de `core/` ou `py/`, recompiler le module :
+  `cd sim-rs/py && VIRTUAL_ENV=../../.venv ../../.venv/bin/maturin develop --release`.
 - Ne jamais supprimer `data/checkpoints/` ou `data/models/` sans accord explicite.
 - Commits : `feat:` / `fix:` en français.
