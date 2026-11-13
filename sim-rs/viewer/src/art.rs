@@ -47,10 +47,46 @@ fn hash(x: u32, y: u32) -> u32 {
     h ^ (h >> 16)
 }
 
+/// Courbure signée (1/px, >0 : virage à droite à l'écran) de la ligne centrale, lissée puis élargie
+/// (max sur une fenêtre) pour que les vibreurs débordent un peu à l'entrée et à la sortie des virages.
+fn corner_map(t: &Track) -> Vec<f64> {
+    let sp = &t.spline;
+    let n = sp.len();
+    let k = 10;
+    let head = |i: usize| -> f64 {
+        let a = sp[i % n];
+        let b = sp[(i + k) % n];
+        (b[1] - a[1]).atan2(b[0] - a[0])
+    };
+    let raw: Vec<f64> = (0..n)
+        .map(|i| {
+            let (h0, h1) = (head(i + n - k), head(i));
+            let mut d = h1 - h0;
+            while d > std::f64::consts::PI { d -= 2.0 * std::f64::consts::PI; }
+            while d < -std::f64::consts::PI { d += 2.0 * std::f64::consts::PI; }
+            let arc = t.cum[(i + k).min(n)] - t.cum[i.saturating_sub(k)];
+            if arc > 1e-6 { d / arc } else { 0.0 }
+        })
+        .collect();
+    let wdw = 25;
+    (0..n)
+        .map(|i| {
+            let mut best = 0.0f64;
+            for j in 0..=2 * wdw {
+                let v = raw[(i + n + j - wdw) % n];
+                if v.abs() > best.abs() {
+                    best = v;
+                }
+            }
+            best
+        })
+        .collect()
+}
+
 pub fn track_texture(t: &Track) -> Texture2D {
     let (w, h) = (W as usize, H as usize);
     let d = dist_to_other(&t.mask, 16);
-    // vibreurs : rayures le long de la piste (abscisse curviligne du point le plus proche)
+    let curv = corner_map(t);
     let n = t.spline.len();
     let mut bytes = vec![0u8; w * h * 4];
     for y in 0..h {
@@ -59,13 +95,24 @@ pub fn track_texture(t: &Track) -> Texture2D {
             let road = t.mask[i];
             let noise = (hash(x as u32, y as u32) % 9) as i32 - 4;
             let (r, g, b): (i32, i32, i32) = if road {
-                if d[i] <= 5 {
-                    // rayure : alterner selon la position projetée sur la ligne centrale
+                if d[i] <= 7 {
+                    // vibreurs seulement dans les virages : toujours à la corde, à l'extérieur si c'est serré
                     let k = t.closest(x as f64, y as f64);
-                    let s = t.cum[k.min(n - 1)];
-                    if ((s / 14.0) as i64) % 2 == 0 { (214, 40, 40) } else { (240, 240, 240) }
-                } else if d[i] <= 7 {
-                    (235, 235, 235)
+                    let c = curv[k.min(n - 1)];
+                    let a = t.spline[k];
+                    let b = t.spline[(k + 1) % n];
+                    let side = (b[0] - a[0]) * (y as f64 - a[1]) - (b[1] - a[1]) * (x as f64 - a[0]); // >0 : à droite
+                    let inside = c != 0.0 && (side > 0.0) == (c > 0.0);
+                    let radius = if c != 0.0 { 1.0 / c.abs() } else { f64::INFINITY };
+                    let kerb = d[i] <= 5 && ((inside && radius < 260.0) || (!inside && radius < 120.0));
+                    if kerb {
+                        let s = t.cum[k.min(n - 1)];
+                        if ((s / 14.0) as i64) % 2 == 0 { (214, 40, 40) } else { (240, 240, 240) }
+                    } else if d[i] <= 2 {
+                        (230, 230, 230) // ligne blanche de bord de route
+                    } else {
+                        (92 + noise, 94 + noise, 100 + noise)
+                    }
                 } else {
                     (92 + noise, 94 + noise, 100 + noise)
                 }

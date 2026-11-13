@@ -328,10 +328,12 @@ impl Records {
 
 /// Bulle de temps intermédiaire (au-dessus d'une porte ou de la ligne).
 struct Split {
+    #[allow(dead_code)]
     pos: Vec2,
     time: f64,
     delta: Option<f64>,
     at: f64,
+    ghost: Option<f64>,
 }
 
 /// Traces de pneus : une suite de positions des deux roues arrière tant que la voiture glisse ou freine.
@@ -434,6 +436,12 @@ async fn main() {
     let mut bubbles: Vec<Split> = vec![];
     let mut skids: Vec<Skid> = vec![];
     let mut skidding = false;
+    // passages du fantôme : (tour, porte) -> temps de course ; porte = nb de portes pour la ligne d'arrivée
+    let mut ghost_marks: std::collections::HashMap<(usize, usize), f64> = std::collections::HashMap::new();
+    let (mut ghost_seen_cps, mut ghost_seen_laps) = (0usize, 0usize);
+    let mut ghost_delta: Option<f64> = None; // écart avec le fantôme au dernier passage (négatif : devant)
+    let mut show_lidar = false;
+    let mut show_help = false;
     let mut pause_until: Option<f64> = None;
     let mut paused = false;
     let mut speed = a.speed;
@@ -456,6 +464,12 @@ async fn main() {
         }
         let mut new_race = is_key_pressed(KeyCode::N);
         let mut restart = is_key_pressed(KeyCode::R);
+        if is_key_pressed(KeyCode::L) {
+            show_lidar = !show_lidar;
+        }
+        if is_key_pressed(KeyCode::H) {
+            show_help = !show_help;
+        }
 
         // nouvelle génération ?
         if let Some(d) = &follow_dir {
@@ -494,6 +508,18 @@ async fn main() {
                 let ended = me.tick(input, policy.as_ref(), &actions, timeout);
                 if let (Some(g), Some(gp)) = (ghost.as_mut(), ghost_policy.as_ref()) {
                     g.tick(None, Some(gp), &actions, timeout);
+                    let gs = &g.sim;
+                    let n_cp = gs.track.checkpoints.len();
+                    if gs.lap_times.len() > ghost_seen_laps {
+                        ghost_marks.insert((ghost_seen_laps, n_cp), gs.t);
+                        ghost_seen_laps = gs.lap_times.len();
+                        ghost_seen_cps = gs.cp_visited.iter().filter(|v| **v).count();
+                    }
+                    let c = gs.cp_visited.iter().filter(|v| **v).count();
+                    for i in ghost_seen_cps..c {
+                        ghost_marks.insert((gs.lap_count, i), gs.t);
+                    }
+                    ghost_seen_cps = c;
                 }
                 let s = &me.sim;
                 // chocs
@@ -528,7 +554,13 @@ async fn main() {
                         let wr = records.wr(&key);
                         let reference = wr.as_ref().map(|w| w.0).or(session_best.as_ref().map(|b| b.0));
                         let [fx, fy, _] = s.track.finish;
-                        bubbles.push(Split { pos: vec2(fx as f32, fy as f32), time: t, delta: reference.map(|r| t - r), at: now });
+                        let n_cp = s.track.checkpoints.len();
+                        ghost_delta = match ghost_marks.get(&(li, n_cp)) {
+                            Some(gt) => Some(s.t - gt),
+                            None if ghost_policy.is_some() => Some(-0.0001), // le fantôme n'y est pas encore : devant
+                            None => None,
+                        };
+                        bubbles.push(Split { pos: vec2(fx as f32, fy as f32), time: t, delta: reference.map(|r| t - r), at: now, ghost: ghost_delta });
                         if session_best.as_ref().map_or(true, |b| t < b.0) {
                             session_best = Some((t, splits_now.clone()));
                         }
@@ -561,7 +593,12 @@ async fn main() {
                         let reference = records.wr(&key).map(|w| w.2).filter(|v| v.len() > i).or(session_best.as_ref().map(|b| b.1.clone()));
                         let delta = reference.and_then(|r| r.get(i).copied()).filter(|x| x.is_finite()).map(|r| t - r);
                         let c = s.track.checkpoints[i];
-                        bubbles.push(Split { pos: vec2(c[0] as f32, c[1] as f32), time: t, delta, at: now });
+                        ghost_delta = match ghost_marks.get(&(s.lap_count, i)) {
+                            Some(gt) => Some(s.t + DT - gt),
+                            None if ghost_policy.is_some() => Some(-0.0001),
+                            None => None,
+                        };
+                        bubbles.push(Split { pos: vec2(c[0] as f32, c[1] as f32), time: t, delta, at: now, ghost: ghost_delta });
                     }
                 }
                 seen_cps = cps;
@@ -618,6 +655,10 @@ async fn main() {
             bonks.clear();
             skids.clear();
             bubbles.clear();
+            ghost_marks.clear();
+            ghost_seen_cps = 0;
+            ghost_seen_laps = 0;
+            ghost_delta = None;
             splits_now.clear();
             seen_hits = 0;
             seen_laps = 0;
@@ -657,14 +698,16 @@ async fn main() {
         for (i, c) in s.track.checkpoints.iter().enumerate() {
             let (cx, cy, ang) = (c[0] as f32, c[1] as f32, c[2] as f32);
             let d = vec2(ang.cos(), ang.sin()) * half;
-            let col = if Some(i) == next {
-                Color::new(0.35, 0.85, 1.0, 0.9)
-            } else if s.cp_visited[i] {
-                Color::new(0.35, 0.85, 1.0, 0.18)
+            if Some(i) == next {
+                draw_line(cx - d.x, cy - d.y, cx + d.x, cy + d.y, 12.0, Color::new(0.3, 0.85, 1.0, 0.25));
+                draw_line(cx - d.x, cy - d.y, cx + d.x, cy + d.y, 5.0, Color::new(0.35, 0.9, 1.0, 1.0));
             } else {
-                Color::new(1.0, 1.0, 1.0, 0.25)
-            };
-            draw_line(cx - d.x, cy - d.y, cx + d.x, cy + d.y, if Some(i) == next { 5.0 } else { 3.0 }, col);
+                let col = if s.cp_visited[i] { Color::new(1.0, 1.0, 1.0, 0.15) } else { Color::new(1.0, 1.0, 1.0, 0.5) };
+                draw_line(cx - d.x, cy - d.y, cx + d.x, cy + d.y, 3.0, col);
+            }
+            for e in [vec2(cx, cy) - d, vec2(cx, cy) + d] {
+                draw_circle(e.x, e.y, 5.0, Color::new(0.1, 0.11, 0.14, 0.9));
+            }
         }
         {
             let [fx, fy, fa] = s.track.finish;
@@ -695,11 +738,11 @@ async fn main() {
         if let Some(g) = &ghost {
             if ghost_policy.is_some() {
                 let (gp, gh) = g.pose(alpha);
-                draw_car(gp, gh, Color::new(0.47, 0.9, 1.0, 0.45), 0.45);
+                draw_car(gp, gh, Color::new(1.0, 0.6, 0.15, 0.5), 0.5);
             }
         }
         let (pos, heading) = me.pose(alpha);
-        if !a.play && me.obs.len() >= 44 {
+        if show_lidar && !a.play && me.obs.len() >= 44 {
             for k in 0..9 {
                 let ang = heading + (-std::f32::consts::FRAC_PI_2 + k as f32 * std::f32::consts::PI / 8.0);
                 let d = me.obs[35 + k] * 400.0;
@@ -723,26 +766,7 @@ async fn main() {
             }
         }
 
-        // bulles de temps intermédiaires
         bubbles.retain(|b| now - b.at < 2.5);
-        for b in &bubbles {
-            let age = (now - b.at) as f32;
-            let fade = if age > 1.8 { 1.0 - (age - 1.8) / 0.7 } else { 1.0 };
-            let rise = (age * 12.0).min(12.0);
-            let t1 = fmt_time(b.time);
-            let w = 130.0;
-            let hgt = if b.delta.is_some() { 56.0 } else { 32.0 };
-            let (x, y) = (b.pos.x - w / 2.0, b.pos.y - 80.0 - rise);
-            draw_rectangle(x, y, w, hgt, Color::new(0.05, 0.06, 0.08, 0.8 * fade));
-            let d1 = measure_text(&t1, None, 24, 1.0);
-            draw_text(&t1, b.pos.x - d1.width / 2.0, y + 24.0, 24.0, Color::new(1.0, 1.0, 1.0, fade));
-            if let Some(d) = b.delta {
-                let t2 = format!("{}{:.2}", if d < 0.0 { "-" } else { "+" }, d.abs());
-                let c = if d < 0.0 { Color::new(0.35, 0.86, 0.5, fade) } else { Color::new(1.0, 0.33, 0.3, fade) };
-                let d2 = measure_text(&t2, None, 24, 1.0);
-                draw_text(&t2, b.pos.x - d2.width / 2.0, y + 50.0, 24.0, c);
-            }
-        }
 
         // --- panneau ---
         set_default_camera();
@@ -773,12 +797,13 @@ async fn main() {
         }
         if let (Some(g), false) = (&ghost, ghost_label.is_empty()) {
             let gs = &g.sim;
-            let txt = if gs.done {
-                fmt_time(gs.lap_times.iter().sum())
-            } else {
-                format!("tour {}/{}", (gs.lap_count + 1).min(gs.laps), gs.laps)
+            let txt = match ghost_delta {
+                Some(g) if g < -0.00005 && g > -0.001 => "devant".to_string(),
+                Some(g) => format!("{}{:.2} s", if g < 0.0 { "-" } else { "+" }, g.abs()),
+                None if gs.done => fmt_time(gs.lap_times.iter().sum()),
+                None => "—".into(),
             };
-            lines.push((format!("Fantôme ({})  {}", ghost_label.to_lowercase().replace("génération", "gén."), txt), 20.0, Color::from_rgba(120, 230, 255, 255)));
+            lines.push((format!("Fantôme ({})  {}", ghost_label.to_lowercase().replace("génération", "gén."), txt), 20.0, Color::from_rgba(255, 160, 60, 255)));
         }
         let fmt_gen = |g: Option<u64>| g.map(|g| format!("  (gén. {g})")).unwrap_or_default();
         if !a.play {
@@ -822,13 +847,42 @@ async fn main() {
             draw_text(t, 26.0, y, *sz, *c);
             y += 6.0;
         }
-        let keys: &[&str] = if a.play {
-            &["Flèches, ZQSD ou WASD : conduire", "R : recommencer   N : autre circuit", "Espace : pause   Échap : quitter"]
+        let keys: &[&str] = if !show_help {
+            &["H : aide"]
+        } else if a.play {
+            &["Flèches, ZQSD ou WASD : conduire", "R : recommencer   N : autre circuit", "Espace : pause   H : aide", "Échap : quitter"]
         } else {
-            &["N : circuit suivant   R : recommencer", "Espace : pause   +/- : vitesse", "Échap : quitter"]
+            &["N : circuit suivant   R : recommencer", "Espace : pause   +/- : vitesse", "L : lidars   H : aide", "Échap : quitter"]
         };
         for (k, t) in keys.iter().enumerate() {
             draw_text(t, 22.0, sh - 18.0 - 22.0 * (keys.len() - 1 - k) as f32, 18.0, Color::from_rgba(150, 156, 170, 255));
+        }
+        // écart au passage de la porte ou de la ligne : en haut au centre, comme dans Trackmania
+        if let Some(b) = bubbles.last() {
+            let age = (now - b.at) as f32;
+            let fade = if age > 1.8 { (1.0 - (age - 1.8) / 0.7).max(0.0) } else { 1.0 };
+            let cx = side + (sw - side) / 2.0;
+            let main_txt = match b.delta {
+                Some(d) => format!("{}{:.2}", if d < 0.0 { "-" } else { "+" }, d.abs()),
+                None => fmt_time(b.time),
+            };
+            let main_col = match b.delta {
+                Some(d) if d < 0.0 => Color::new(0.35, 0.9, 0.5, fade),
+                Some(_) => Color::new(1.0, 0.35, 0.3, fade),
+                None => Color::new(1.0, 1.0, 1.0, fade),
+            };
+            let sub = match (b.delta, b.ghost) {
+                (_, Some(g)) if g < -0.00005 && g > -0.001 => format!("{}  ·  devant le fantôme", fmt_time(b.time)),
+                (_, Some(g)) => format!("{}  ·  fantôme {}{:.2}", fmt_time(b.time), if g < 0.0 { "-" } else { "+" }, g.abs()),
+                (Some(_), None) => fmt_time(b.time),
+                (None, None) => String::new(),
+            };
+            let d1 = measure_text(&main_txt, None, 52, 1.0);
+            let d2 = measure_text(&sub, None, 22, 1.0);
+            let bw = d1.width.max(d2.width) + 40.0;
+            draw_rectangle(cx - bw / 2.0, 14.0, bw, 84.0, Color::new(0.05, 0.06, 0.08, 0.75 * fade));
+            draw_text(&main_txt, cx - d1.width / 2.0, 62.0, 52.0, main_col);
+            draw_text(&sub, cx - d2.width / 2.0, 88.0, 22.0, Color::new(0.85, 0.87, 0.92, fade));
         }
         if paused {
             draw_text("PAUSE", side + (sw - side) / 2.0 - 50.0, 40.0, 40.0, WHITE);
