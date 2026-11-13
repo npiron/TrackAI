@@ -123,7 +123,17 @@ fn export_policy(root: &Path, model: &Path) -> Result<PathBuf, String> {
     Ok(out)
 }
 
+/// Dernière génération du dossier, ou le modèle de départ d'une reprise tant qu'il n'y en a pas.
 fn latest_gen(dir: &Path) -> Option<PathBuf> {
+    latest_gen_only(dir).or_else(|| {
+        let cfg: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(dir.join("config.json")).ok()?).ok()?;
+        let init = PathBuf::from(cfg["init"].as_str()?);
+        let init = if init.is_absolute() { init } else { dir.parent()?.parent()?.parent()?.join(init) };
+        init.is_file().then_some(init)
+    })
+}
+
+fn latest_gen_only(dir: &Path) -> Option<PathBuf> {
     let mut gens: Vec<PathBuf> = std::fs::read_dir(dir)
         .ok()?
         .filter_map(|e| e.ok().map(|e| e.path()))
