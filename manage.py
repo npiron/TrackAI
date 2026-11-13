@@ -4,6 +4,7 @@
   python manage.py play                 conduire soi-même (circuits longs, 3 tours, N : nouveau circuit)
   python manage.py train --minutes 360  entraîner de zéro (obs v3, 15 actions) ; --live : fenêtre qui suit l'entraînement
   python manage.py watch                regarder le meilleur bot (--follow DOSSIER : suivre un entraînement en cours)
+  python manage.py hard-tracks --model M  classer les circuits où le bot M se plante le plus (data/hard_tracks/)
   python manage.py dashboard            graphiques de l'apprentissage en direct dans le navigateur
   python manage.py test                 lancer les tests
 
@@ -41,6 +42,7 @@ def main():
     t.add_argument("--live", action="store_true", help="ouvre aussi une fenêtre qui suit les générations")
     w = sub.add_parser("watch", help="regarder un bot sur les circuits longs")
     w.add_argument("--follow", default=None, metavar="DOSSIER", help="suivre un entraînement en cours")
+    sub.add_parser("hard-tracks", help="classer les circuits où un bot se plante le plus")
     sub.add_parser("dashboard", help="graphiques de l'apprentissage en direct (navigateur)")
     sub.add_parser("test", help="lancer les tests")
     a, rest = p.parse_known_args()
@@ -61,6 +63,8 @@ def main():
     if a.command == "watch":
         extra = ["--follow", a.follow] if a.follow else []
         return run(["scripts/watch_best.py", "--long", *extra, *rest])
+    if a.command == "hard-tracks":
+        return run(["scripts/hard_tracks.py", *rest])
     if a.command == "dashboard":
         return run(["scripts/live_dashboard.py", *rest])
     if a.command == "test":

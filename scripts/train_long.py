@@ -25,13 +25,14 @@ TRAIN_KEYS = ("train/entropy_loss", "train/approx_kl", "train/clip_fraction", "t
 
 
 def make_env(rank, seed, wall_penalty, laps=1, time_penalty=None, track_seed=None, obs_version=3, action_set=2,
-             speed_bonus=0.0):
+             speed_bonus=0.0, track_seeds=None, track_mix=1.0):
     def _f():
         from src.rl.wrappers import GymTimeAttack
         kw = {} if time_penalty is None else {"time_penalty": time_penalty}
         env = GymTimeAttack(render_mode=None, procedural=True, laps=laps, obs_version=obs_version, track_variant=2,
                             action_set=action_set, speed_bonus=speed_bonus,
-                            reward_mode="simple", wall_penalty=wall_penalty, track_seed=track_seed, **kw)
+                            reward_mode="simple", wall_penalty=wall_penalty, track_seed=track_seed,
+                            track_seeds=track_seeds, track_mix=track_mix, **kw)
         env.reset(seed=seed + rank)
         return env
     return _f
@@ -53,6 +54,11 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=7)
     p.add_argument("--init", default=None)
     p.add_argument("--track-seed", type=int, default=None, help="s'entraîner sur un seul circuit (son numéro)")
+    p.add_argument("--track-seeds-file", default=None,
+                   help="JSON de circuits (liste de numéros, ou {\"train\": [...]} produit par hard_tracks.py) : "
+                        "une part --track-mix des épisodes y est tirée")
+    p.add_argument("--track-mix", type=float, default=0.7,
+                   help="part des épisodes sur --track-seeds-file (le reste : circuits aléatoires)")
     p.add_argument("--clip", type=float, default=None, help="clip_range PPO (reprise : 0.1 conseillé)")
     p.add_argument("--n-steps", type=int, default=None,
                    help="pas par environnement entre deux mises à jour (lot = n_envs x n_steps) ; défaut 4096/n_envs")
@@ -69,6 +75,13 @@ def main(argv=None):
     p.add_argument("--action-set", type=int, default=2, choices=(1, 2),
                    help="1 : 9 touches tout ou rien ; 2 : 15 actions avec demi-braquages")
     a = p.parse_args(argv)
+    track_seeds = None
+    if a.track_seeds_file:
+        import json
+        with open(a.track_seeds_file) as f:
+            data = json.load(f)
+        track_seeds = data["train"] if isinstance(data, dict) else data
+        print(f"{len(track_seeds)} circuits imposés, {a.track_mix:.0%} des épisodes")
 
     import torch
     torch.set_num_threads(2)
@@ -78,7 +91,8 @@ def main(argv=None):
 
     os.makedirs(a.out_dir, exist_ok=True)
     venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty, a.laps, a.time_penalty, a.track_seed,
-                                              a.obs_version, a.action_set, a.speed_bonus)
+                                              a.obs_version, a.action_set, a.speed_bonus,
+                                              track_seeds, a.track_mix)
                                       for i in range(a.n_envs)]))
     if a.init:
         venv = VecNormalize.load(a.init[:-4] + "_vecnormalize.pkl", venv)

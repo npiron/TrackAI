@@ -45,7 +45,8 @@ class GymTimeAttack(gym.Env):
 
     def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
                  reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY,
-                 action_repeat=BOT_DECISION_FRAMES, track_seed=None, action_set=1, speed_bonus=0.0):
+                 action_repeat=BOT_DECISION_FRAMES, track_seed=None, action_set=1, speed_bonus=0.0,
+                 track_seeds=None, track_mix=1.0):
         super().__init__()
         if reward_mode not in REWARD_MODES:
             raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
@@ -54,6 +55,10 @@ class GymTimeAttack(gym.Env):
         self.reward_mode = reward_mode
         self.action_repeat = max(1, int(action_repeat))  # images jouées par décision du bot
         self.fixed_track_seed = track_seed   # circuit imposé (entraînement sur un seul circuit)
+        # liste de circuits (ex. les plus durs) : une part track_mix des épisodes y est tirée, le reste est aléatoire
+        self.track_seeds = [int(x) for x in track_seeds] if track_seeds else None
+        self.track_mix = float(track_mix)
+        self._seed_rng = np.random.RandomState()
         self._k_prog_arg = k_prog
         self.time_penalty = float(time_penalty)
         # bonus à chaque tour bouclé = speed_bonus x vitesse moyenne du tour (fraction de la vitesse max) :
@@ -133,7 +138,11 @@ class GymTimeAttack(gym.Env):
             print(f"Error loading rewards config: {e}")
 
     def reset(self, seed=None, options=None):
+        if seed is not None:
+            self._seed_rng.seed(seed)
         track_seed = (options or {}).get("track_seed", self.fixed_track_seed)
+        if track_seed is None and self.track_seeds and self._seed_rng.rand() < self.track_mix:
+            track_seed = int(self.track_seeds[self._seed_rng.randint(len(self.track_seeds))])
         # This regenerates the track if procedural (track_seed fixes it)
         obs = self.ta.reset() if track_seed is None else self.ta.reset(track_seed=track_seed)
         
