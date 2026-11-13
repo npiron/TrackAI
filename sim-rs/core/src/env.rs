@@ -2,7 +2,8 @@
 use crate::consts::*;
 use crate::physics::{drive, DriveState};
 use crate::pymath::{clip, cos, hypot, np_sum, pymod, sin};
-use crate::track::{generate, Track};
+use crate::track::{get as get_track, Track};
+use std::sync::Arc;
 
 pub const V2_POINT_DISTANCES: [f64; 8] = [30.0, 60.0, 100.0, 150.0, 220.0, 300.0, 420.0, 560.0];
 pub const V2_RAY_LENGTH: f64 = 400.0;
@@ -46,7 +47,9 @@ pub struct Car {
 }
 
 pub struct Sim {
-    pub track: Track,
+    pub track: Arc<Track>,
+    /// point de la ligne centrale le plus proche de la voiture (mis à jour à chaque image)
+    pub idx: usize,
     pub car: Car,
     pub laps: usize,
     pub lap_count: usize,
@@ -68,9 +71,10 @@ pub struct Sim {
 
 impl Sim {
     pub fn new(seed: u64, laps: usize) -> Result<Sim, String> {
-        let track = generate(seed)?;
+        let track = get_track(seed)?;
         let mut s = Sim {
             track,
+            idx: 0,
             car: Car::default(),
             laps: laps.max(1),
             lap_count: 0,
@@ -96,7 +100,7 @@ impl Sim {
     /// Nouveau circuit (graine) puis départ.
     pub fn reset(&mut self, seed: u64) -> Result<(), String> {
         if seed != self.track.seed {
-            self.track = generate(seed)?;
+            self.track = get_track(seed)?;
         }
         self.best_time = None;
         self.best_ghost.clear();
@@ -124,6 +128,7 @@ impl Sim {
         self.wall_contacts = 0;
         self.wall_prev = false;
         self.frames_since_wall = 1_000_000;
+        self.idx = self.track.closest(self.car.pos[0], self.car.pos[1]);
     }
 
     #[inline]
@@ -254,6 +259,7 @@ impl Sim {
             self.ghost.push(p);
         }
         self.t += 1.0 / FPS;
+        self.idx = self.track.closest_near(self.car.pos[0], self.car.pos[1], self.idx);
         if self.done || lap_finished { 100.0 } else { 0.0 }
     }
 
@@ -373,7 +379,7 @@ impl Sim {
         let total = self.track.length();
         let n = sp.len();
         let pos = car.pos;
-        let i0 = self.track.closest(pos[0], pos[1]);
+        let i0 = self.idx;
         let (ch, sh) = (cos(car.heading), sin(car.heading));
         out.push(car.steering as f32);
         let mut pts = [[0.0f64; 2]; 8];

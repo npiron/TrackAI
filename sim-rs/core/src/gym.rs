@@ -128,8 +128,7 @@ impl Agent {
     }
 
     fn centerline_s(&self) -> f64 {
-        let i = self.sim.track.closest(self.sim.car.pos[0], self.sim.car.pos[1]);
-        self.sim.track.cum[i]
+        self.sim.track.cum[self.sim.idx]
     }
 
     fn begin_episode(&mut self) {

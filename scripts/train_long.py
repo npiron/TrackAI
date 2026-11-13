@@ -66,6 +66,9 @@ def main(argv=None):
                    help="le pas d'apprentissage baisse linéairement au fil des --minutes jusqu'à FIN x --lr (ex. 0.2)")
     p.add_argument("--fresh-reward-scale", action="store_true",
                    help="reprise : remet à zéro l'échelle des récompenses (VecNormalize) et la mémoire d'Adam")
+    p.add_argument("--torch-threads", type=int, default=None,
+                   help="threads de torch (défaut : 4 avec --engine rust, 2 avec python)")
+    p.add_argument("--batch-size", type=int, default=None, help="taille des mini-lots PPO (défaut : 1024, ou min(4096, lot) en reprise avec --n-steps)")
     p.add_argument("--engine", default="rust", choices=("rust", "python"),
                    help="rust : moteur sim-rs (toutes les voitures dans un processus, ~15x plus rapide) ; python : SubprocVecEnv")
     p.add_argument("--out-dir", default="data/checkpoints/long")
@@ -86,7 +89,7 @@ def main(argv=None):
         print(f"{len(track_seeds)} circuits imposés, {a.track_mix:.0%} des épisodes")
 
     import torch
-    torch.set_num_threads(2)
+    torch.set_num_threads(a.torch_threads or (4 if a.engine == "rust" else 2))
     from stable_baselines3 import PPO
     from stable_baselines3.common.callbacks import BaseCallback
     from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor, VecNormalize
@@ -113,7 +116,7 @@ def main(argv=None):
         if a.n_steps:   # lots plus gros : nouveau tampon d'expérience (les poids du réseau sont gardés)
             from stable_baselines3.common.buffers import RolloutBuffer
             model.n_steps = a.n_steps
-            model.batch_size = min(4096, a.n_steps * a.n_envs)
+            model.batch_size = a.batch_size or min(4096, a.n_steps * a.n_envs)
             model.rollout_buffer = RolloutBuffer(a.n_steps, model.observation_space, model.action_space,
                                                  device=model.device, gae_lambda=model.gae_lambda,
                                                  gamma=model.gamma, n_envs=a.n_envs)
@@ -128,7 +131,7 @@ def main(argv=None):
     else:
         venv = VecNormalize(venv, norm_obs=True, norm_reward=True, clip_obs=10.0, gamma=0.995)
         model = PPO("MlpPolicy", venv, device="cpu", seed=a.seed, learning_rate=a.lr,
-                    n_steps=a.n_steps or max(64, 4096 // a.n_envs), batch_size=1024, n_epochs=4, gamma=0.995,
+                    n_steps=a.n_steps or max(64, 4096 // a.n_envs), batch_size=a.batch_size or 1024, n_epochs=4, gamma=0.995,
                     gae_lambda=0.95, clip_range=0.2, ent_coef=a.ent,
                     policy_kwargs=dict(net_arch=dict(pi=[256, 256], vf=[256, 256])))
         gen0 = 0

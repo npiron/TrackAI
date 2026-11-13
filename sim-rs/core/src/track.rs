@@ -56,6 +56,32 @@ impl Track {
         bi
     }
 
+    /// Comme `closest`, mais en cherchant autour de `hint` (le point trouvé à l'image précédente) :
+    /// la voiture avance de quelques points par image. Si le résultat est loin de la route, recherche complète.
+    pub fn closest_near(&self, x: f64, y: f64, hint: usize) -> usize {
+        let n = self.spline.len();
+        let w = 80usize.min(n / 2);
+        let mut best = f64::INFINITY;
+        let mut bi = hint;
+        for k in 0..=2 * w {
+            let i = (hint + n + k - w) % n;
+            let p = self.spline[i];
+            let dx = p[0] - x;
+            let dy = p[1] - y;
+            let d = dx * dx + dy * dy;
+            if d < best || (d == best && i < bi) {
+                best = d;
+                bi = i;
+            }
+        }
+        // au bord de la fenêtre, ou trop loin de la ligne centrale : on ne sait pas, recherche complète
+        let edge = (bi + n - (hint + n - w) % n) % n;
+        if edge == 0 || edge == 2 * w || best > (self.half_width * 1.6).powi(2) {
+            return self.closest(x, y);
+        }
+        bi
+    }
+
     pub fn length(&self) -> f64 {
         self.cum[self.cum.len() - 1]
     }
@@ -322,9 +348,9 @@ fn finish_track(spline: Vec<[f64; 2]>, seed: u64, half_width: f64) -> Track {
             }
             let xa = (cx + x0).max(0);
             let xb = (cx + x1).min(W - 1);
-            let row = (y * W) as usize;
-            for x in xa..=xb {
-                mask[row + x as usize] = true;
+            if xa <= xb {
+                let row = (y * W) as usize;
+                mask[row + xa as usize..=row + xb as usize].fill(true);
             }
         }
     }
@@ -386,6 +412,32 @@ fn finish_track(spline: Vec<[f64; 2]>, seed: u64, half_width: f64) -> Track {
         })
         .collect();
     t
+}
+
+use std::sync::{Arc, Mutex, OnceLock};
+
+/// Circuits déjà générés (les circuits imposés reviennent souvent) : au plus CACHE_MAX, les plus anciens sortent.
+const CACHE_MAX: usize = 512;
+static CACHE: OnceLock<Mutex<(std::collections::HashMap<u64, Arc<Track>>, std::collections::VecDeque<u64>)>> = OnceLock::new();
+
+/// Circuit partagé (en cache) pour une graine.
+pub fn get(seed: u64) -> Result<Arc<Track>, String> {
+    let cache = CACHE.get_or_init(|| Mutex::new((std::collections::HashMap::new(), std::collections::VecDeque::new())));
+    if let Some(t) = cache.lock().unwrap().0.get(&seed) {
+        return Ok(t.clone());
+    }
+    let t = Arc::new(generate(seed)?);
+    let mut c = cache.lock().unwrap();
+    if !c.0.contains_key(&seed) {
+        c.0.insert(seed, t.clone());
+        c.1.push_back(seed);
+        while c.1.len() > CACHE_MAX {
+            if let Some(old) = c.1.pop_front() {
+                c.0.remove(&old);
+            }
+        }
+    }
+    Ok(t)
 }
 
 /// `generate_procedural_track(seed, variant=2)`.
