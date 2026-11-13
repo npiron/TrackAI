@@ -27,6 +27,8 @@ struct Args {
     hard_file: String,
     speed: f64,
     screenshot: Option<String>,
+    ghost: Option<String>,
+    no_ghost: bool,
     shot_at: u64,
     root: PathBuf,
 }
@@ -59,6 +61,8 @@ fn parse_args() -> Args {
             "--hard-file" => a.hard_file = next(&mut i),
             "--speed" => a.speed = next(&mut i).parse().unwrap_or(1.0),
             "--screenshot" => a.screenshot = Some(next(&mut i)),
+            "--ghost" => a.ghost = Some(next(&mut i)),
+            "--no-ghost" => a.no_ghost = true,
             "--shot-at" => a.shot_at = next(&mut i).parse().unwrap_or(300),
             "-h" | "--help" => {
                 println!("trackai [--play | --model M.zip|M.json | --follow DOSSIER] [--laps N] [--hard [train|val|all]] [--track-seed S] [--speed X]");
@@ -132,6 +136,31 @@ fn latest_gen(dir: &Path) -> Option<PathBuf> {
     gens.pop()
 }
 
+/// Génération qui précède `cur` dans `dir` (ou le modèle de départ d'une reprise, lu dans config.json).
+fn previous_model(dir: &Path, cur: &Path) -> Option<PathBuf> {
+    let mut gens: Vec<PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| {
+            let n = p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            n.starts_with("gen_") && n.ends_with(".zip")
+        })
+        .collect();
+    gens.sort();
+    if let Some(i) = gens.iter().position(|g| g == cur) {
+        if i > 0 {
+            return Some(gens[i - 1].clone());
+        }
+    }
+    let cfg: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(dir.join("config.json")).ok()?).ok()?;
+    let init = PathBuf::from(cfg["init"].as_str()?);
+    (init.is_file() && init != cur).then_some(init)
+}
+
+fn gen_number(p: &Path) -> Option<u64> {
+    p.file_stem()?.to_string_lossy().strip_prefix("gen_")?.parse().ok()
+}
+
 fn gen_label(p: &Path) -> String {
     let n = p.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
     match n.strip_prefix("gen_").and_then(|g| g.parse::<u32>().ok()) {
@@ -181,6 +210,138 @@ fn draw_car(pos: Vec2, heading: f32, body: Color, alpha: f32) {
     rect(pos + fwd * 8.0, 10.0, 2.0, Color::new(1.0, 1.0, 1.0, alpha * 0.9));
 }
 
+/// Une voiture qui roule (le bot, son fantôme ou le joueur).
+struct Driver {
+    sim: Sim,
+    frame: u64,
+    action: usize,
+    obs: Vec<f32>,
+    prev: ([f64; 2], f64),
+    stuck: u32,
+    over: bool,
+}
+
+impl Driver {
+    fn new(seed: u64, laps: usize) -> Driver {
+        let sim = Sim::new(seed, laps).expect("circuit");
+        let prev = (sim.car.pos, sim.car.heading);
+        Driver { sim, frame: 0, action: 0, obs: Vec::with_capacity(64), prev, stuck: 0, over: false }
+    }
+
+    fn reset(&mut self, seed: u64) {
+        self.sim.reset(seed).expect("circuit");
+        self.restart();
+    }
+
+    fn restart(&mut self) {
+        self.sim.restart();
+        self.frame = 0;
+        self.stuck = 0;
+        self.over = false;
+        self.prev = (self.sim.car.pos, self.sim.car.heading);
+    }
+
+    /// Une image ; renvoie true quand la course est finie (arrivée, temps écoulé ou bloqué).
+    fn tick(&mut self, input: Option<(f64, f64, f64)>, policy: Option<&Policy>, actions: &[(f64, f64, f64)], timeout: u64) -> bool {
+        if self.over {
+            self.prev = (self.sim.car.pos, self.sim.car.heading);
+            return true;
+        }
+        self.prev = (self.sim.car.pos, self.sim.car.heading);
+        let (steer, accel, brake) = match (input, policy) {
+            (Some(i), _) => i,
+            (None, Some(p)) => {
+                if self.frame % BOT_DECISION_FRAMES as u64 == 0 {
+                    self.sim.obs(p.obs_version, &mut self.obs);
+                    self.action = p.act(&self.obs);
+                }
+                actions[self.action]
+            }
+            _ => (0.0, 0.0, 0.0),
+        };
+        self.sim.step(steer, accel, brake);
+        self.frame += 1;
+        self.stuck = if self.sim.car.speed.max(0.0) / MAX_SPEED < 0.05 { self.stuck + 1 } else { 0 };
+        if self.sim.done || self.frame >= timeout || (input.is_none() && self.stuck >= 150) {
+            self.over = true;
+        }
+        self.over
+    }
+
+    fn pose(&self, alpha: f64) -> (Vec2, f32) {
+        let l = |p: f64, c: f64| (p + (c - p) * alpha) as f32;
+        (vec2(l(self.prev.0[0], self.sim.car.pos[0]), l(self.prev.0[1], self.sim.car.pos[1])), l(self.prev.1, self.sim.car.heading))
+    }
+}
+
+/// Records du bot, dans les mêmes fichiers que la version Pygame :
+/// data/bot_records.json (WR du tour par circuit : "graine-tours" -> {lap, lap_gen, splits}) et
+/// data/bot_speed_record.json (meilleure vitesse moyenne sur un tour, tous circuits).
+struct Records {
+    laps_path: PathBuf,
+    speed_path: PathBuf,
+    laps: serde_json::Value,
+    speed: serde_json::Value,
+}
+
+impl Records {
+    fn load(root: &Path) -> Records {
+        let read = |p: &Path| -> serde_json::Value {
+            std::fs::read_to_string(p).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or(serde_json::json!({}))
+        };
+        let laps_path = root.join("data/bot_records.json");
+        let speed_path = root.join("data/bot_speed_record.json");
+        Records { laps: read(&laps_path), speed: read(&speed_path), laps_path, speed_path }
+    }
+
+    fn save(path: &Path, v: &serde_json::Value) {
+        if let Ok(t) = serde_json::to_string_pretty(v) {
+            let tmp = path.with_extension("json.tmp");
+            if std::fs::write(&tmp, t).is_ok() {
+                let _ = std::fs::rename(&tmp, path);
+            }
+        }
+    }
+
+    /// (temps, génération, temps intermédiaires) du WR de ce circuit.
+    fn wr(&self, key: &str) -> Option<(f64, Option<u64>, Vec<f64>)> {
+        let e = &self.laps[key];
+        let lap = e["lap"].as_f64()?;
+        let splits = e["splits"].as_array().map(|a| a.iter().map(|x| x.as_f64().unwrap_or(f64::NAN)).collect()).unwrap_or_default();
+        Some((lap, e["lap_gen"].as_u64(), splits))
+    }
+
+    fn set_wr(&mut self, key: &str, lap: f64, gen: Option<u64>, splits: &[f64]) {
+        self.laps[key] = serde_json::json!({ "lap": (lap * 1000.0).round() / 1000.0, "lap_gen": gen, "splits": splits });
+        Self::save(&self.laps_path, &self.laps);
+    }
+
+    fn speed_record(&self) -> Option<(f64, Option<u64>)> {
+        Some((self.speed["speed"].as_f64()?, self.speed["gen"].as_u64()))
+    }
+
+    fn set_speed(&mut self, v: f64, gen: Option<u64>, seed: u64, run: &str) {
+        self.speed = serde_json::json!({ "speed": (v * 10000.0).round() / 10000.0, "gen": gen, "seed": seed, "run": run });
+        Self::save(&self.speed_path, &self.speed);
+    }
+}
+
+/// Bulle de temps intermédiaire (au-dessus d'une porte ou de la ligne).
+struct Split {
+    pos: Vec2,
+    time: f64,
+    delta: Option<f64>,
+    at: f64,
+}
+
+/// Traces de pneus : une suite de positions des deux roues arrière tant que la voiture glisse ou freine.
+struct Skid {
+    left: Vec<Vec2>,
+    right: Vec<Vec2>,
+}
+
+type Loaded = (PathBuf, Result<Policy, String>, Option<(PathBuf, Result<Policy, String>)>);
+
 #[macroquad::main(window_conf)]
 async fn main() {
     let a = parse_args();
@@ -206,52 +367,78 @@ async fn main() {
         1000 + rng_seed % 1_000_000_000
     };
 
-    // politique du bot
-    let mut policy: Option<Policy> = None;
-    let mut label = String::new();
-    let mut loaded_from: Option<PathBuf> = None;
+    // politique du bot et de son fantôme
     let follow_dir = a.follow.as_ref().map(|d| root.join(d));
+    let run_name = follow_dir.as_ref().and_then(|d| d.file_name()).map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
     let load = |p: &Path| -> Result<Policy, String> { Policy::load(export_policy(&root, p)?.to_str().unwrap()) };
+    let mut policy: Option<Policy> = None;
+    let mut ghost_policy: Option<Policy> = None;
+    let mut label = String::new();
+    let mut ghost_label = String::new();
+    let mut gen: Option<u64> = None;
+    let mut loaded_from: Option<PathBuf> = None;
     if !a.play {
         let first = match (&a.model, &follow_dir) {
             (Some(m), _) => Some(root.join(m)),
             (None, Some(d)) => latest_gen(d),
             _ => None,
         };
-        match first {
-            Some(p) => match load(&p) {
+        match &first {
+            Some(p) => match load(p) {
                 Ok(pl) => {
-                    label = gen_label(&p);
-                    loaded_from = Some(p);
+                    label = gen_label(p);
+                    gen = gen_number(p);
+                    loaded_from = Some(p.clone());
                     policy = Some(pl);
                 }
                 Err(e) => eprintln!("{e}"),
             },
             None => eprintln!("aucun modèle : --model, --follow ou --play"),
         }
+        if !a.no_ghost {
+            let g = match (&a.ghost, &follow_dir, &first) {
+                (Some(g), _, _) => Some(root.join(g)),
+                (None, Some(d), Some(cur)) => previous_model(d, cur),
+                _ => None,
+            };
+            if let Some(g) = g {
+                match load(&g) {
+                    Ok(p) => {
+                        ghost_label = gen_label(&g);
+                        ghost_policy = Some(p);
+                    }
+                    Err(e) => eprintln!("fantôme : {e}"),
+                }
+            }
+        }
     }
-    // rechargement en arrière-plan (--follow)
-    let (tx, rx) = mpsc::channel::<(PathBuf, Result<Policy, String>)>();
+    // rechargement en arrière-plan (--follow) : nouvelle génération + la précédente en fantôme
+    let (tx, rx) = mpsc::channel::<Loaded>();
     let mut pending = false;
     let mut last_check = 0.0f64;
 
-    let obs_version = policy.as_ref().map_or(3, |p| p.obs_version);
     let actions = action_set(policy.as_ref().map_or(2, |p| p.action_set));
-    let mut sim = Sim::new(next_seed(&mut hard_i), a.laps).expect("circuit");
-    let mut tex = art::track_texture(&sim.track);
-    let mut obs = Vec::with_capacity(64);
-    let mut action = 0usize;
-    let mut frame: u64 = 0;
+    let timeout = 2000 * a.laps as u64 * if a.play { 10 } else { 1 };
+    let mut me = Driver::new(next_seed(&mut hard_i), a.laps);
+    let mut ghost = ghost_policy.as_ref().map(|_| Driver::new(me.sim.track.seed, a.laps));
+    let mut tex = art::track_texture(&me.sim.track);
+    let mut records = Records::load(&root);
     let mut acc = 0.0f64;
-    let mut prev = (sim.car.pos, sim.car.heading);
     let mut bonks: Vec<Bonk> = vec![];
     let mut seen_hits = 0u64;
-    let mut stuck = 0u32;
+    let mut seen_laps = 0usize;
+    let mut seen_cps = 0usize;
+    let mut splits_now: Vec<f64> = vec![];
+    let mut session_best: Option<(f64, Vec<f64>)> = None; // meilleur tour de la session sur ce circuit
+    let mut pb_speed: Option<f64> = None; // meilleure vitesse de la génération courante
+    let mut bubbles: Vec<Split> = vec![];
+    let mut skids: Vec<Skid> = vec![];
+    let mut skidding = false;
     let mut pause_until: Option<f64> = None;
     let mut paused = false;
     let mut speed = a.speed;
     let mut drawn: u64 = 0;
-    let mut record: Option<f64> = None;
+    let record_key = |seed: u64| format!("{seed}-{}", a.laps);
 
     loop {
         let now = get_time();
@@ -268,13 +455,7 @@ async fn main() {
             speed = (speed / 2.0).max(0.25);
         }
         let mut new_race = is_key_pressed(KeyCode::N);
-        if is_key_pressed(KeyCode::R) {
-            sim.restart();
-            bonks.clear();
-            seen_hits = 0;
-            frame = 0;
-            prev = (sim.car.pos, sim.car.heading);
-        }
+        let mut restart = is_key_pressed(KeyCode::R);
 
         // nouvelle génération ?
         if let Some(d) = &follow_dir {
@@ -283,11 +464,13 @@ async fn main() {
                 if let Some(g) = latest_gen(d) {
                     if loaded_from.as_ref() != Some(&g) {
                         pending = true;
-                        let (tx, root) = (tx.clone(), root.clone());
+                        let (tx, root, d, no_ghost) = (tx.clone(), root.clone(), d.clone(), a.no_ghost);
                         std::thread::spawn(move || {
                             std::thread::sleep(std::time::Duration::from_millis(1500)); // laisse l'entraînement finir d'écrire
-                            let r = export_policy(&root, &g).and_then(|p| Policy::load(p.to_str().unwrap()));
-                            let _ = tx.send((g, r));
+                            let ld = |p: &Path| export_policy(&root, p).and_then(|j| Policy::load(j.to_str().unwrap()));
+                            let r = ld(&g);
+                            let gh = if no_ghost { None } else { previous_model(&d, &g).map(|p| { let r = ld(&p); (p, r) }) };
+                            let _ = tx.send((g, r, gh));
                         });
                     }
                 }
@@ -299,38 +482,90 @@ async fn main() {
             acc += (get_frame_time() as f64 * speed).min(0.25);
             while acc >= DT {
                 acc -= DT;
-                prev = (sim.car.pos, sim.car.heading);
-                let (steer, accel, brake) = if a.play {
-                    let left = is_key_down(KeyCode::Left) || is_key_down(KeyCode::A);
+                let input = if a.play {
+                    let left = is_key_down(KeyCode::Left) || is_key_down(KeyCode::A) || is_key_down(KeyCode::Q);
                     let right = is_key_down(KeyCode::Right) || is_key_down(KeyCode::D);
                     let up = is_key_down(KeyCode::Up) || is_key_down(KeyCode::W) || is_key_down(KeyCode::Z);
                     let down = is_key_down(KeyCode::Down) || is_key_down(KeyCode::S);
-                    let left = left || is_key_down(KeyCode::Q);
-                    ((right as i32 - left as i32) as f64, up as i32 as f64, down as i32 as f64)
-                } else if let Some(p) = &policy {
-                    if frame % BOT_DECISION_FRAMES as u64 == 0 {
-                        sim.obs(obs_version, &mut obs);
-                        action = p.act(&obs);
-                    }
-                    actions[action]
+                    Some(((right as i32 - left as i32) as f64, up as i32 as f64, down as i32 as f64))
                 } else {
-                    (0.0, 0.0, 0.0)
+                    None
                 };
-                sim.step(steer, accel, brake);
-                frame += 1;
-                if sim.wall_hits > seen_hits {
-                    for _ in seen_hits..sim.wall_hits {
-                        bonks.push(Bonk { pos: sim.car.pos, lap: sim.lap_count, at: now });
-                    }
-                    seen_hits = sim.wall_hits;
+                let ended = me.tick(input, policy.as_ref(), &actions, timeout);
+                if let (Some(g), Some(gp)) = (ghost.as_mut(), ghost_policy.as_ref()) {
+                    g.tick(None, Some(gp), &actions, timeout);
                 }
-                stuck = if sim.car.speed.max(0.0) / MAX_SPEED < 0.05 { stuck + 1 } else { 0 };
-                let timeout = frame >= 2000 * a.laps as u64 * if a.play { 10 } else { 1 };
-                if sim.done || timeout || (!a.play && stuck >= 150) {
-                    if sim.done {
-                        let total: f64 = sim.lap_times.iter().sum();
-                        record = Some(record.map_or(total, |r: f64| r.min(total)));
+                let s = &me.sim;
+                // chocs
+                if s.wall_hits > seen_hits {
+                    for _ in seen_hits..s.wall_hits {
+                        bonks.push(Bonk { pos: s.car.pos, lap: s.lap_count, at: now });
                     }
+                    seen_hits = s.wall_hits;
+                }
+                // traces de pneus
+                let skid_now = (s.car.is_drifting || s.car.braking) && s.car.speed.abs() > 2.0;
+                if skid_now {
+                    let (h, p) = (s.car.heading as f32, vec2(s.car.pos[0] as f32, s.car.pos[1] as f32));
+                    let (fwd, side) = (vec2(h.cos(), h.sin()), vec2(-h.sin(), h.cos()));
+                    if !skidding {
+                        skids.push(Skid { left: vec![], right: vec![] });
+                        if skids.len() > 400 {
+                            skids.remove(0);
+                        }
+                    }
+                    let k = skids.last_mut().unwrap();
+                    k.left.push(p - fwd * 10.0 + side * 8.5);
+                    k.right.push(p - fwd * 10.0 - side * 8.5);
+                }
+                skidding = skid_now;
+                // tours bouclés : PB, records, écart au WR sur la ligne
+                let key = record_key(s.track.seed);
+                if s.lap_times.len() > seen_laps {
+                    for li in seen_laps..s.lap_times.len() {
+                        let t = s.lap_times[li];
+                        let v = s.track.length() / t / (MAX_SPEED * FPS);
+                        let wr = records.wr(&key);
+                        let reference = wr.as_ref().map(|w| w.0).or(session_best.as_ref().map(|b| b.0));
+                        let [fx, fy, _] = s.track.finish;
+                        bubbles.push(Split { pos: vec2(fx as f32, fy as f32), time: t, delta: reference.map(|r| t - r), at: now });
+                        if session_best.as_ref().map_or(true, |b| t < b.0) {
+                            session_best = Some((t, splits_now.clone()));
+                        }
+                        if !a.play {
+                            pb_speed = Some(pb_speed.map_or(v, |p| p.max(v)));
+                            if records.speed_record().map_or(true, |r| v > r.0) {
+                                records.set_speed(v, gen, s.track.seed, &run_name);
+                            }
+                            if wr.map_or(true, |w| t < w.0) {
+                                records.set_wr(&key, t, gen, &splits_now);
+                            }
+                        }
+                        splits_now.clear();
+                    }
+                    seen_laps = s.lap_times.len();
+                    seen_cps = s.cp_visited.iter().filter(|v| **v).count();
+                }
+                // portes franchies : temps intermédiaire et écart
+                let cps = s.cp_visited.iter().filter(|v| **v).count();
+                if cps > seen_cps {
+                    let t = s.t + DT - s.lap_start_t;
+                    for i in seen_cps..cps {
+                        if splits_now.len() <= i {
+                            splits_now.resize(i + 1, f64::NAN);
+                        }
+                        splits_now[i] = t;
+                        if i == 0 {
+                            continue; // la première porte est sur la ligne de départ
+                        }
+                        let reference = records.wr(&key).map(|w| w.2).filter(|v| v.len() > i).or(session_best.as_ref().map(|b| b.1.clone()));
+                        let delta = reference.and_then(|r| r.get(i).copied()).filter(|x| x.is_finite()).map(|r| t - r);
+                        let c = s.track.checkpoints[i];
+                        bubbles.push(Split { pos: vec2(c[0] as f32, c[1] as f32), time: t, delta, at: now });
+                    }
+                }
+                seen_cps = cps;
+                if ended {
                     pause_until = Some(now + 1.5);
                     break;
                 }
@@ -343,33 +578,56 @@ async fn main() {
             }
         }
         if new_race {
-            if let Ok((g, r)) = rx.try_recv() {
+            if let Ok((g, r, gh)) = rx.try_recv() {
                 pending = false;
                 match r {
                     Ok(p) => {
                         label = gen_label(&g);
+                        gen = gen_number(&g);
                         loaded_from = Some(g);
                         policy = Some(p);
+                        pb_speed = None;
                     }
                     Err(e) => eprintln!("{e}"),
                 }
+                if let Some((gp, Ok(p))) = gh {
+                    ghost_label = gen_label(&gp);
+                    ghost_policy = Some(p);
+                }
             }
             let seed = next_seed(&mut hard_i);
-            let same = seed == sim.track.seed;
-            sim.reset(seed).expect("circuit");
-            if !same {
-                tex = art::track_texture(&sim.track);
-                record = None;
+            if seed != me.sim.track.seed {
+                me.reset(seed);
+                tex = art::track_texture(&me.sim.track);
+                session_best = None;
+            } else {
+                me.restart();
+            }
+            restart = true;
+        }
+        if restart {
+            me.restart();
+            if ghost_policy.is_some() {
+                let g = ghost.get_or_insert_with(|| Driver::new(me.sim.track.seed, a.laps));
+                if g.sim.track.seed != me.sim.track.seed {
+                    g.reset(me.sim.track.seed);
+                } else {
+                    g.restart();
+                }
             }
             bonks.clear();
+            skids.clear();
+            bubbles.clear();
+            splits_now.clear();
             seen_hits = 0;
-            stuck = 0;
-            frame = 0;
+            seen_laps = 0;
+            seen_cps = 0;
+            skidding = false;
             acc = 0.0;
-            prev = (sim.car.pos, sim.car.heading);
         }
 
         // --- dessin ---
+        let s = &me.sim;
         clear_background(Color::from_rgba(18, 20, 26, 255));
         let (sw, sh) = (screen_width(), screen_height());
         let side = SIDE.min(sw * 0.3);
@@ -383,15 +641,25 @@ async fn main() {
         set_camera(&cam);
         draw_texture_ex(&tex, 0.0, 0.0, WHITE, DrawTextureParams { dest_size: Some(vec2(W as f32, H as f32)), ..Default::default() });
 
+        // traces de pneus
+        let skid_col = Color::new(0.08, 0.08, 0.09, 0.42);
+        for k in &skids {
+            for pts in [&k.left, &k.right] {
+                for w in pts.windows(2) {
+                    draw_line(w[0].x, w[0].y, w[1].x, w[1].y, 3.5, skid_col);
+                }
+            }
+        }
+
         // portes de checkpoint et arrivée
-        let half = (sim.track.half_width + 10.0) as f32;
-        let next = sim.next_cp();
-        for (i, c) in sim.track.checkpoints.iter().enumerate() {
+        let half = (s.track.half_width + 10.0) as f32;
+        let next = s.next_cp();
+        for (i, c) in s.track.checkpoints.iter().enumerate() {
             let (cx, cy, ang) = (c[0] as f32, c[1] as f32, c[2] as f32);
             let d = vec2(ang.cos(), ang.sin()) * half;
             let col = if Some(i) == next {
                 Color::new(0.35, 0.85, 1.0, 0.9)
-            } else if sim.cp_visited[i] {
+            } else if s.cp_visited[i] {
                 Color::new(0.35, 0.85, 1.0, 0.18)
             } else {
                 Color::new(1.0, 1.0, 1.0, 0.25)
@@ -399,7 +667,7 @@ async fn main() {
             draw_line(cx - d.x, cy - d.y, cx + d.x, cy + d.y, if Some(i) == next { 5.0 } else { 3.0 }, col);
         }
         {
-            let [fx, fy, fa] = sim.track.finish;
+            let [fx, fy, fa] = s.track.finish;
             let (fx, fy, fa) = (fx as f32, fy as f32, fa as f32);
             let across = vec2(fa.cos(), fa.sin());
             let along = vec2(fa.sin(), -fa.cos());
@@ -416,23 +684,27 @@ async fn main() {
         // marques de choc
         for b in &bonks {
             let (x, y) = (b.pos[0] as f32, b.pos[1] as f32);
-            let col = if b.lap == sim.lap_count { Color::new(1.0, 0.16, 0.16, 0.95) } else { Color::new(0.6, 0.25, 0.25, 0.7) };
+            let col = if b.lap == s.lap_count { Color::new(1.0, 0.16, 0.16, 0.95) } else { Color::new(0.6, 0.25, 0.25, 0.7) };
             draw_circle(x, y, 10.0, Color::new(0.25, 0.05, 0.05, 0.6));
             draw_line(x - 7.0, y - 7.0, x + 7.0, y + 7.0, 4.0, col);
             draw_line(x - 7.0, y + 7.0, x + 7.0, y - 7.0, 4.0, col);
         }
 
-        // voiture interpolée
+        // fantôme puis voiture, interpolés
         let alpha = (acc / DT).clamp(0.0, 1.0);
-        let lerp = |p: f64, c: f64| (p + (c - p) * alpha) as f32;
-        let pos = vec2(lerp(prev.0[0], sim.car.pos[0]), lerp(prev.0[1], sim.car.pos[1]));
-        let heading = lerp(prev.1, sim.car.heading);
-        if !a.play && obs.len() >= 44 {
+        if let Some(g) = &ghost {
+            if ghost_policy.is_some() {
+                let (gp, gh) = g.pose(alpha);
+                draw_car(gp, gh, Color::new(0.47, 0.9, 1.0, 0.45), 0.45);
+            }
+        }
+        let (pos, heading) = me.pose(alpha);
+        if !a.play && me.obs.len() >= 44 {
             for k in 0..9 {
                 let ang = heading + (-std::f32::consts::FRAC_PI_2 + k as f32 * std::f32::consts::PI / 8.0);
-                let d = obs[35 + k] * 400.0;
+                let d = me.obs[35 + k] * 400.0;
                 let end = pos + vec2(ang.cos(), ang.sin()) * d;
-                let col = if obs[35 + k] < 0.15 { Color::new(1.0, 0.3, 0.2, 0.55) } else { Color::new(0.4, 1.0, 0.4, 0.25) };
+                let col = if me.obs[35 + k] < 0.15 { Color::new(1.0, 0.3, 0.2, 0.55) } else { Color::new(0.4, 1.0, 0.4, 0.25) };
                 draw_line(pos.x, pos.y, end.x, end.y, 1.5, col);
             }
         }
@@ -451,10 +723,32 @@ async fn main() {
             }
         }
 
+        // bulles de temps intermédiaires
+        bubbles.retain(|b| now - b.at < 2.5);
+        for b in &bubbles {
+            let age = (now - b.at) as f32;
+            let fade = if age > 1.8 { 1.0 - (age - 1.8) / 0.7 } else { 1.0 };
+            let rise = (age * 12.0).min(12.0);
+            let t1 = fmt_time(b.time);
+            let w = 130.0;
+            let hgt = if b.delta.is_some() { 56.0 } else { 32.0 };
+            let (x, y) = (b.pos.x - w / 2.0, b.pos.y - 80.0 - rise);
+            draw_rectangle(x, y, w, hgt, Color::new(0.05, 0.06, 0.08, 0.8 * fade));
+            let d1 = measure_text(&t1, None, 24, 1.0);
+            draw_text(&t1, b.pos.x - d1.width / 2.0, y + 24.0, 24.0, Color::new(1.0, 1.0, 1.0, fade));
+            if let Some(d) = b.delta {
+                let t2 = format!("{}{:.2}", if d < 0.0 { "-" } else { "+" }, d.abs());
+                let c = if d < 0.0 { Color::new(0.35, 0.86, 0.5, fade) } else { Color::new(1.0, 0.33, 0.3, fade) };
+                let d2 = measure_text(&t2, None, 24, 1.0);
+                draw_text(&t2, b.pos.x - d2.width / 2.0, y + 50.0, 24.0, c);
+            }
+        }
+
         // --- panneau ---
         set_default_camera();
         draw_rectangle(0.0, 0.0, side, sh, Color::from_rgba(18, 20, 26, 255));
-        let lap_t = if sim.lap_count < sim.laps { sim.t - sim.lap_start_t } else { 0.0 };
+        let lap_t = if s.lap_count < s.laps { s.t - s.lap_start_t } else { 0.0 };
+        let grey = Color::from_rgba(190, 196, 210, 255);
         let mut lines: Vec<(String, f32, Color)> = vec![];
         if !label.is_empty() {
             lines.push((label.clone(), 26.0, WHITE));
@@ -462,26 +756,70 @@ async fn main() {
         if a.play {
             lines.push(("Mode pilote".into(), 26.0, WHITE));
         }
-        lines.push((format!("Circuit #{}  ·  tour {}/{}", sim.track.seed, (sim.lap_count + 1).min(sim.laps), sim.laps), 20.0, Color::from_rgba(190, 196, 210, 255)));
+        lines.push((format!("Circuit #{}  ·  tour {}/{}", s.track.seed, (s.lap_count + 1).min(s.laps), s.laps), 20.0, grey));
         lines.push((fmt_time(lap_t), 44.0, WHITE));
-        let len = sim.track.length();
-        for (i, t) in sim.lap_times.iter().enumerate() {
-            let v = len / t / (MAX_SPEED * FPS) * 100.0;
-            lines.push((format!("T{}  {}  {:.1} %", i + 1, fmt_time(*t), v), 20.0, WHITE));
+        let len = s.track.length();
+        let best_lap = s.lap_times.iter().cloned().fold(f64::INFINITY, f64::min);
+        // une ligne par tour, même vide : le panneau ne bouge pas pendant la course
+        for i in 0..s.laps {
+            match s.lap_times.get(i) {
+                Some(t) => {
+                    let v = len / t / (MAX_SPEED * FPS) * 100.0;
+                    let c = if *t == best_lap && s.lap_times.len() > 1 { Color::from_rgba(90, 220, 130, 255) } else { WHITE };
+                    lines.push((format!("T{}  {}  {:.1} %", i + 1, fmt_time(*t), v), 20.0, c));
+                }
+                None => lines.push((format!("T{}  --:--.---", i + 1), 20.0, Color::from_rgba(95, 100, 115, 255))),
+            }
         }
-        if let Some(r) = record {
-            lines.push((format!("Meilleure course ici  {}", fmt_time(r)), 20.0, Color::from_rgba(230, 200, 120, 255)));
+        if let (Some(g), false) = (&ghost, ghost_label.is_empty()) {
+            let gs = &g.sim;
+            let txt = if gs.done {
+                fmt_time(gs.lap_times.iter().sum())
+            } else {
+                format!("tour {}/{}", (gs.lap_count + 1).min(gs.laps), gs.laps)
+            };
+            lines.push((format!("Fantôme ({})  {}", ghost_label.to_lowercase().replace("génération", "gén."), txt), 20.0, Color::from_rgba(120, 230, 255, 255)));
         }
-        let lap_hits = bonks.iter().filter(|b| b.lap == sim.lap_count).count();
-        lines.push((format!("Chocs  {}   (ce tour : {})", sim.wall_hits, lap_hits), 20.0, Color::from_rgba(255, 90, 80, 255)));
-        lines.push((format!("{:.0} px/s", sim.car.speed.max(0.0) * FPS), 20.0, Color::from_rgba(150, 220, 160, 255)));
+        let fmt_gen = |g: Option<u64>| g.map(|g| format!("  (gén. {g})")).unwrap_or_default();
+        if !a.play {
+            lines.push((format!("PB vitesse  {}", pb_speed.map(|v| format!("{:.1} %", v * 100.0)).unwrap_or("—".into())), 20.0, Color::from_rgba(90, 220, 130, 255)));
+            lines.push((
+                match records.speed_record() {
+                    Some((v, g)) => format!("Record vitesse  {:.1} %{}", v * 100.0, fmt_gen(g)),
+                    None => "Record vitesse  —".into(),
+                },
+                20.0,
+                Color::from_rgba(200, 120, 255, 255),
+            ));
+            lines.push((
+                match records.wr(&record_key(s.track.seed)) {
+                    Some((t, g, _)) => format!("WR circuit  {}{}", fmt_time(t), fmt_gen(g)),
+                    None => "WR circuit  —".into(),
+                },
+                20.0,
+                Color::from_rgba(230, 200, 120, 255),
+            ));
+        } else if let Some((t, _)) = &session_best {
+            lines.push((format!("Meilleur tour  {}", fmt_time(*t)), 20.0, Color::from_rgba(90, 220, 130, 255)));
+        }
+        let lap_hits = bonks.iter().filter(|b| b.lap == s.lap_count).count();
+        lines.push((format!("Chocs  {}   (ce tour : {})", s.wall_hits, lap_hits), 20.0, Color::from_rgba(255, 90, 80, 255)));
+        lines.push((format!("{:.0} px/s", s.car.speed.max(0.0) * FPS), 20.0, Color::from_rgba(150, 220, 160, 255)));
+        if s.car.is_drifting {
+            let (vx, vy) = (s.car.vel[0], s.car.vel[1]);
+            let h = s.car.heading;
+            let slip = (-vx * h.sin() + vy * h.cos()).atan2((vx * h.cos() + vy * h.sin()).abs()).to_degrees();
+            lines.push((format!("DRIFT  {:.0}°", slip.abs()), 24.0, Color::from_rgba(255, 170, 60, 255)));
+        } else {
+            lines.push((String::new(), 24.0, WHITE)); // place gardée pour DRIFT
+        }
         lines.push((format!("{} fps  ·  physique 50 Hz  ·  x{}", get_fps(), speed), 18.0, Color::from_rgba(150, 156, 170, 255)));
         let hgt: f32 = lines.iter().map(|l| l.1 + 6.0).sum::<f32>() + 20.0;
         draw_rectangle(12.0, 12.0, side - 24.0, hgt, Color::from_rgba(30, 33, 42, 255));
         let mut y = 22.0;
-        for (t, s, c) in &lines {
-            y += s;
-            draw_text(t, 26.0, y, *s, *c);
+        for (t, sz, c) in &lines {
+            y += sz;
+            draw_text(t, 26.0, y, *sz, *c);
             y += 6.0;
         }
         let keys: &[&str] = if a.play {
