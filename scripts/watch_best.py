@@ -155,7 +155,38 @@ def main():
         except Exception as e:  # modèle illisible : on continue sans fantôme
             print("fantôme impossible :", e, flush=True)
 
+    # chocs contre les murs : marque au point d'impact (vive ce tour-ci, estompée ensuite) + anneau et « BONK ! »
+    bonk = {"seen": 0, "marks": [], "font": None}
+
+    def draw_bonks(screen):
+        ta = env.ta
+        if ta.wall_hits < bonk["seen"]:          # nouvelle course
+            bonk["seen"], bonk["marks"] = 0, []
+        now = time.time()
+        while bonk["seen"] < ta.wall_hits:
+            bonk["seen"] += 1
+            x, y = float(ta.car.pos[0]), float(ta.car.pos[1])
+            bonk["marks"].append((x, y, ta.lap_count, now))
+        if not bonk["font"]:
+            bonk["font"] = pygame.font.SysFont("Avenir Next Condensed", 26, bold=True, italic=True)
+        for x, y, lap, t0 in bonk["marks"]:   # dessin direct (pas de calque plein écran : il vidait l'image)
+            c = (255, 40, 40) if lap == ta.lap_count else (150, 60, 60)
+            pygame.draw.circle(screen, (60, 20, 20), (x, y), 10)
+            pygame.draw.line(screen, c, (x - 7, y - 7), (x + 7, y + 7), 4)
+            pygame.draw.line(screen, c, (x - 7, y + 7), (x + 7, y - 7), 4)
+            age = now - t0
+            if age < 0.8:                        # anneau qui s'élargit et texte qui monte
+                k = age / 0.8
+                r = int(14 + 46 * k)
+                ring = pygame.Surface((2 * r + 8, 2 * r + 8), pygame.SRCALPHA)
+                pygame.draw.circle(ring, (255, 60, 40, int(255 * (1 - k))), (r + 4, r + 4), r, 4)
+                screen.blit(ring, (x - r - 4, y - r - 4))
+                img = bonk["font"].render("BONK !", True, (255, 70, 50))
+                img.set_alpha(int(255 * (1 - k)))
+                screen.blit(img, (x - img.get_width() / 2, y - 44 - 30 * k))
+
     def draw_world(screen):
+        draw_bonks(screen)
         g = ghost["run"]
         if not g or not g["frames"]:
             return
@@ -294,7 +325,7 @@ def main():
         cur_lap = min(ta.lap_count + 1, a.laps)
         cur_t = ta.t - ta._lap_start_t if ta.lap_count < a.laps else 0.0
         rows = len(ta.lap_times)
-        h = (172 if fixed_tracks else 150) + 22 * rows + (22 if ghost["run"] else 0)
+        h = (216 if fixed_tracks else 194) + 22 * rows + (22 if ghost["run"] else 0)
         oy = 70                                 # sous le numéro de génération
         box = pygame.Surface((SIDE - 28, h), pygame.SRCALPHA)
         pygame.draw.rect(box, (30, 33, 42, 255), box.get_rect(), border_radius=14)
@@ -328,6 +359,12 @@ def main():
         if fixed_tracks:
             wr = f"{fmt_time(r['lap'])}  (gén. {r.get('lap_gen')})" if r.get("lap") is not None else "—"
             blit("small", f"WR tour (ce circuit)  {wr}", (230, 200, 120), (30, y + 48))
+        lap_hits = sum(1 for m in bonk["marks"] if m[2] == ta.lap_count)
+        blit("small", f"Chocs  {ta.wall_hits}   (ce tour : {lap_hits})", (255, 90, 80),
+             (30, y + (70 if fixed_tracks else 48)))
+        fps = clock.get_fps() * env.action_repeat   # une image du jeu par pas de physique
+        blit("small", f"{fps:.0f} fps  (jeu {FPS * a.speed:.0f} visés, affichage {clock.get_fps():.0f} img/s)",
+             (150, 156, 170), (30, y + (92 if fixed_tracks else 70)))
 
     def overlay(screen):
         nonlocal font
