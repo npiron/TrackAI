@@ -189,12 +189,17 @@ class GymTimeAttack(gym.Env):
     def step(self, action):
         """Une décision du bot = action_repeat images avec les mêmes touches (récompenses additionnées)."""
         total = 0.0
+        every = self.render_mode == "human" and getattr(self, "render_every_frame", False)
         for _ in range(self.action_repeat):
             obs, r, term, trunc, info = self._step_frame(action)
             total += r
+            if every:   # affichage fluide : chaque image de physique est dessinée (frame_hook : cadence)
+                self.render()
+                if getattr(self, "frame_hook", None):
+                    self.frame_hook()
             if term or trunc:
                 break
-        if self.render_mode == "human":
+        if self.render_mode == "human" and not every:
             self.render()
         return obs, total, term, trunc, info
 

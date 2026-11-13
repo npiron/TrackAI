@@ -362,8 +362,7 @@ def main():
         lap_hits = sum(1 for m in bonk["marks"] if m[2] == ta.lap_count)
         blit("small", f"Chocs  {ta.wall_hits}   (ce tour : {lap_hits})", (255, 90, 80),
              (30, y + (70 if fixed_tracks else 48)))
-        fps = clock.get_fps() * env.action_repeat   # une image du jeu par pas de physique
-        blit("small", f"{fps:.0f} fps  (jeu {FPS * a.speed:.0f} visés, affichage {clock.get_fps():.0f} img/s)",
+        blit("small", f"{clock.get_fps():.0f} fps  ({FPS * a.speed:.0f} visés)",
              (150, 156, 170), (30, y + (92 if fixed_tracks else 70)))
 
     def overlay(screen):
@@ -390,6 +389,8 @@ def main():
             box.blit(img, (14, 7))
             screen.blit(box, (14, 12))   # en haut du panneau
     env.overlay = overlay
+    env.render_every_frame = True                          # chaque image du jeu est affichée (50 img/s)
+    env.frame_hook = lambda: clock.tick(FPS * a.speed)    # cadence : une image de physique par tick
 
     def gen_label(path):
         m = re.search(r"gen_(\d+)", os.path.basename(path))
@@ -454,7 +455,6 @@ def main():
                 step = volume_step(event)
                 if step and audio is not None:
                     vol_msg["text"], vol_msg["until"] = f"Volume {round(100 * audio.change_volume(step))} %", time.time() + 1.5
-            clock.tick(FPS * a.speed / env.action_repeat)  # une décision = action_repeat images
         status = "terminé" if info.get("is_success") else "échec"
         print(f"Course {ep} : {status}, {info.get('laps_done', 0)} tour(s), {env.ta.t:.2f} s")
         if audio is not None and info.get("is_success"):
