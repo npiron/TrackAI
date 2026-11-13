@@ -66,6 +66,8 @@ def main(argv=None):
                    help="le pas d'apprentissage baisse linéairement au fil des --minutes jusqu'à FIN x --lr (ex. 0.2)")
     p.add_argument("--fresh-reward-scale", action="store_true",
                    help="reprise : remet à zéro l'échelle des récompenses (VecNormalize) et la mémoire d'Adam")
+    p.add_argument("--engine", default="rust", choices=("rust", "python"),
+                   help="rust : moteur sim-rs (toutes les voitures dans un processus, ~15x plus rapide) ; python : SubprocVecEnv")
     p.add_argument("--out-dir", default="data/checkpoints/long")
     p.add_argument("--obs-version", type=int, default=3, choices=(2, 3),
                    help="3 : + position latérale, virages proche/moyen/lointain, drift et angle de glisse")
@@ -90,10 +92,18 @@ def main(argv=None):
     from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor, VecNormalize
 
     os.makedirs(a.out_dir, exist_ok=True)
-    venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty, a.laps, a.time_penalty, a.track_seed,
-                                              a.obs_version, a.action_set, a.speed_bonus,
-                                              track_seeds, a.track_mix)
-                                      for i in range(a.n_envs)]))
+    if a.engine == "rust":
+        from src.rl.rust_vec_env import RustVecEnv
+        time_penalty = 0.01 if a.time_penalty is None else a.time_penalty
+        venv = VecMonitor(RustVecEnv(a.n_envs, seed=a.seed * 100, laps=a.laps, obs_version=a.obs_version,
+                                     action_set=a.action_set, wall_penalty=a.wall_penalty, time_penalty=time_penalty,
+                                     speed_bonus=a.speed_bonus, track_seeds=track_seeds, track_mix=a.track_mix,
+                                     track_seed=a.track_seed))
+    else:
+        venv = VecMonitor(SubprocVecEnv([make_env(i, a.seed * 100, a.wall_penalty, a.laps, a.time_penalty, a.track_seed,
+                                                  a.obs_version, a.action_set, a.speed_bonus,
+                                                  track_seeds, a.track_mix)
+                                          for i in range(a.n_envs)]))
     if a.init:
         venv = VecNormalize.load(a.init[:-4] + "_vecnormalize.pkl", venv)
         over = dict(learning_rate=a.lr, lr_schedule=lambda _: a.lr, ent_coef=a.ent)

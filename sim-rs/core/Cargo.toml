@@ -1,0 +1,8 @@
+[package]
+name = "trackai-core"
+version = "0.1.0"
+edition = "2021"
+description = "Moteur de simulation TrackAI (physique, circuits, observations), parité au bit près avec la version Python"
+
+[dependencies]
+rayon = "1.10"
