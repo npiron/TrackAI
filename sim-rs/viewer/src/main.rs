@@ -29,6 +29,7 @@ struct Args {
     screenshot: Option<String>,
     ghost: Option<String>,
     no_ghost: bool,
+    menu: bool,
     shot_at: u64,
     root: PathBuf,
 }
@@ -63,6 +64,7 @@ fn parse_args() -> Args {
             "--screenshot" => a.screenshot = Some(next(&mut i)),
             "--ghost" => a.ghost = Some(next(&mut i)),
             "--no-ghost" => a.no_ghost = true,
+            "--menu" => a.menu = true,
             "--shot-at" => a.shot_at = next(&mut i).parse().unwrap_or(300),
             "-h" | "--help" => {
                 println!("trackai [--play | --model M.zip|M.json | --follow DOSSIER] [--laps N] [--hard [train|val|all]] [--track-seed S] [--speed X]");
@@ -175,8 +177,57 @@ fn gen_label(p: &Path) -> String {
     let n = p.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
     match n.strip_prefix("gen_").and_then(|g| g.parse::<u32>().ok()) {
         Some(g) => format!("Génération {g}"),
-        None => n,
+        None => {
+            let run = p.parent().and_then(|d| d.file_name()).map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
+            if run.is_empty() { n } else { format!("{run} · {n}") }
+        }
     }
+}
+
+/// Un circuit qui a un WR (écran de choix).
+struct MenuItem {
+    seed: u64,
+    laps: usize,
+    wr: f64,
+    gen: Option<u64>,
+    ghost: bool,
+}
+
+fn wr_circuits(root: &Path, records: &serde_json::Value) -> Vec<MenuItem> {
+    let mut v: Vec<MenuItem> = records
+        .as_object()
+        .map(|o| {
+            o.iter()
+                .filter_map(|(k, e)| {
+                    let (s, l) = k.split_once('-')?;
+                    Some(MenuItem {
+                        seed: s.parse().ok()?,
+                        laps: l.parse().ok()?,
+                        wr: e["lap"].as_f64()?,
+                        gen: e["lap_gen"].as_u64(),
+                        ghost: wr_ghost_path(root, k).exists(),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    // circuits qui ont un fantôme doré mais plus de ligne dans bot_records.json
+    if let Ok(rd) = std::fs::read_dir(root.join("data/bot_ghosts")) {
+        for e in rd.flatten() {
+            let p = e.path();
+            let Some(k) = p.file_stem().map(|s| s.to_string_lossy().to_string()) else { continue };
+            let Some((sd, l)) = k.split_once('-') else { continue };
+            let (Ok(seed), Ok(laps)) = (sd.parse::<u64>(), l.parse::<usize>()) else { continue };
+            if v.iter().any(|m| m.seed == seed && m.laps == laps) {
+                continue;
+            }
+            if let Some(g) = load_wr_ghost(root, &k) {
+                v.push(MenuItem { seed, laps, wr: g.lap, gen: g.gen, ghost: true });
+            }
+        }
+    }
+    v.sort_by(|a, b| (b.ghost, a.seed, a.laps).cmp(&(a.ghost, b.seed, b.laps)));
+    v
 }
 
 fn fmt_time(t: f64) -> String {
@@ -188,6 +239,59 @@ struct Bonk {
     pos: [f64; 2],
     lap: usize,
     at: f64,
+}
+
+const MENU_ROW: f32 = 34.0;
+const MENU_TOP: f32 = 110.0;
+
+/// Géométrie de la liste : (x, largeur, nombre de lignes visibles, première ligne affichée).
+fn menu_layout(sel: usize, n: usize) -> (f32, f32, usize, usize) {
+    let (sw, sh) = (screen_width(), screen_height());
+    let side = SIDE.min(sw * 0.3);
+    let x = side + 40.0;
+    let w = (sw - side - 80.0).min(760.0);
+    let rows = (((sh - MENU_TOP - 60.0) / MENU_ROW) as usize).max(1);
+    let first = if sel >= rows { sel + 1 - rows } else { 0 }.min(n.saturating_sub(rows));
+    (x, w, rows, first)
+}
+
+fn menu_hit((mx, my): (f32, f32), sel: usize, n: usize) -> Option<usize> {
+    let (x, w, rows, first) = menu_layout(sel, n);
+    if mx < x || mx > x + w || my < MENU_TOP {
+        return None;
+    }
+    let r = ((my - MENU_TOP) / MENU_ROW) as usize;
+    (r < rows && first + r < n).then_some(first + r)
+}
+
+fn draw_menu(items: &[MenuItem], sel: usize, cur_seed: u64, cur_laps: usize) {
+    let (sw, sh) = (screen_width(), screen_height());
+    let side = SIDE.min(sw * 0.3);
+    draw_rectangle(side, 0.0, sw - side, sh, Color::new(0.05, 0.06, 0.08, 0.82));
+    let (x, w, rows, first) = menu_layout(sel, items.len());
+    draw_text("Circuits avec un WR", x, 60.0, 40.0, WHITE);
+    draw_text(&format!("{} circuits  ·  flèches ou molette, Entrée ou clic pour courir, Échap pour fermer", items.len()), x, 90.0, 18.0, Color::from_rgba(150, 156, 170, 255));
+    if items.is_empty() {
+        draw_text("Aucun WR pour l'instant : laisse le bot boucler quelques tours.", x, MENU_TOP + 30.0, 22.0, WHITE);
+        return;
+    }
+    for (r, it) in items.iter().enumerate().skip(first).take(rows) {
+        let y = MENU_TOP + (r - first) as f32 * MENU_ROW;
+        if r == sel {
+            draw_rectangle(x - 10.0, y, w, MENU_ROW - 4.0, Color::new(0.3, 0.75, 1.0, 0.25));
+        }
+        let col = if it.seed == cur_seed && it.laps == cur_laps { Color::from_rgba(120, 220, 255, 255) } else { WHITE };
+        let ty = y + 23.0;
+        draw_text(&format!("#{}", it.seed), x, ty, 24.0, col);
+        draw_text(&format!("{} tours", it.laps), x + 150.0, ty, 22.0, Color::from_rgba(190, 196, 210, 255));
+        draw_text(&format!("WR {}", fmt_time(it.wr)), x + 270.0, ty, 22.0, Color::from_rgba(230, 200, 120, 255));
+        if let Some(g) = it.gen {
+            draw_text(&format!("gén. {g}"), x + 460.0, ty, 20.0, Color::from_rgba(150, 156, 170, 255));
+        }
+        if it.ghost {
+            draw_text("fantôme doré", x + 560.0, ty, 20.0, Color::from_rgba(255, 210, 60, 255));
+        }
+    }
 }
 
 fn window_conf() -> Conf {
@@ -321,7 +425,25 @@ impl Records {
         Some((lap, e["lap_gen"].as_u64(), splits))
     }
 
+    /// Relit les fichiers (un autre viewer a pu y écrire entre-temps) avant d'y ajouter quelque chose.
+    fn refresh(&mut self) {
+        if let Some(v) = std::fs::read_to_string(&self.laps_path).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()) {
+            if v.is_object() {
+                self.laps = v;
+            }
+        }
+        if let Some(v) = std::fs::read_to_string(&self.speed_path).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok()) {
+            if v.is_object() {
+                self.speed = v;
+            }
+        }
+    }
+
     fn set_wr(&mut self, key: &str, lap: f64, gen: Option<u64>, splits: &[f64]) {
+        self.refresh();
+        if self.laps[key]["lap"].as_f64().map_or(false, |old| old <= lap) {
+            return; // battu entre-temps par un autre viewer
+        }
         self.laps[key] = serde_json::json!({ "lap": (lap * 1000.0).round() / 1000.0, "lap_gen": gen, "splits": splits });
         Self::save(&self.laps_path, &self.laps);
     }
@@ -331,8 +453,48 @@ impl Records {
     }
 
     fn set_speed(&mut self, v: f64, gen: Option<u64>, seed: u64, run: &str) {
+        self.refresh();
+        if self.speed["speed"].as_f64().map_or(false, |old| old >= v) {
+            return;
+        }
         self.speed = serde_json::json!({ "speed": (v * 10000.0).round() / 10000.0, "gen": gen, "seed": seed, "run": run });
         Self::save(&self.speed_path, &self.speed);
+    }
+}
+
+/// Fantôme du WR d'un circuit : la trajectoire du tour record, image par image (x, y, cap).
+struct WrGhost {
+    lap: f64,
+    gen: Option<u64>,
+    frames: Vec<[f32; 3]>,
+}
+
+fn wr_ghost_path(root: &Path, key: &str) -> PathBuf {
+    root.join("data/bot_ghosts").join(format!("{key}.json"))
+}
+
+fn load_wr_ghost(root: &Path, key: &str) -> Option<WrGhost> {
+    let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(wr_ghost_path(root, key)).ok()?).ok()?;
+    let frames = v["frames"]
+        .as_array()?
+        .iter()
+        .filter_map(|f| {
+            let f = f.as_array()?;
+            Some([f.first()?.as_f64()? as f32, f.get(1)?.as_f64()? as f32, f.get(2)?.as_f64()? as f32])
+        })
+        .collect::<Vec<_>>();
+    (!frames.is_empty()).then(|| WrGhost { lap: v["lap"].as_f64().unwrap_or(0.0), gen: v["gen"].as_u64(), frames })
+}
+
+fn save_wr_ghost(root: &Path, key: &str, g: &WrGhost) {
+    let dir = root.join("data/bot_ghosts");
+    let _ = std::fs::create_dir_all(&dir);
+    let frames: Vec<[f64; 3]> = g.frames.iter().map(|f| [(f[0] as f64 * 100.0).round() / 100.0, (f[1] as f64 * 100.0).round() / 100.0, (f[2] as f64 * 10000.0).round() / 10000.0]).collect();
+    let v = serde_json::json!({ "lap": g.lap, "gen": g.gen, "frames": frames });
+    let path = wr_ghost_path(root, key);
+    let tmp = path.with_extension("json.tmp");
+    if std::fs::write(&tmp, v.to_string()).is_ok() {
+        let _ = std::fs::rename(&tmp, &path);
     }
 }
 
@@ -430,9 +592,10 @@ async fn main() {
     let mut last_check = 0.0f64;
 
     let actions = action_set(policy.as_ref().map_or(2, |p| p.action_set));
-    let timeout = 2000 * a.laps as u64 * if a.play { 10 } else { 1 };
-    let mut me = Driver::new(next_seed(&mut hard_i), a.laps);
-    let mut ghost = ghost_policy.as_ref().map(|_| Driver::new(me.sim.track.seed, a.laps));
+    let mut laps = a.laps;
+    let timeout_for = |l: usize| 2000 * l as u64 * if a.play { 10 } else { 1 };
+    let mut me = Driver::new(next_seed(&mut hard_i), laps);
+    let mut ghost = ghost_policy.as_ref().map(|_| Driver::new(me.sim.track.seed, laps));
     let mut tex = art::track_texture(&me.sim.track);
     let mut records = Records::load(&root);
     let mut acc = 0.0f64;
@@ -446,6 +609,17 @@ async fn main() {
     let mut bubbles: Vec<Split> = vec![];
     let mut skids: Vec<Skid> = vec![];
     let mut skidding = false;
+    // fantôme WR : trajectoire du tour en cours (sauvée si elle bat le WR) et fantôme du WR de ce circuit
+    let mut lap_traj: Vec<[f32; 3]> = vec![];
+    let mut lap_start_frame: u64 = 0;
+    let mut wr_ghost: Option<WrGhost> = load_wr_ghost(&root, &format!("{}-{}", me.sim.track.seed, laps));
+    // écran de choix des circuits avec un WR (touche C) et circuit choisi (gardé jusqu'à N)
+    let mut menu: Option<(Vec<MenuItem>, usize)> = None;
+    let mut pinned: Option<u64> = None;
+    if a.menu {
+        let items = wr_circuits(&root, &records.laps);
+        menu = Some((items, 0));
+    }
     // passages du fantôme : (tour, porte) -> temps de course ; porte = nb de portes pour la ligne d'arrivée
     let mut ghost_marks: std::collections::HashMap<(usize, usize), f64> = std::collections::HashMap::new();
     let (mut ghost_seen_cps, mut ghost_seen_laps) = (0usize, 0usize);
@@ -456,12 +630,42 @@ async fn main() {
     let mut paused = false;
     let mut speed = a.speed;
     let mut drawn: u64 = 0;
-    let record_key = |seed: u64| format!("{seed}-{}", a.laps);
+    let record_key = |seed: u64, laps: usize| format!("{seed}-{laps}");
 
     loop {
         let now = get_time();
-        if is_key_pressed(KeyCode::Escape) || is_key_pressed(KeyCode::Q) && !a.play {
-            break;
+        let mut chosen: Option<(u64, usize)> = None;
+        if let Some((items, sel)) = menu.as_mut() {
+            let n = items.len();
+            if is_key_pressed(KeyCode::Escape) || is_key_pressed(KeyCode::C) {
+                menu = None;
+            } else if n > 0 {
+                if is_key_pressed(KeyCode::Down) { *sel = (*sel + 1).min(n - 1); }
+                if is_key_pressed(KeyCode::Up) { *sel = sel.saturating_sub(1); }
+                if is_key_pressed(KeyCode::PageDown) { *sel = (*sel + 15).min(n - 1); }
+                if is_key_pressed(KeyCode::PageUp) { *sel = sel.saturating_sub(15); }
+                let wheel = mouse_wheel().1;
+                if wheel < 0.0 { *sel = (*sel + 1).min(n - 1); }
+                if wheel > 0.0 { *sel = sel.saturating_sub(1); }
+                if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter) {
+                    chosen = Some((items[*sel].seed, items[*sel].laps));
+                }
+                if is_mouse_button_pressed(MouseButton::Left) {
+                    if let Some(i) = menu_hit(mouse_position(), *sel, n) {
+                        chosen = Some((items[i].seed, items[i].laps));
+                    }
+                }
+            }
+        } else {
+            if is_key_pressed(KeyCode::Escape) || is_key_pressed(KeyCode::Q) && !a.play {
+                break;
+            }
+            if is_key_pressed(KeyCode::C) {
+                records.refresh();
+                let items = wr_circuits(&root, &records.laps);
+                let sel = items.iter().position(|m| m.seed == me.sim.track.seed && m.laps == laps).unwrap_or(0);
+                menu = Some((items, sel));
+            }
         }
         if is_key_pressed(KeyCode::Space) {
             paused = !paused;
@@ -472,7 +676,18 @@ async fn main() {
         if is_key_pressed(KeyCode::Minus) || is_key_pressed(KeyCode::KpSubtract) {
             speed = (speed / 2.0).max(0.25);
         }
-        let mut new_race = is_key_pressed(KeyCode::N);
+        let mut new_race = menu.is_none() && is_key_pressed(KeyCode::N);
+        if new_race {
+            pinned = None; // N : on repart sur la liste habituelle
+        }
+        if let Some((seed, l)) = chosen {
+            pinned = Some(seed);
+            laps = l;
+            me.sim.laps = l;
+            menu = None;
+            new_race = true;
+            pause_until = None;
+        }
         let mut restart = is_key_pressed(KeyCode::R);
         if is_key_pressed(KeyCode::L) {
             show_lidar = !show_lidar;
@@ -515,9 +730,12 @@ async fn main() {
                 } else {
                     None
                 };
-                let ended = me.tick(input, policy.as_ref(), &actions, timeout);
+                let ended = me.tick(input, policy.as_ref(), &actions, timeout_for(laps));
+                if !me.sim.done || lap_traj.is_empty() {
+                    lap_traj.push([me.sim.car.pos[0] as f32, me.sim.car.pos[1] as f32, me.sim.car.heading as f32]);
+                }
                 if let (Some(g), Some(gp)) = (ghost.as_mut(), ghost_policy.as_ref()) {
-                    g.tick(None, Some(gp), &actions, timeout);
+                    g.tick(None, Some(gp), &actions, timeout_for(laps));
                     let gs = &g.sim;
                     let n_cp = gs.track.checkpoints.len();
                     if gs.lap_times.len() > ghost_seen_laps {
@@ -556,7 +774,7 @@ async fn main() {
                 }
                 skidding = skid_now;
                 // tours bouclés : PB, records, écart au WR sur la ligne
-                let key = record_key(s.track.seed);
+                let key = record_key(s.track.seed, laps);
                 if s.lap_times.len() > seen_laps {
                     for li in seen_laps..s.lap_times.len() {
                         let t = s.lap_times[li];
@@ -581,10 +799,15 @@ async fn main() {
                             }
                             if wr.map_or(true, |w| t < w.0) {
                                 records.set_wr(&key, t, gen, &splits_now);
+                                let g = WrGhost { lap: t, gen, frames: std::mem::take(&mut lap_traj) };
+                                save_wr_ghost(&root, &key, &g);
+                                wr_ghost = Some(g);
                             }
                         }
                         splits_now.clear();
                     }
+                    lap_traj.clear();
+                    lap_start_frame = me.frame;
                     seen_laps = s.lap_times.len();
                     seen_cps = s.cp_visited.iter().filter(|v| **v).count();
                 }
@@ -642,7 +865,7 @@ async fn main() {
                     ghost_policy = Some(p);
                 }
             }
-            let seed = next_seed(&mut hard_i);
+            let seed = pinned.unwrap_or_else(|| next_seed(&mut hard_i));
             if seed != me.sim.track.seed {
                 me.reset(seed);
                 tex = art::track_texture(&me.sim.track);
@@ -655,13 +878,17 @@ async fn main() {
         if restart {
             me.restart();
             if ghost_policy.is_some() {
-                let g = ghost.get_or_insert_with(|| Driver::new(me.sim.track.seed, a.laps));
+                let g = ghost.get_or_insert_with(|| Driver::new(me.sim.track.seed, laps));
+                g.sim.laps = laps;
                 if g.sim.track.seed != me.sim.track.seed {
                     g.reset(me.sim.track.seed);
                 } else {
                     g.restart();
                 }
             }
+            lap_traj.clear();
+            lap_start_frame = 0;
+            wr_ghost = load_wr_ghost(&root, &record_key(me.sim.track.seed, laps));
             bonks.clear();
             skids.clear();
             bubbles.clear();
@@ -743,8 +970,22 @@ async fn main() {
             draw_line(x - 7.0, y + 7.0, x + 7.0, y - 7.0, 4.0, col);
         }
 
-        // fantôme puis voiture, interpolés
+        // fantômes puis voiture, interpolés
         let alpha = (acc / DT).clamp(0.0, 1.0);
+        if let Some(w) = &wr_ghost {
+            if !me.sim.done {
+                let k = (me.frame.saturating_sub(lap_start_frame) as f64 - 1.0 + alpha).max(0.0);
+                let last = w.frames.len() - 1;
+                let (i0, i1) = ((k.floor() as usize).min(last), (k.ceil() as usize).min(last));
+                let f = (k - k.floor()) as f32;
+                let (a0, a1) = (w.frames[i0], w.frames[i1]);
+                let mut dh = a1[2] - a0[2];
+                if dh > std::f32::consts::PI { dh -= 2.0 * std::f32::consts::PI; }
+                if dh < -std::f32::consts::PI { dh += 2.0 * std::f32::consts::PI; }
+                let gp = vec2(a0[0] + (a1[0] - a0[0]) * f, a0[1] + (a1[1] - a0[1]) * f);
+                draw_car(gp, a0[2] + dh * f, Color::new(1.0, 0.82, 0.2, 0.5), 0.5);
+            }
+        }
         if let Some(g) = &ghost {
             if ghost_policy.is_some() {
                 let (gp, gh) = g.pose(alpha);
@@ -811,31 +1052,34 @@ async fn main() {
                 Some(g) if g < -0.00005 && g > -0.001 => "devant".to_string(),
                 Some(g) => format!("{}{:.2} s", if g < 0.0 { "-" } else { "+" }, g.abs()),
                 None if gs.done => fmt_time(gs.lap_times.iter().sum()),
-                None => "—".into(),
+                None => "-".into(),
             };
             lines.push((format!("Fantôme ({})  {}", ghost_label.to_lowercase().replace("génération", "gén."), txt), 20.0, Color::from_rgba(255, 160, 60, 255)));
         }
         let fmt_gen = |g: Option<u64>| g.map(|g| format!("  (gén. {g})")).unwrap_or_default();
         if !a.play {
-            lines.push((format!("PB vitesse  {}", pb_speed.map(|v| format!("{:.1} %", v * 100.0)).unwrap_or("—".into())), 20.0, Color::from_rgba(90, 220, 130, 255)));
+            lines.push((format!("PB vitesse  {}", pb_speed.map(|v| format!("{:.1} %", v * 100.0)).unwrap_or("-".into())), 20.0, Color::from_rgba(90, 220, 130, 255)));
             lines.push((
                 match records.speed_record() {
                     Some((v, g)) => format!("Record vitesse  {:.1} %{}", v * 100.0, fmt_gen(g)),
-                    None => "Record vitesse  —".into(),
+                    None => "Record vitesse  -".into(),
                 },
                 20.0,
                 Color::from_rgba(200, 120, 255, 255),
             ));
             lines.push((
-                match records.wr(&record_key(s.track.seed)) {
+                match records.wr(&record_key(s.track.seed, laps)) {
                     Some((t, g, _)) => format!("WR circuit  {}{}", fmt_time(t), fmt_gen(g)),
-                    None => "WR circuit  —".into(),
+                    None => "WR circuit  -".into(),
                 },
                 20.0,
                 Color::from_rgba(230, 200, 120, 255),
             ));
         } else if let Some((t, _)) = &session_best {
             lines.push((format!("Meilleur tour  {}", fmt_time(*t)), 20.0, Color::from_rgba(90, 220, 130, 255)));
+        }
+        if let Some(w) = &wr_ghost {
+            lines.push((format!("Fantôme doré : WR {}{}", fmt_time(w.lap), fmt_gen(w.gen)), 18.0, Color::from_rgba(255, 210, 60, 255)));
         }
         let lap_hits = bonks.iter().filter(|b| b.lap == s.lap_count).count();
         lines.push((format!("Chocs  {}   (ce tour : {})", s.wall_hits, lap_hits), 20.0, Color::from_rgba(255, 90, 80, 255)));
@@ -858,11 +1102,11 @@ async fn main() {
             y += 6.0;
         }
         let keys: &[&str] = if !show_help {
-            &["H : aide"]
+            &["H : aide   C : circuits avec un WR"]
         } else if a.play {
-            &["Flèches, ZQSD ou WASD : conduire", "R : recommencer   N : autre circuit", "Espace : pause   H : aide", "Échap : quitter"]
+            &["Flèches, ZQSD ou WASD : conduire", "R : recommencer   N : autre circuit", "C : circuits avec un WR", "Espace : pause   H : aide", "Échap : quitter"]
         } else {
-            &["N : circuit suivant   R : recommencer", "Espace : pause   +/- : vitesse", "L : lidars   H : aide", "Échap : quitter"]
+            &["N : circuit suivant   R : recommencer", "C : circuits avec un WR", "Espace : pause   +/- : vitesse", "L : lidars   H : aide", "Échap : quitter"]
         };
         for (k, t) in keys.iter().enumerate() {
             draw_text(t, 22.0, sh - 18.0 - 22.0 * (keys.len() - 1 - k) as f32, 18.0, Color::from_rgba(150, 156, 170, 255));
@@ -896,6 +1140,10 @@ async fn main() {
         }
         if paused {
             draw_text("PAUSE", side + (sw - side) / 2.0 - 50.0, 40.0, 40.0, WHITE);
+        }
+
+        if let Some((items, sel)) = &menu {
+            draw_menu(items, *sel, me.sim.track.seed, laps);
         }
 
         drawn += 1;
