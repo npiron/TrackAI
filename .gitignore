@@ -82,3 +82,6 @@ data/audio/
 data/bot_records_ancienne_physique.json
 data/bot_speed_record.json
 data/audio_settings.json
+
+# Classement des circuits durs (scripts/hard_tracks.py)
+data/hard_tracks

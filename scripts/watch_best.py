@@ -16,6 +16,24 @@ import pygame
 from scripts.eval import _load_model, detect_action_set, detect_obs_version
 from src.core.constants import H, MAX_SPEED, W
 from src.game.rendering import draw_keys
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def load_hard_seeds(which, path):
+    """Circuits durs de hard_tracks.json (scripts/hard_tracks.py), du plus dur au plus facile.
+    which : "train", "val", "all" (les deux, dans l'ordre du classement) ou None (aucun)."""
+    if which is None:
+        return []
+    import json
+    with open(path) as f:
+        d = json.load(f)
+    if which != "all":
+        return list(d[which])
+    out = []
+    for i in range(max(len(d["train"]), len(d["val"]))):
+        out += d["train"][i:i + 1] + d["val"][i:i + 1]
+    return out
 from src.core.constants import FPS
 from src.rl.wrappers import GymTimeAttack
 
@@ -31,6 +49,10 @@ def main():
     p.add_argument("--same-tracks", action="store_true", help="toujours la même série de circuits (pour comparer des modèles)")
     p.add_argument("--no-keys", action="store_true", help="ne pas afficher les touches du bot")
     p.add_argument("--track-seed", type=int, default=None, help="toujours ce circuit (son numéro)")
+    p.add_argument("--hard", nargs="?", const="train", default=None, choices=("train", "val", "all"),
+                   help="enchaîne les circuits durs de --hard-file, du plus dur au plus facile "
+                        "(train : ceux de l'entraînement ciblé, val : jamais vus, all : les deux)")
+    p.add_argument("--hard-file", default=os.path.join(_ROOT, "data", "hard_tracks", "hard_tracks.json"))
     p.add_argument("--screenshot", default=None, help="enregistre la fenêtre après --shot-at décisions puis quitte")
     p.add_argument("--shot-at", type=int, default=400)
     p.add_argument("--mute", action="store_true", help="sans le son (M pour couper/remettre en cours de route)")
@@ -40,6 +62,8 @@ def main():
     p.add_argument("--follow", default=None, metavar="DOSSIER",
                    help="suivre un entraînement en cours : recharge la dernière génération de DOSSIER avant chaque course")
     a = p.parse_args()
+    if a.hard is not None:
+        a.long = True
 
     import glob
     import json
@@ -171,7 +195,7 @@ def main():
             speed_rec = json.load(f)
     except (OSError, ValueError):
         speed_rec = {}
-    fixed_tracks = a.track_seed is not None or a.same_tracks
+    fixed_tracks = a.track_seed is not None or a.same_tracks or a.hard is not None
 
     def lap_speed(lt):
         """Vitesse moyenne d'un tour en fraction de la vitesse max (longueur de la ligne centrale / temps)."""
@@ -339,6 +363,9 @@ def main():
     chrono["gen"] = int(m_.group(1)) if m_ else None
     import random as _random
     rng = _random.Random(None if not a.same_tracks else 12345)
+    hard_seeds, hard_i = load_hard_seeds(a.hard, a.hard_file), [0]
+    if hard_seeds:
+        print(f"{len(hard_seeds)} circuits durs ({a.hard}), du plus dur au plus facile : {hard_seeds[:10]}...", flush=True)
 
     for ep in range(1, a.episodes + 1):
         if a.follow and latest_gen() != current:
@@ -352,6 +379,9 @@ def main():
         seed = None
         if a.track_seed is not None:
             seed = a.track_seed
+        elif hard_seeds:
+            seed = hard_seeds[hard_i[0] % len(hard_seeds)]
+            hard_i[0] += 1
         elif (a.random or a.long) and not a.same_tracks:
             seed = rng.randrange(1000, 10**9)  # un nouveau circuit à chaque lancement
         elif a.long:

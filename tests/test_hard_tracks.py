@@ -53,3 +53,14 @@ def test_tri_et_coupe_train_val():
     assert [r["seed"] for r in rows] == [2, 3, 1, 4, 0]
     assert split_hard(rows, top=10) == {"train": [2, 1], "val": [3, 4]}
     assert split_hard(rows, top=2) == {"train": [2], "val": [3]}
+
+
+def test_watch_charge_les_circuits_durs(tmp_path):
+    import json
+    from scripts.watch_best import load_hard_seeds
+    f = tmp_path / "hard.json"
+    f.write_text(json.dumps({"train": [2, 1, 7], "val": [3, 4]}))
+    assert load_hard_seeds(None, str(f)) == []
+    assert load_hard_seeds("train", str(f)) == [2, 1, 7]
+    assert load_hard_seeds("val", str(f)) == [3, 4]
+    assert load_hard_seeds("all", str(f)) == [2, 3, 1, 4, 7]
