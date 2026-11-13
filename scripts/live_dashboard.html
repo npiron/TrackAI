@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrackAI en direct</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f4f2;
+  --surface-1: #fcfcfb;
+  --border: #e3e2de;
+  --grid: #ecebe7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --good: #1a7f37;
+  --live: #1baf7a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #111110;
+    --surface-1: #1a1a19;
+    --border: #2c2c2a;
+    --grid: #252523;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8f8e86;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --good: #3fb950;
+    --live: #199e70;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #111110;
+  --surface-1: #1a1a19;
+  --border: #2c2c2a;
+  --grid: #252523;
+  --text-primary: #f0efec;
+  --text-secondary: #c3c2b7;
+  --text-muted: #8f8e86;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --good: #3fb950;
+  --live: #199e70;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text-primary);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+}
+main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 14px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+h1 span { color: var(--text-muted); font-weight: 500; }
+.controls { display: flex; gap: 10px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+select, button {
+  font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer;
+}
+.status { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-muted); }
+.dot.live { background: var(--live); box-shadow: 0 0 0 0 var(--live); animation: pulse 1.8s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 60%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.timebar { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.timebar .row { display: flex; justify-content: space-between; color: var(--text-secondary); font-size: 13px; margin-bottom: 8px; gap: 12px; flex-wrap: wrap; }
+.track { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+.fill { height: 100%; background: var(--series-1); border-radius: 3px; width: 0; transition: width .6s; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.tile .label { color: var(--text-secondary); font-size: 12.5px; }
+.tile .value { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tile .delta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px 14px 8px; min-width: 0; }
+.card.wide { grid-column: 1 / -1; }
+.card h2 { font-size: 14px; margin: 0; font-weight: 600; }
+.card p { margin: 2px 0 8px; color: var(--text-muted); font-size: 12.5px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 0 6px; font-size: 12.5px; color: var(--text-secondary); }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.chart { position: relative; height: 220px; }
+.card.wide .chart { height: 260px; }
+.small { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.small .chart { height: 140px; }
+.small h3 { font-size: 12.5px; margin: 0 0 4px; font-weight: 600; color: var(--text-secondary); }
+.empty { color: var(--text-muted); padding: 40px 0; text-align: center; }
+details { margin-top: 14px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+summary { cursor: pointer; color: var(--text-secondary); }
+.tablewrap { overflow-x: auto; margin-top: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--text-secondary); font-weight: 600; }
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  .small { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .controls { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>TrackAI <span>· apprentissage en direct</span></h1>
+    <div class="controls">
+      <span class="status"><span class="dot" id="dot"></span><span id="status">connexion…</span></span>
+      <select id="run" aria-label="Entraînement affiché"></select>
+      <button id="theme" type="button" aria-label="Changer de thème">Thème</button>
+    </div>
+  </header>
+
+  <div class="timebar">
+    <div class="row"><span id="timeLabel">—</span><span id="cfgLabel"></span></div>
+    <div class="track"><div class="fill" id="timeFill"></div></div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="grid">
+    <section class="card wide">
+      <h2>Courses terminées</h2>
+      <p>Part des épisodes où le bot boucle tous ses tours, par génération</p>
+      <div class="chart"><canvas id="cFinish"></canvas></div>
+    </section>
+    <section class="card wide">
+      <h2>Vitesse moyenne au tour</h2>
+      <p>En % de la vitesse max : longueur du circuit / temps du tour. Évaluation = chaque génération rejouée sur
+        les 5 mêmes circuits (comparable d'une génération à l'autre) <span id="evalStatus"></span></p>
+      <div class="legend" id="speedLegend"></div>
+      <div class="chart"><canvas id="cSpeed"></canvas></div>
+    </section>
+    <section class="card">
+      <h2>Checkpoints franchis</h2>
+      <p>Moyenne par épisode : jusqu'où il va</p>
+      <div class="chart"><canvas id="cCp"></canvas></div>
+    </section>
+    <section class="card">
+      <h2>Chocs contre les murs</h2>
+      <p>Moyenne par épisode : plus bas, c'est mieux</p>
+      <div class="chart"><canvas id="cHits"></canvas></div>
+    </section>
+    <section class="card wide">
+      <h2>Récompense par épisode</h2>
+      <p>Total et ce qui le compose : progression sur la piste, pénalité de temps, bonus ou malus de fin</p>
+      <div class="legend" id="rewardLegend"></div>
+      <div class="chart"><canvas id="cReward"></canvas></div>
+    </section>
+    <section class="card wide">
+      <h2>Santé de l'apprentissage (PPO)</h2>
+      <p>Entropie : il explore encore (baisse lente = normal) · KL : taille des mises à jour (pics = instable) ·
+        variance expliquée : le critique prédit bien (vers 1) · vitesse de simulation</p>
+      <div class="small">
+        <div><h3>Entropie</h3><div class="chart"><canvas id="cEnt"></canvas></div></div>
+        <div><h3>KL approx.</h3><div class="chart"><canvas id="cKl"></canvas></div></div>
+        <div><h3>Variance expliquée</h3><div class="chart"><canvas id="cEv"></canvas></div></div>
+        <div><h3>Pas par seconde</h3><div class="chart"><canvas id="cSps"></canvas></div></div>
+      </div>
+    </section>
+    <section class="card wide">
+      <h2>En vrac</h2>
+      <p>D'autres façons de lire l'apprentissage, une génération par point (ou par barre)</p>
+      <div class="small">
+        <div><h3>Durée moyenne d'une course (s)</h3><div class="chart"><canvas id="cDur"></canvas></div></div>
+        <div><h3>Gain de vitesse par génération (pt)</h3><div class="chart"><canvas id="cGain"></canvas></div></div>
+        <div><h3>Courses jouées par génération</h3><div class="chart"><canvas id="cEp"></canvas></div></div>
+        <div><h3>Contacts mur par course</h3><div class="chart"><canvas id="cCont"></canvas></div></div>
+        <div><h3>Écart entraînement − évaluation (pt)</h3><div class="chart"><canvas id="cGap"></canvas></div></div>
+        <div><h3>Erreur du critique (value loss)</h3><div class="chart"><canvas id="cVl"></canvas></div></div>
+        <div><h3>Part des mises à jour rognées (clip)</h3><div class="chart"><canvas id="cClip"></canvas></div></div>
+        <div><h3>Pénalité de temps par course</h3><div class="chart"><canvas id="cTime"></canvas></div></div>
+      </div>
+    </section>
+    <section class="card wide">
+      <h2>Meilleure vitesse de chaque run</h2>
+      <p>Meilleure génération sur les 5 circuits fixes (runs déjà affichés dans ce tableau de bord)</p>
+      <div class="chart" id="runsWrap"><canvas id="cRuns"></canvas></div>
+    </section>
+  </div>
+
+  <details>
+    <summary>Tableau des générations</summary>
+    <div class="tablewrap"><table id="table"></table></div>
+  </details>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (x, d = 0) => x == null || Number.isNaN(x) ? "—" :
+  x.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+let current = null, charts = {}, lastData = null, lastFetch = 0, lastGen = -1, lastEvalN = -1;
+
+function stored(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+const savedTheme = stored("trackai-theme");
+if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+$("theme").onclick = () => {
+  const dark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = dark ? "light" : "dark";
+  store("trackai-theme", document.documentElement.dataset.theme);
+  rebuild();
+};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rebuild);
+
+function baseOptions(yLabel, opts = {}) {
+  const grid = css("--grid"), muted = css("--text-muted"), sec = css("--text-secondary");
+  return {
+    animation: false, responsive: true, maintainAspectRatio: false, parsing: false, normalized: true,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: css("--surface-1"), titleColor: css("--text-primary"), bodyColor: sec,
+        borderColor: css("--border"), borderWidth: 1, padding: 10, boxPadding: 4, usePointStyle: true,
+        callbacks: {
+          title: (items) => {
+            const g = lastData?.progress?.find((r) => r.timesteps / 1e6 === items[0].parsed.x);
+            return (g ? `Génération ${g.gen} · ` : "") + `${fmt(items[0].parsed.x, 2)} M pas`;
+          },
+          label: (it) => ` ${it.dataset.label} : ${fmt(it.parsed.y, opts.digits ?? 2)}${opts.unit ?? ""}`,
+        },
+      },
+    },
+    scales: {
+      x: { type: "linear", grid: { color: grid, drawTicks: false }, border: { display: false },
+           ticks: { color: muted, padding: 6, maxTicksLimit: 8, callback: (v) => fmt(v, v < 10 ? 1 : 0) + " M" } },
+      y: { grid: { color: grid, drawTicks: false }, border: { display: false },
+           ticks: { color: muted, padding: 6, maxTicksLimit: 5, callback: (v) => fmt(v, opts.tickDigits ?? 0) + (opts.unit ?? "") },
+           title: { display: false, text: yLabel }, ...(opts.y || {}) },
+    },
+  };
+}
+
+function line(label, color, data) {
+  return { label, data, borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.25,
+           pointRadius: 0, pointHoverRadius: 5, pointHoverBorderWidth: 2, pointHoverBorderColor: css("--surface-1") };
+}
+
+function series(rows, key, scale = 1) {
+  return rows.filter((r) => r[key] != null).map((r) => ({ x: r.timesteps / 1e6, y: r[key] * scale }));
+}
+
+function makeChart(id, datasets, yLabel, opts) {
+  if (charts[id]) charts[id].destroy();
+  const o = baseOptions(yLabel, opts);
+  if (opts && opts.bar) {   // barres fines, extrémités arrondies côté données
+    o.scales.x.offset = true;
+    datasets.forEach((d) => Object.assign(d, { borderWidth: 0, borderRadius: 4, borderSkipped: "start",
+      barPercentage: 0.7, categoryPercentage: 0.9, maxBarThickness: 18 }));
+  }
+  charts[id] = new Chart($(id), { type: opts && opts.bar ? "bar" : "line", data: { datasets }, options: o });
+}
+
+function bars(label, colorFn, data) {
+  return { label, data, backgroundColor: data.map((p) => colorFn(p.y)), hoverBackgroundColor: data.map((p) => colorFn(p.y)) };
+}
+
+function rebuild() {
+  if (!lastData) return;
+  for (const id in charts) charts[id].destroy();
+  charts = {};
+  draw(lastData, true);
+  drawRuns();
+}
+
+function tile(label, value, delta) {
+  return `<div class="tile"><div class="label">${label}</div><div class="value">${value}</div>
+    <div class="delta">${delta || "&nbsp;"}</div></div>`;
+}
+
+function delta(rows, key, scale, digits, unit = "", lowerBetter = false) {
+  if (rows.length < 2) return "";
+  const a = rows[rows.length - 2][key], b = rows[rows.length - 1][key];
+  if (a == null || b == null) return "";
+  const d = (b - a) * scale;
+  if (Math.abs(d) < Math.pow(10, -digits) / 2) return "stable depuis la génération précédente";
+  const better = lowerBetter ? d < 0 : d > 0;
+  return `${d > 0 ? "▲" : "▼"} ${fmt(Math.abs(d), digits)}${unit} ${better ? "(mieux)" : "(moins bien)"}`;
+}
+
+function draw(data, full) {
+  const P = data.progress, S = data.stats, E = data.eval || [], cfg = data.config || {};
+  const stepsOf = Object.fromEntries(P.map((r) => [r.gen, r.timesteps]));
+  const ES = E.filter((r) => stepsOf[r.gen] != null).map((r) => ({ ...r, timesteps: stepsOf[r.gen] }));
+  const lastEval = ES.filter((r) => r.vitesse_tour != null).slice(-1)[0];
+  const last = P[P.length - 1];
+  // barre de temps
+  const total = cfg.minutes || 0, done = last ? last.minutes : 0;
+  $("timeFill").style.width = total ? Math.min(100, 100 * done / total) + "%" : "0";
+  $("timeLabel").textContent = data.finished ? `Terminé · ${fmt(done, 1)} min` :
+    `${fmt(done, 1)} min sur ${fmt(total)} · reste ~${fmt(Math.max(0, total - done))} min`;
+  $("cfgLabel").textContent = [cfg.laps && `${cfg.laps} tour${cfg.laps > 1 ? "s" : ""}`,
+    cfg.n_envs && `${cfg.n_envs} env.`, cfg.obs_version && `obs v${cfg.obs_version}`,
+    cfg.action_set && (cfg.action_set === 2 ? "15 actions" : "9 actions"),
+    cfg.init ? "reprise" : "de zéro"].filter(Boolean).join(" · ");
+  if (!last) {
+    $("tiles").innerHTML = `<div class="empty">En attente de la première génération…</div>`;
+    for (const id in charts) charts[id].destroy();   // pas de courbes d'un autre run
+    charts = {};
+    $("table").innerHTML = "";
+    return;
+  }
+  $("tiles").innerHTML =
+    tile("Génération", fmt(last.gen), `${fmt(last.timesteps / 1e6, 2)} M pas`) +
+    tile("Vitesse moy. au tour", lastEval ? fmt(lastEval.vitesse_tour * 100, 1) + " %" : "—",
+         lastEval ? `gén. ${fmt(lastEval.gen)} · ` + (delta(ES.filter((r) => r.vitesse_tour != null), "vitesse_tour", 100, 1, " pt") || "première mesure")
+                  : "évaluation en cours…") +
+    tile("Courses terminées", fmt(last.taux_tour_fini * 100, 1) + " %", delta(P, "taux_tour_fini", 100, 1, " pt")) +
+    tile("Checkpoints / épisode", fmt(last.checkpoints_moy, 1), delta(P, "checkpoints_moy", 1, 1)) +
+    tile("Chocs / épisode", fmt(last.chocs_moy, 1), delta(P, "chocs_moy", 1, 1, "", true)) +
+    tile("Épisodes (génération)", fmt(last.episodes), "") +
+    tile("Vitesse", fmt(last.pas_s) + " pas/s", "");
+
+  const c1 = css("--series-1"), c2 = css("--series-2"), c3 = css("--series-3"), c4 = css("--series-4");
+  const sets = {
+    cFinish: [[line("Courses terminées", c1, series(P, "taux_tour_fini", 100))], "%", { unit: " %", digits: 1, y: { min: 0, max: 100 } }],
+    cSpeed: [[line("Évaluation · 5 circuits fixes", c1, series(ES, "vitesse_tour", 100)),
+              line("Pendant l'entraînement", c2, series(P, "vitesse_tour", 100))], "%", { unit: " %", digits: 1 }],
+    cCp: [[line("Checkpoints", c1, series(P, "checkpoints_moy"))], "", { digits: 1 }],
+    cHits: [[line("Chocs", c1, series(P, "chocs_moy"))], "", { digits: 1, tickDigits: 1, y: { min: 0 } }],
+    cReward: [[line("Total", c1, series(S, "ep_reward")), line("Progression", c2, series(S, "r_progress")),
+               line("Temps", c3, series(S, "r_time")), line("Fin d'épisode", c4, series(S, "r_env")),
+               ...(S.some((r) => r.r_speed != null) ? [line("Bonus vitesse", css("--series-5"), series(S, "r_speed"))] : [])], "", { digits: 1 }],
+    cEnt: [[line("Entropie", c1, series(S, "entropy_loss", -1))], "", { digits: 3, tickDigits: 1 }],
+    cKl: [[line("KL", c1, series(S, "approx_kl"))], "", { digits: 4, tickDigits: 3, y: { min: 0 } }],
+    cEv: [[line("Variance expliquée", c1, series(S, "explained_variance"))], "", { digits: 3, tickDigits: 1 }],
+    cSps: [[line("Pas/s", c1, series(P, "pas_s"))], "", { digits: 0, y: { min: 0 } }],
+  };
+  const hasTrain = P.some((r) => r.vitesse_tour != null);
+  $("speedLegend").innerHTML = [["Évaluation · 5 circuits fixes", c1]].concat(hasTrain ? [["Pendant l'entraînement", c2]] : [])
+    .map(([l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
+  const gens = P.length, evald = E.length;
+  $("evalStatus").textContent = evald < gens ? `· évaluation : ${evald}/${gens} générations` : "";
+  $("rewardLegend").innerHTML = [["Total", c1], ["Progression", c2], ["Temps", c3], ["Fin d'épisode", c4]]
+    .concat(S.some((r) => r.r_speed != null) ? [["Bonus vitesse", css("--series-5")]] : [])
+    .map(([l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join("");
+  // --- en vrac ---
+  const tp = cfg.time_penalty || 0.01, dec = 2 / 50;           // une décision du bot = 2 images à 50 i/s
+  const evSpeed = ES.filter((r) => r.vitesse_tour != null);
+  const gain = evSpeed.slice(1).map((r, i) => ({ x: r.timesteps / 1e6, y: (r.vitesse_tour - evSpeed[i].vitesse_tour) * 100 }));
+  const evalAt = Object.fromEntries(evSpeed.map((r) => [r.gen, r.vitesse_tour]));
+  const gap = P.filter((r) => r.vitesse_tour != null && evalAt[r.gen] != null)
+               .map((r) => ({ x: r.timesteps / 1e6, y: (r.vitesse_tour - evalAt[r.gen]) * 100 }));
+  const pos = c1, neg = c2;
+  Object.assign(sets, {
+    cDur: [[line("Durée", c1, S.filter((r) => r.r_time != null).map((r) => ({ x: r.timesteps / 1e6, y: -r.r_time / tp * dec })))], "", { digits: 1, unit: " s" }],
+    cGain: [[bars("Gain", (y) => (y >= 0 ? pos : neg), gain)], "", { digits: 2, unit: " pt", bar: true, tickDigits: 1 }],
+    cEp: [[bars("Courses", () => c1, series(P, "episodes"))], "", { digits: 0, bar: true, y: { min: 0 } }],
+    cCont: [[line("Contacts", c1, series(S, "contacts_moy"))], "", { digits: 2, tickDigits: 1, y: { min: 0 } }],
+    cGap: [[line("Écart", c1, gap)], "", { digits: 1, unit: " pt", tickDigits: 0 }],
+    cVl: [[line("Value loss", c1, series(S, "value_loss"))], "", { digits: 3, tickDigits: 2, y: { min: 0 } }],
+    cClip: [[line("Clip", c1, series(S, "clip_fraction", 100))], "", { digits: 1, unit: " %", y: { min: 0 } }],
+    cTime: [[line("Pénalité", c1, series(S, "r_time"))], "", { digits: 1 }],
+  });
+  for (const [id, [ds, yl, opts]] of Object.entries(sets)) {
+    if (full || !charts[id] || (opts && opts.bar)) makeChart(id, ds, yl, opts);
+    else { charts[id].data.datasets.forEach((d, i) => d.data = ds[i].data); charts[id].update("none"); }
+  }
+  // tableau
+  const cols = [["gen", "Gén.", 0], ["timesteps", "Pas (M)", 2, 1e-6], ["minutes", "Min", 1], ["taux_tour_fini", "Terminées %", 1, 100],
+                ["checkpoints_moy", "Checkpoints", 2], ["chocs_moy", "Chocs", 1], ["vit_eval", "Vitesse éval. %", 1, 100], ["episodes", "Épisodes", 0], ["pas_s", "Pas/s", 0]];
+  const evalBy = Object.fromEntries(E.map((r) => [r.gen, r.vitesse_tour]));
+  P.forEach((r) => { r.vit_eval = evalBy[r.gen] ?? null; });
+  $("table").innerHTML = "<tr>" + cols.map((c) => `<th>${c[1]}</th>`).join("") + "</tr>" +
+    P.slice().reverse().map((r) => "<tr>" + cols.map(([k, , d, s]) => `<td>${r[k] == null ? "—" : fmt(r[k] * (s || 1), d)}</td>`).join("") + "</tr>").join("");
+}
+
+async function drawRuns() {
+  let s;
+  try { s = await fetch("/api/summary").then((x) => x.json()); } catch (e) { return; }
+  s.sort((a, b) => b.best - a.best);
+  $("runsWrap").style.height = Math.max(120, 34 * s.length + 40) + "px";
+  if (charts.cRuns) charts.cRuns.destroy();
+  const grid = css("--grid"), muted = css("--text-muted"), sec = css("--text-secondary");
+  charts.cRuns = new Chart($("cRuns"), {
+    type: "bar",
+    data: { labels: s.map((r) => r.run), datasets: [{ label: "Meilleure vitesse", data: s.map((r) => r.best * 100),
+      backgroundColor: s.map((r) => (r.run === current ? css("--series-1") : css("--text-muted"))),
+      borderRadius: 4, borderSkipped: "start", maxBarThickness: 18 }] },
+    options: { indexAxis: "y", animation: false, responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: css("--surface-1"), titleColor: css("--text-primary"),
+        bodyColor: sec, borderColor: css("--border"), borderWidth: 1, padding: 10,
+        callbacks: { label: (it) => ` ${fmt(it.parsed.x, 1)} % (gén. ${fmt(s[it.dataIndex].gen)}) · dernière : ${fmt(s[it.dataIndex].last * 100, 1)} %` } } },
+      scales: { x: { min: Math.max(0, Math.floor(Math.min(...s.map((r) => r.best * 100)) / 5) * 5 - 5), grid: { color: grid }, border: { display: false },
+                     ticks: { color: muted, callback: (v) => v + " %" } },
+                y: { grid: { display: false }, border: { display: false }, ticks: { color: sec } } } },
+  });
+}
+
+async function loadRuns() {
+  const r = await fetch("/api/runs").then((x) => x.json());
+  const sel = $("run");
+  const keep = current || r.default || r.runs[0];
+  sel.innerHTML = r.runs.map((n) => `<option value="${n}">${n}</option>`).join("");
+  if (keep) { sel.value = keep; current = keep; }
+}
+$("run").onchange = (e) => {
+  current = e.target.value; lastGen = -1; lastEvalN = -1; lastData = null;
+  for (const id in charts) charts[id].destroy();
+  charts = {};
+  tick(true);
+  drawRuns();
+};
+
+async function tick(full = false) {
+  if (!current) return;
+  try {
+    const data = await fetch(`/api/data?run=${encodeURIComponent(current)}`).then((x) => x.json());
+    lastFetch = Date.now();
+    const P = data.progress, gen = P.length ? P[P.length - 1].gen : 0;
+    const first = !lastData;
+    lastData = data;
+    const evalN = (data.eval || []).length;
+    if (gen !== lastGen || evalN !== lastEvalN || full || first) draw(data, full || first);
+    lastGen = gen; lastEvalN = evalN;
+    const age = Math.round(data.age_s ?? 0);
+    const ago = age < 60 ? age + " s" : Math.floor(age / 60) + " min " + String(age % 60).padStart(2, "0") + " s";
+    // prochaine génération : générations rapprochées au début (cfg.early), puis tous les gen_steps pas
+    const cfg = data.config || {}, last = P[P.length - 1];
+    let next = null, eta = "";
+    if (last && !data.finished) {
+      const early = (cfg.early || []).filter((m) => m > last.timesteps);
+      next = early.length && !cfg.init ? early[0] : last.timesteps + (cfg.gen_steps || 0);
+      if (last.pas_s) {
+        const left = Math.max(0, (next - last.timesteps) / last.pas_s - age);
+        eta = left > 0 ? ` · prochaine à ${fmt(next / 1e6, 1)} M pas, dans ~${left < 60 ? Math.round(left) + " s" : Math.round(left / 60) + " min"}`
+                       : ` · prochaine à ${fmt(next / 1e6, 1)} M pas, imminente`;
+      }
+    }
+    $("dot").className = "dot" + (data.finished ? "" : " live");
+    $("status").textContent = data.finished ? "entraînement terminé" :
+      `en direct · dernière génération il y a ${ago}${eta}`;
+  } catch (e) {
+    $("dot").className = "dot";
+    $("status").textContent = "serveur arrêté ?";
+  }
+}
+
+(async () => {
+  await loadRuns();
+  await tick(true);
+  drawRuns();
+  setInterval(tick, 5000);
+  setInterval(drawRuns, 30000);
+  setInterval(loadRuns, 30000);
+})();
+</script>
+</body>
+</html>

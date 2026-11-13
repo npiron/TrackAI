@@ -12,14 +12,14 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
-from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics, detect_obs_version, wall_stats
+from scripts.eval import DEFAULT_METRICS, _load_model, append_metrics, detect_action_set, detect_obs_version, wall_stats
 
 
 def run(model_path, episodes, seed, eps, laps_n, procedural=False, obs_version=None):
     from src.rl.wrappers import GymTimeAttack
     model, vn = (None, None) if model_path == "heuristic" else _load_model(model_path)
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n,
-                        obs_version=detect_obs_version(model, obs_version))
+                        obs_version=detect_obs_version(model, obs_version), action_set=detect_action_set(model))
     if model_path == "heuristic":
         from scripts.heuristic_lap import heuristic_action
     succ, totals, fails, hits = [], [], [], []

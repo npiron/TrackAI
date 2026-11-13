@@ -71,7 +71,7 @@ def test_gym_wrapper_laps_info():
 # Hash de la trajectoire (obs, récompense, done) mesuré à l'origine sur le code d'avant le mode
 # multi-tours (commit e32dec6~1), puis remesuré avec la physique façon Trackmania (2026-11-07) ;
 # le code actuel avec laps omis doit le reproduire.
-REF_HASH = "e033a527125f1fca21ad4077cbe3a62ebfd053b12d4c9353394af35d9ccc72ed"
+REF_HASH = "a6af0c5c351862a82336ed1b9c2bd56adfc3853bc92fff392f00116443374941"
 
 
 def _traj_hash(**kw):

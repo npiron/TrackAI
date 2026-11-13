@@ -4,10 +4,19 @@ import numpy as np
 import pygame
 import os
 
-from src.core.constants import W, H, FONT_SIZE, MAX_SPEED, BOT_DECISION_FRAMES
+from src.core.constants import W, H, FONT_SIZE, FPS, MAX_SPEED, BOT_DECISION_FRAMES
 from src.game.env import TimeAttackEnv
 from src.game.track import build_track
 from src.game.rendering import draw_track, draw_car, draw_ghost, draw_lidar
+
+# Actions discrètes -> (volant, gaz, frein).
+# Jeu 1 (historique, 9) : 0 rien, 1 gaz, 2 frein, 3 gauche, 4 droite, 5 G+gaz, 6 D+gaz, 7 G+frein, 8 D+frein.
+# Jeu 2 (15) : volant -1, -0.5, 0, +0.5, +1 x (rien, gaz, frein) ; index = 3 * position du volant + pédale.
+ACTION_SETS = {
+    1: [(0.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (-1.0, 0.0, 0.0), (1.0, 0.0, 0.0),
+        (-1.0, 1.0, 0.0), (1.0, 1.0, 0.0), (-1.0, 0.0, 1.0), (1.0, 0.0, 1.0)],
+    2: [(s, a, b) for s in (-1.0, -0.5, 0.0, 0.5, 1.0) for a, b in ((0.0, 0.0), (1.0, 0.0), (0.0, 1.0))],
+}
 
 # Récompense "simple" (reward_mode="simple") : progression le long de la ligne centrale + temps + chocs
 SIMPLE_LAP_REWARD = 100.0   # récompense de progression cumulée pour un tour de piste (k_prog = SIMPLE_LAP_REWARD / longueur de la ligne centrale)
@@ -36,7 +45,7 @@ class GymTimeAttack(gym.Env):
 
     def __init__(self, render_mode=None, procedural=True, laps=1, wall_fatal=False, wall_penalty=0.0, obs_version=1, track_variant=1,
                  reward_mode="simple", k_prog=None, time_penalty=SIMPLE_TIME_PENALTY,
-                 action_repeat=BOT_DECISION_FRAMES, track_seed=None):
+                 action_repeat=BOT_DECISION_FRAMES, track_seed=None, action_set=1, speed_bonus=0.0):
         super().__init__()
         if reward_mode not in REWARD_MODES:
             raise ValueError(f"reward_mode doit valoir l'un de {REWARD_MODES}")
@@ -47,6 +56,9 @@ class GymTimeAttack(gym.Env):
         self.fixed_track_seed = track_seed   # circuit imposé (entraînement sur un seul circuit)
         self._k_prog_arg = k_prog
         self.time_penalty = float(time_penalty)
+        # bonus à chaque tour bouclé = speed_bonus x vitesse moyenne du tour (fraction de la vitesse max) :
+        # chaque point de vitesse gagné rapporte speed_bonus / 100 (le bonus fixe de 100 ne dépend pas de la vitesse)
+        self.speed_bonus = float(speed_bonus)
         # Options d'entraînement (défaut : désactivées). wall_penalty : récompense ajoutée par choc (négative = pénalité).
         self.wall_fatal = bool(wall_fatal)
         self.wall_hit_penalty = float(wall_penalty)
@@ -61,10 +73,14 @@ class GymTimeAttack(gym.Env):
 
         # Obs: 14 floats (Pilot-Centric)
         # (obs_version=2 : 35 floats, voir TimeAttackEnv)
-        n_obs = TimeAttackEnv.OBS_V2_SIZE if obs_version == 2 else 14
+        n_obs = {1: 14, 2: TimeAttackEnv.OBS_V2_SIZE, 3: TimeAttackEnv.OBS_V3_SIZE}[obs_version]
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(n_obs,), dtype=np.float32)
-        # 9 Discrete Actions for Complete Arcade Control (on/off buttons)
-        self.action_space = spaces.Discrete(9)
+        # Jeu d'actions 1 : 9 touches tout ou rien ; 2 : 15 actions avec demi-braquages (voir ACTION_SETS)
+        if action_set not in ACTION_SETS:
+            raise ValueError(f"action_set doit valoir l'un de {sorted(ACTION_SETS)}")
+        self.action_set = action_set
+        self._actions = ACTION_SETS[action_set]
+        self.action_space = spaces.Discrete(len(self._actions))
 
         self._last_progress = 0.0
         self.render_mode = render_mode
@@ -131,6 +147,7 @@ class GymTimeAttack(gym.Env):
         self._last_progress = -dist
         self._simple_s = self._centerline_s()
         self._ep_components = {}
+        self._laps_rewarded = 0
         self._last_lap_count = 0
         self._last_speed = 0.0
         self._last_cp_count = 0
@@ -155,6 +172,10 @@ class GymTimeAttack(gym.Env):
         if self.render_mode == "human":
             self.render()
         return obs, {}
+
+    def controls(self, action):
+        """(volant, gaz, frein) d'une action discrète du jeu d'actions courant."""
+        return self._actions[int(action)]
 
     def step(self, action):
         """Une décision du bot = action_repeat images avec les mêmes touches (récompenses additionnées)."""
@@ -192,30 +213,8 @@ class GymTimeAttack(gym.Env):
         if self.step_counter % 60 == 0:
             self._load_config()
 
-        # Decode Discrete Action (Complete on/off button controls)
-        # 0: Idle, 1: Acc, 2: Brake, 3: Left, 4: Right
-        # 5: L+A, 6: R+A, 7: L+B, 8: R+B
-        steer, accel, brake = 0.0, 0.0, 0.0
-        if action == 1:
-            accel = 1.0
-        elif action == 2:
-            brake = 1.0
-        elif action == 3:
-            steer = -1.0
-        elif action == 4:
-            steer = 1.0
-        elif action == 5:
-            steer = -1.0
-            accel = 1.0
-        elif action == 6:
-            steer = 1.0
-            accel = 1.0
-        elif action == 7:
-            steer = -1.0
-            brake = 1.0
-        elif action == 8:
-            steer = 1.0
-            brake = 1.0
+        # Décodage de l'action discrète (voir ACTION_SETS)
+        steer, accel, brake = self.controls(action)
             
         hits_before = self.ta.wall_hits
         obs, reward, done, info = self.ta.step((steer, accel, brake))
@@ -493,10 +492,16 @@ class GymTimeAttack(gym.Env):
             ds = 0.0  # pas de récompense hors piste
         progress = k_prog * ds
         wall = self.wall_hit_penalty * new_hits
-        total_reward = float(progress - self.time_penalty + wall + reward)
+        speed = 0.0
+        if self.speed_bonus and self.ta.lap_count > self._laps_rewarded:
+            for t in self.ta.lap_times[self._laps_rewarded:self.ta.lap_count]:
+                if t > 0:
+                    speed += self.speed_bonus * total_len / t / (MAX_SPEED * FPS)
+            self._laps_rewarded = self.ta.lap_count
+        total_reward = float(progress - self.time_penalty + wall + reward + speed)
         info["reward_components"] = {
             "progress": float(progress), "time_penalty": float(-self.time_penalty),
-            "wall": float(wall), "env": float(reward),
+            "wall": float(wall), "env": float(reward), "speed": float(speed),
         }
         for k, v in info["reward_components"].items():
             self._ep_components[k] = self._ep_components.get(k, 0.0) + v
@@ -513,6 +518,10 @@ class GymTimeAttack(gym.Env):
         info["total_time"] = float(sum(self.ta.lap_times))
         info["wall_hits"] = int(self.ta.wall_hits)
         info["wall_contacts"] = int(self.ta.wall_contacts)
+        # vitesse moyenne de chaque tour bouclé, en fraction de la vitesse max : longueur de la ligne centrale /
+        # temps du tour (comparable d'un circuit à l'autre, contrairement au temps au tour)
+        length = float(self.ta._arc_lengths()[-1])
+        info["lap_speeds"] = [length / t / (MAX_SPEED * FPS) for t in self.ta.lap_times if t > 0]
 
     def render(self):
         side = getattr(self, "sidebar", 0)   # panneau d'infos à gauche du circuit (px), 0 = aucun
@@ -538,6 +547,8 @@ class GymTimeAttack(gym.Env):
 
         draw_track(screen, track, checkpoints=next((i for i, v in enumerate(env.cp_visited) if not v), None),
                    visited=env.cp_visited)
+        if getattr(self, "world_overlay", None):
+            self.world_overlay(screen)  # dessin sur le circuit, sous la voiture (ex. fantôme dans watch_best.py)
 
         if env.best_time is not None:
              draw_ghost(screen, env.best_ghost, color=(70, 160, 220))

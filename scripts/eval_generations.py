@@ -17,12 +17,13 @@ import numpy as np
 
 
 def run_gen(path, n_tracks):
-    from scripts.eval import _load_model
+    from scripts.eval import _load_model, detect_action_set, detect_obs_version
     from src.rl.wrappers import GymTimeAttack
     import contextlib
     import io
     m, vn = _load_model(path)
-    env = GymTimeAttack(render_mode=None, procedural=True, laps=1, obs_version=2, track_variant=2)
+    env = GymTimeAttack(render_mode=None, procedural=True, laps=1, obs_version=detect_obs_version(m),
+                        action_set=detect_action_set(m), track_variant=2)
     rows = []
     for seed in range(n_tracks):
         obs, _ = env.reset(options={"track_seed": seed})

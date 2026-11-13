@@ -303,3 +303,74 @@ class TestObservationV2:
             assert a1 == a2
             assert isinstance(a2, (int, np.integer))
             e1.step((0, 1, 0)); e2.step((0, 1, 0))
+
+
+class TestObservationV3AndActionSet2:
+    """obs_version=3 (v2 + 6) et jeu d'actions 2 (15 actions avec demi-braquages)."""
+
+    def test_action_set_2_has_half_steering(self):
+        from src.rl.wrappers import GymTimeAttack, ACTION_SETS
+        g = GymTimeAttack(procedural=False, action_set=2)
+        assert g.action_space.n == 15
+        steers = sorted({s for s, _, _ in ACTION_SETS[2]})
+        assert steers == [-1.0, -0.5, 0.0, 0.5, 1.0]
+        assert g.controls(3 * 3 + 1) == (0.5, 1.0, 0.0)   # demi-braquage à droite + gaz
+        assert len(set(ACTION_SETS[2])) == 15
+
+    def test_action_set_1_unchanged(self):
+        from src.rl.wrappers import GymTimeAttack
+        g = GymTimeAttack(procedural=False)
+        assert g.action_space.n == 9
+        assert [g.controls(i) for i in (0, 1, 5, 8)] == [(0, 0, 0), (0, 1, 0), (-1, 1, 0), (1, 0, 1)]
+
+    def test_v3_shape_finite_and_v2_prefix(self):
+        from src.rl.wrappers import GymTimeAttack
+        g3 = GymTimeAttack(procedural=True, obs_version=3, action_set=2)
+        n = g3.ta.OBS_V3_SIZE
+        assert n == g3.ta.OBS_V2_SIZE + 6 and g3.observation_space.shape == (n,)
+        o3, _ = g3.reset(seed=3)
+        rng = np.random.default_rng(0)
+        for _ in range(200):
+            o3, _, t3, tr3, _ = g3.step(int(rng.integers(0, 15)))
+            assert o3.shape == (n,) and np.all(np.isfinite(o3))
+            assert np.array_equal(o3[:g3.ta.OBS_V2_SIZE], g3.ta._obs_v2())   # v3 = v2 + 6 valeurs
+            assert -1.5 <= o3[-6] <= 1.5 and np.all(np.abs(o3[-5:-2]) <= 1.0)
+            assert o3[-2] in (0.0, 1.0) and -1.0 <= o3[-1] <= 1.0
+            if t3 or tr3:
+                break
+
+    def test_v3_lateral_offset_and_bends_on_straight(self):
+        """Ligne droite : 0 virage ; voiture décalée vers la droite de la route : écart > 0."""
+        from src.game.env import TimeAttackEnv
+        from src.game.track import build_track
+        env = TimeAttackEnv(build_track(), obs_version=3)
+        env.reset()
+        env.track.spline_points = np.array([[100.0 + 10.0 * i, 300.0] for i in range(200)])
+        env._arc_cache = None
+        env.car.heading = 0.0
+        env.car.pos = np.array([500.0, 300.0])
+        assert abs(env._obs()[-6]) < 1e-6
+        env.car.pos = np.array([500.0, 300.0 + env.track.half_width / 2])   # y vers le bas = à droite en roulant vers +x
+        obs = env._obs()
+        assert obs[-6] == pytest.approx(0.5, abs=1e-6)
+        assert np.all(np.abs(obs[-5:-2]) < 1e-6)
+
+
+def test_speed_bonus_rewards_faster_laps():
+    """Bonus de vitesse : versé une fois par tour bouclé, proportionnel à la vitesse moyenne du tour."""
+    from src.rl.wrappers import GymTimeAttack
+    from src.core.constants import FPS, MAX_SPEED
+    g = GymTimeAttack(procedural=False, speed_bonus=400.0, action_repeat=1)
+    g.reset()
+    total_len = float(g.ta._arc_lengths()[-1])
+    g.ta.lap_times = [10.0]
+    g.ta.lap_count = 1
+    _, r, *_ , info = g.step(0)
+    expected = 400.0 * total_len / 10.0 / (MAX_SPEED * FPS)
+    assert info["reward_components"]["speed"] == pytest.approx(expected)
+    _, r, *_, info = g.step(0)
+    assert info["reward_components"]["speed"] == 0.0          # pas versé deux fois
+    g0 = GymTimeAttack(procedural=False)
+    g0.reset()
+    _, _, *_, info = g0.step(0)
+    assert info["reward_components"]["speed"] == 0.0          # désactivé par défaut

@@ -1,7 +1,7 @@
 """Behavior cloning depuis l'heuristique : collecte (obs, action) puis pré-entraîne une PPO MlpPolicy.
 
 Usage : python scripts/imitate.py --static --laps 1 --out data/checkpoints/ppo_t24_bc [--episodes 30]
-Sauve <out>.zip et <out>_vecnormalize.pkl (compatibles `rl_train_ppo.py --load` et scripts/eval.py).
+Sauve <out>.zip et <out>_vecnormalize.pkl (compatibles scripts/eval.py et scripts/train_long.py --init).
 Les épisodes bruités (action aléatoire avec proba eps, étiquette = action de l'heuristique) couvrent
 les états hors trajectoire (type DAgger sans politique apprise).
 """

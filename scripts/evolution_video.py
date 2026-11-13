@@ -47,12 +47,13 @@ def gen_color(i, n):
 
 class Runner:
     def __init__(self, path, label, color, laps, variant, seed):
-        from scripts.eval import _load_model, detect_obs_version
+        from scripts.eval import _load_model, detect_action_set, detect_obs_version
         from src.rl.wrappers import GymTimeAttack
         self.model, self.vn = _load_model(path)
         ov = detect_obs_version(self.model)
         proc = variant == 2 or seed is not None
         self.env = GymTimeAttack(render_mode=None, procedural=proc, laps=laps, obs_version=ov,
+                                 action_set=detect_action_set(self.model),
                                  track_variant=variant, action_repeat=1)  # une image vidéo = une image de jeu
         from scripts.eval import Pilot
         self.pilot = Pilot(self.model, self.vn)

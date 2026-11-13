@@ -30,17 +30,25 @@ class TimeAttackEnv:
               (cos>0 : devant, sin>0 : à droite)
       34    : courbure à venir (changement de cap moyen entre points, / (pi/4), clip [-1, 1], >0 : à droite)
       35-43 : 9 lidars (-pi/2 à pi/2 par pas de pi/8), portée V2_RAY_LENGTH px, normalisés [0,1]
+
+    obs_version=3 : 50 floats = v2 + 6 :
+      44    : écart latéral à la ligne centrale / demi-largeur de route (>0 : à droite, ±1 : bord), clip [-1.5, 1.5]
+      45-47 : virage proche (0-150 px), moyen (150-300 px), lointain (300-560 px) : changement de cap
+              cumulé / (pi/2), clip [-1, 1], >0 : à droite (pour savoir quand freiner)
+      48    : en drift (0/1)
+      49    : angle de glisse (entre la vitesse et le cap) / (pi/4), clip [-1, 1]
     ta.obs_v1() renvoie toujours l'observation v1 courante (pour le professeur heuristique).
     """
     V2_POINT_DISTANCES = (30.0, 60.0, 100.0, 150.0, 220.0, 300.0, 420.0, 560.0)
     V2_RAY_LENGTH = 400.0
     V2_LIDAR_ANGLES = [-math.pi / 2 + i * math.pi / 8 for i in range(9)]
     OBS_V2_SIZE = 10 + 3 * len(V2_POINT_DISTANCES) + 1 + 9
+    OBS_V3_SIZE = OBS_V2_SIZE + 6
 
     def __init__(self, track: Optional[Track] = None, procedural: bool = True, laps: int = 1, obs_version: int = 1,
                  track_variant: int = 1):
-        if obs_version not in (1, 2):
-            raise ValueError("obs_version doit valoir 1 ou 2")
+        if obs_version not in (1, 2, 3):
+            raise ValueError("obs_version doit valoir 1, 2 ou 3")
         self.obs_version = obs_version
         self.track_variant = int(track_variant)  # 1 : tracé historique, 2 : circuits longs (src/game/track.py)
         self._arc_cache = None
@@ -311,9 +319,37 @@ class TimeAttackEnv:
         return self._obs_v1()
 
     def _obs(self):
+        if self.obs_version == 3:
+            return self._obs_v3()
         if self.obs_version == 2:
             return self._obs_v2()
         return self._obs_v1()
+
+    def _obs_v3(self):
+        v2 = self._obs_v2()
+        i0, dh = self._v2_ctx
+        sp = self.track.spline_points
+        n = len(sp)
+        a, b = sp[i0], sp[(i0 + 1) % n]
+        t = b - a
+        tl = math.hypot(t[0], t[1]) or 1.0
+        rel = np.asarray(self.car.pos, dtype=np.float64) - a
+        lateral = (t[0] * rel[1] - t[1] * rel[0]) / tl  # >0 : à droite de la ligne centrale (repère écran, y vers le bas)
+        half = float(getattr(self.track, "half_width", 60.0))
+        offset = float(np.clip(lateral / half, -1.5, 1.5))
+        bends = [float(np.clip(np.sum(dh[sl]) / (math.pi / 2), -1.0, 1.0))
+                 for sl in (slice(0, 3), slice(3, 5), slice(5, None))]
+        vx, vy = float(self.car.vel[0]), float(self.car.vel[1])
+        if math.hypot(vx, vy) > 0.5:
+            h = self.car.heading
+            v_long = vx * math.cos(h) + vy * math.sin(h)
+            v_lat = -vx * math.sin(h) + vy * math.cos(h)
+            slip = math.atan2(v_lat, abs(v_long))
+        else:
+            slip = 0.0
+        extra = [offset, *bends, 1.0 if self.car.is_drifting else 0.0,
+                 float(np.clip(slip / (math.pi / 4), -1.0, 1.0))]
+        return np.concatenate([v2, np.array(extra, dtype=np.float32)])
 
     def _arc_lengths(self):
         sp = self.track.spline_points
@@ -353,6 +389,7 @@ class TimeAttackEnv:
         heads = np.arctan2(seg[:, 1], seg[:, 0])
         dh = (np.diff(heads) + math.pi) % (2 * math.pi) - math.pi
         curv = float(np.clip(np.mean(dh) / (math.pi / 4), -1.0, 1.0))
+        self._v2_ctx = (i0, dh)  # réutilisé par l'observation v3
         lidar = self._cast_rays(self.V2_LIDAR_ANGLES, self.V2_RAY_LENGTH)
         return np.array([*base, float(self.car.steering), *feats, curv, *lidar], dtype=np.float32)
 

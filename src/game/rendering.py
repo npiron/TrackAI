@@ -293,8 +293,17 @@ ACTION_KEYS = {0: (), 1: ("up",), 2: ("down",), 3: ("left",), 4: ("right",), 5: 
 
 
 def draw_keys(screen, action, speed=None, max_speed=None, font=None):
-    """Les 4 flèches du bot en bas de l'écran, allumées quand il les appuie, et sa vitesse."""
-    pressed = ACTION_KEYS.get(int(action), ())
+    """Les 4 flèches du bot en bas de l'écran, allumées quand il les appuie, et sa vitesse.
+    `action` : index du jeu d'actions historique (9) ou (volant, gaz, frein) ; un demi-braquage allume
+    la flèche à moitié."""
+    half = set()
+    if isinstance(action, (tuple, list)):
+        st, gas, brk = action
+        pressed = tuple(n for n, on in (("left", st < 0), ("right", st > 0), ("up", gas > 0), ("down", brk > 0)) if on)
+        if 0 < abs(st) < 1:
+            half.add("left" if st < 0 else "right")
+    else:
+        pressed = ACTION_KEYS.get(int(action), ())
     w, h = screen.get_size()
     k, gap = 46, 8
     cx, by = 24 + k + gap + k // 2, h - 24  # en bas à gauche
@@ -307,7 +316,10 @@ def draw_keys(screen, action, speed=None, max_speed=None, font=None):
     for name, (x, y) in pos.items():
         on = name in pressed
         rect = pygame.Rect(x, y, k, k)
-        pygame.draw.rect(screen, colors[name] if on else (52, 56, 66), rect, border_radius=8)
+        col = colors[name] if on else (52, 56, 66)
+        if on and name in half:  # demi-braquage : couleur à mi-chemin entre éteint et allumé
+            col = tuple((a + b) // 2 for a, b in zip(col, (52, 56, 66)))
+        pygame.draw.rect(screen, col, rect, border_radius=8)
         pygame.draw.rect(screen, (255, 255, 255) if on else (90, 96, 110), rect, 2, border_radius=8)
         c = rect.center
         s = 11

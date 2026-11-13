@@ -93,15 +93,16 @@ def bot_run(seed, laps, long_tracks, model_path=BOT_MODEL):
     import contextlib
     import io
     import numpy as np
-    from scripts.eval import Pilot, _load_model, detect_obs_version
+    from scripts.eval import Pilot, _load_model, detect_action_set, detect_obs_version
     from src.rl.wrappers import GymTimeAttack
     model, vn = _load_model(model_path)
     try:
         obs_version = detect_obs_version(model)
+        action_set = detect_action_set(model)
     except ValueError:
         return None   # modèle d'une ancienne version de l'observation : pas de fantôme
     env = GymTimeAttack(render_mode=None, procedural=long_tracks, laps=laps, track_variant=2,
-                        obs_version=obs_version, action_repeat=1)  # trajectoire image par image
+                        obs_version=obs_version, action_set=action_set, action_repeat=1)  # trajectoire image par image
     pilot = Pilot(model, vn)
     obs, _ = env.reset(options={"track_seed": seed} if long_tracks else None)
     frames, splits, done, info = [], [], False, {}
@@ -203,6 +204,8 @@ def play(laps, long_tracks=False, seed=None):
                 running = False
             elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_m:
                 audio.toggle_mute()
+            elif ev.type == pygame.KEYDOWN and (ev.unicode in ("+", "-") or ev.key in (pygame.K_KP_PLUS, pygame.K_KP_MINUS)):
+                audio.change_volume(0.1 if ev.unicode == "+" or ev.key == pygame.K_KP_PLUS else -0.1)
             elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_r:
                 restart()
             elif ev.type == pygame.KEYDOWN and ev.key in (pygame.K_RETURN, pygame.K_BACKSPACE) and not env.done:
@@ -256,7 +259,7 @@ def play(laps, long_tracks=False, seed=None):
             slip = min(slip, 180 - slip) if c.speed < 0 else slip
         if not env.done:
             audio.update(v / MAX_SPEED, bool(up) and countdown <= 0, slip, c.is_drifting, bool(down) and c.speed > 0.5,
-                         running=countdown <= 0)
+                         running=countdown <= 0, pan=c.pos[0] / W * 2 - 1)
         else:
             audio.silence()   # moteur coupé, mais le flux continue (fanfare d'arrivée)
         # --- dessin ---

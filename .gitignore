@@ -71,3 +71,14 @@ data/human_best.json
 videos/
 data/human_tracks.json
 data/bot_records.json
+
+# Configs de récompense temporaires (une par processus d'entraînement)
+rewards_config_[0-9]*.json
+
+# Démos audio générées (scripts/engine_demo.py)
+data/audio/
+
+# Données d'exécution locales
+data/bot_records_ancienne_physique.json
+data/bot_speed_record.json
+data/audio_settings.json

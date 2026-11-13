@@ -116,11 +116,17 @@ def test_brake_while_steering_starts_drift():
 
 def test_full_lock_at_high_speed_drifts_without_brake():
     e = _free()
-    while e.car.speed < 0.9 * MAX_SPEED:
+    while e.car.speed < 0.97 * MAX_SPEED:
         e.step((0.0, 1.0, 0.0))
     for _ in range(10):
         e.step((1.0, 1.0, 0.0))
-    assert e.car.is_drifting           # gros coup de volant à haute vitesse : l'arrière décroche
+    assert e.car.is_drifting           # volant à fond presque à la vitesse max : l'arrière décroche
+    fast = _free()
+    while fast.car.speed < 0.9 * MAX_SPEED:
+        fast.step((0.0, 1.0, 0.0))
+    for _ in range(10):
+        fast.step((1.0, 1.0, 0.0))
+    assert not fast.car.is_drifting    # adhérence de F1 : à 90 % de la vitesse max, ça tient encore
     slow = _free()
     while slow.car.speed < 0.5 * MAX_SPEED:
         slow.step((0.0, 1.0, 0.0))
@@ -144,7 +150,7 @@ def test_grazing_wall_keeps_more_speed_than_head_on():
             if e.wall_hits:
                 return float(np.linalg.norm(e.car.vel))
         raise AssertionError("pas de contact")
-    assert after_hit(0.15) > 2 * after_hit(1.4)
+    assert after_hit(0.15) > 1.5 * after_hit(1.4)   # un frôlement coûte cher, mais bien moins qu'un choc de face
 
 
 # --- Circuits longs (variante 2) ---
@@ -200,27 +206,27 @@ def _wall_hit_loss(deg):
 
 
 def test_wall_law_graze_costs_and_head_on_stops():
-    assert 0.15 <= _wall_hit_loss(3) <= 0.30   # même un frôlement coûte 15 à 30 %
-    assert 0.15 <= _wall_hit_loss(10) <= 0.30
+    assert 0.25 <= _wall_hit_loss(3) <= 0.40   # même un frôlement coûte 25 à 40 %
+    assert 0.25 <= _wall_hit_loss(10) <= 0.40
     assert _wall_hit_loss(90) >= 0.8           # choc de face : presque tout
     assert _wall_hit_loss(10) < _wall_hit_loss(45) < _wall_hit_loss(90)
 
 
 def test_drift_is_one_continuous_arc_even_when_tapping():
-    """Volant tapoté pendant un drift : un seul drift continu, glisse plafonnée (~34°)."""
+    """Volant tapoté pendant un drift : un seul drift continu, glisse plafonnée (~17°)."""
     e = _free()
     while e.car.speed < 0.9 * MAX_SPEED:
         e.step((0.0, 1.0, 0.0))
     states, slips = [], []
     for i in range(40):
-        st = 1.0 if i < 3 or (i // 2) % 2 == 0 else 0.0
-        e.step((st, 1.0 if i >= 3 else 0.0, 1.0 if i < 3 else 0.0))
+        st = 1.0 if i < 5 or (i // 2) % 2 == 0 else 0.0
+        e.step((st, 1.0 if i >= 5 else 0.0, 1.0 if i < 5 else 0.0))
         states.append(e.car.is_drifting)
         v = e.car.vel
         slips.append(abs((math.atan2(v[1], v[0]) - e.car.heading + math.pi) % (2 * math.pi) - math.pi))
     first = states.index(True)
     assert all(states[first:])                    # pas d'interruption
-    assert max(slips) <= math.radians(36)
+    assert max(slips) <= math.radians(19)
 
 
 def test_bot_decides_every_two_frames():

@@ -69,7 +69,7 @@ class Pilot:
 
 
 def detect_obs_version(model, forced=None):
-    """obs_version d'après la forme d'observation du modèle (14 -> 1, taille v2 -> 2) ; `forced` prioritaire.
+    """obs_version d'après la forme d'observation du modèle (14 -> 1, taille v2 -> 2, v3 -> 3) ; `forced` prioritaire.
     Sans modèle (random/heuristic) : `forced` ou 1."""
     if forced is not None:
         return int(forced)
@@ -81,7 +81,21 @@ def detect_obs_version(model, forced=None):
         return 1
     if n == TimeAttackEnv.OBS_V2_SIZE:
         return 2
+    if n == TimeAttackEnv.OBS_V3_SIZE:
+        return 3
     raise ValueError(f"taille d'observation inconnue : {n}")
+
+
+def detect_action_set(model):
+    """Jeu d'actions d'après le nombre d'actions du modèle (9 -> 1, 15 -> 2) ; sans modèle : 1."""
+    if model is None:
+        return 1
+    from src.rl.wrappers import ACTION_SETS
+    n = int(model.action_space.n)
+    for k, acts in ACTION_SETS.items():
+        if len(acts) == n:
+            return k
+    raise ValueError(f"nombre d'actions inconnu : {n}")
 
 
 def multi_lap_stats(succ, laps_done, totals):
@@ -111,7 +125,7 @@ def run_eval(model_path, episodes, seed, procedural=True, laps_n=1, bench=False,
     real_path = model_path[len("shield:"):] if shield else model_path
     model, vn = (None, None) if model_path in ("random", "heuristic") else _load_model(real_path)
     env = GymTimeAttack(render_mode=None, procedural=procedural, laps=laps_n,
-                        obs_version=detect_obs_version(model, obs_version))
+                        obs_version=detect_obs_version(model, obs_version), action_set=detect_action_set(model))
     if shield:
         from scripts.heuristic_lap import _safe_action
     if model_path == "heuristic":
